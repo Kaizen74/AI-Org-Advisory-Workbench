@@ -1,0 +1,80 @@
+// Typed API client for the Advisory Workbench backend.
+// In dev, Vite proxies /api -> http://127.0.0.1:8000 (see vite.config.ts).
+import type {
+  ActivatorScreen,
+  ArchetypeSummary,
+  Client,
+  Dataset,
+  DiagnosticsSummary,
+  Engagement,
+} from "../types";
+
+const BASE = "/api/v1";
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const resp = await fetch(`${BASE}${path}`, init);
+  if (!resp.ok) {
+    let detail = `${resp.status} ${resp.statusText}`;
+    try {
+      const body = await resp.json();
+      if (body?.detail) detail = body.detail;
+    } catch {
+      /* ignore non-JSON error bodies */
+    }
+    throw new Error(detail);
+  }
+  return (await resp.json()) as T;
+}
+
+function json(body: unknown): RequestInit {
+  return {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  };
+}
+
+export const api = {
+  // Clients
+  listClients: () => request<Client[]>("/engagements/clients"),
+  createClient: (name: string, industry?: string) =>
+    request<Client>("/engagements/clients", json({ name, industry })),
+
+  // Engagements
+  listEngagements: (clientId?: string) =>
+    request<Engagement[]>(
+      `/engagements${clientId ? `?client_id=${encodeURIComponent(clientId)}` : ""}`,
+    ),
+  createEngagement: (clientId: string, name: string) =>
+    request<Engagement>("/engagements", json({ client_id: clientId, name })),
+
+  // Datasets
+  listDatasets: (engagementId: string) =>
+    request<Dataset[]>(`/engagements/${engagementId}/datasets`),
+  uploadDataset: (engagementId: string, file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return request<Dataset>(`/engagements/${engagementId}/datasets`, {
+      method: "POST",
+      body: form,
+    });
+  },
+  purgeEngagement: (engagementId: string) =>
+    request<{ purged: string }>(`/engagements/${engagementId}/purge`, { method: "DELETE" }),
+
+  // Diagnostics
+  compute: (datasetId: string) =>
+    request<DiagnosticsSummary>(
+      `/diagnostics/compute?dataset_id=${encodeURIComponent(datasetId)}`,
+      { method: "POST" },
+    ),
+  summary: (datasetId: string) =>
+    request<DiagnosticsSummary>(
+      `/diagnostics/summary?dataset_id=${encodeURIComponent(datasetId)}`,
+    ),
+  activatorScreen: (datasetId: string) =>
+    request<ActivatorScreen>(
+      `/diagnostics/activator-screen?dataset_id=${encodeURIComponent(datasetId)}`,
+    ),
+  archetypes: () => request<{ archetypes: ArchetypeSummary[] }>("/diagnostics/archetypes"),
+};

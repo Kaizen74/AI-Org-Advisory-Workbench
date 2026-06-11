@@ -1,46 +1,55 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import Engagements from "./pages/Engagements";
+import Diagnostics from "./pages/Diagnostics";
 
-/**
- * Phase 0 placeholder shell. It checks that the backend is reachable and shows which modules
- * are live. Real pages (Engagements, Diagnostics, ...) replace this as phases ship.
- */
+type Tab = "engagements" | "diagnostics";
+
 export default function App() {
-  const [health, setHealth] = useState<"checking" | "ok" | "down">("checking");
+  const [tab, setTab] = useState<Tab>("engagements");
+  const [datasetId, setDatasetId] = useState<string | null>(null);
+  const [diagTitle, setDiagTitle] = useState<string>("");
 
-  useEffect(() => {
-    fetch("/api/../health")
-      .then((r) => (r.ok ? setHealth("ok") : setHealth("down")))
-      .catch(() => setHealth("down"));
-  }, []);
+  function openDiagnostics(id: string, engagementName: string) {
+    setDatasetId(id);
+    setDiagTitle(engagementName);
+    setTab("diagnostics");
+  }
+
+  const tabs: { id: Tab; label: string }[] = [
+    { id: "engagements", label: "Engagements" },
+    { id: "diagnostics", label: "Diagnostics" },
+  ];
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800">
-      <header className="border-b border-slate-200 bg-white px-6 py-4">
-        <h1 className="text-xl font-semibold">OrgAI Advisory Workbench</h1>
-        <p className="text-sm text-slate-500">Phase 0 — foundations</p>
+      <header className="border-b border-slate-200 bg-white px-6 py-3">
+        <div className="mx-auto flex max-w-6xl items-center justify-between">
+          <div>
+            <h1 className="text-lg font-semibold">OrgAI Advisory Workbench</h1>
+            <p className="text-xs text-slate-500">Phase 1 — Engagement core + diagnostics</p>
+          </div>
+          <nav className="flex gap-1">
+            {tabs.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium ${
+                  tab === t.id ? "bg-slate-800 text-white" : "text-slate-600 hover:bg-slate-100"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </nav>
+        </div>
       </header>
-      <main className="mx-auto max-w-3xl px-6 py-10">
-        <section className="rounded-lg border border-slate-200 bg-white p-6">
-          <h2 className="mb-2 text-lg font-medium">Build status</h2>
-          <p className="text-sm">
-            Backend health:{" "}
-            <span
-              className={
-                health === "ok"
-                  ? "font-semibold text-green-600"
-                  : health === "down"
-                    ? "font-semibold text-red-600"
-                    : "text-slate-500"
-              }
-            >
-              {health}
-            </span>
-          </p>
-          <p className="mt-4 text-sm text-slate-500">
-            Modules ship from Phase 1 onward: Engagement Hub, Diagnostics, Task Intelligence,
-            Validation Queue, Scenario Studio, Workflow Mapper, Transition Planner, Deliverables.
-          </p>
-        </section>
+
+      <main className="mx-auto max-w-6xl px-6 py-6">
+        {tab === "engagements" ? (
+          <Engagements onOpenDiagnostics={openDiagnostics} />
+        ) : (
+          <Diagnostics datasetId={datasetId} title={diagTitle} />
+        )}
       </main>
     </div>
   );

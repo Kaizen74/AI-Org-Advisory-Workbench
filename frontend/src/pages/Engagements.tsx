@@ -1,0 +1,200 @@
+import { useEffect, useState } from "react";
+import { api } from "../services/api";
+import type { Client, Dataset, Engagement } from "../types";
+import { Button, Card, Empty, ErrorNote, Spinner } from "../components/ui";
+
+export default function Engagements({
+  onOpenDiagnostics,
+}: {
+  onOpenDiagnostics: (datasetId: string, engagementName: string) => void;
+}) {
+  const [clients, setClients] = useState<Client[]>([]);
+  const [engagements, setEngagements] = useState<Engagement[]>([]);
+  const [datasets, setDatasets] = useState<Dataset[]>([]);
+  const [selectedClient, setSelectedClient] = useState<string>("");
+  const [selectedEngagement, setSelectedEngagement] = useState<string>("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>("");
+  const [newClient, setNewClient] = useState("");
+  const [newEngagement, setNewEngagement] = useState("");
+
+  async function refreshClients() {
+    setClients(await api.listClients());
+  }
+
+  useEffect(() => {
+    refreshClients()
+      .catch((e) => setError(String(e.message ?? e)))
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    if (!selectedClient) {
+      setEngagements([]);
+      return;
+    }
+    api.listEngagements(selectedClient).then(setEngagements).catch((e) => setError(String(e)));
+  }, [selectedClient]);
+
+  useEffect(() => {
+    if (!selectedEngagement) {
+      setDatasets([]);
+      return;
+    }
+    api.listDatasets(selectedEngagement).then(setDatasets).catch((e) => setError(String(e)));
+  }, [selectedEngagement]);
+
+  async function addClient() {
+    if (!newClient.trim()) return;
+    try {
+      const c = await api.createClient(newClient.trim());
+      setNewClient("");
+      await refreshClients();
+      setSelectedClient(c.id);
+    } catch (e) {
+      setError(String(e));
+    }
+  }
+
+  async function addEngagement() {
+    if (!selectedClient || !newEngagement.trim()) return;
+    try {
+      const e = await api.createEngagement(selectedClient, newEngagement.trim());
+      setNewEngagement("");
+      setEngagements(await api.listEngagements(selectedClient));
+      setSelectedEngagement(e.id);
+    } catch (err) {
+      setError(String(err));
+    }
+  }
+
+  async function upload(file: File) {
+    if (!selectedEngagement) return;
+    try {
+      await api.uploadDataset(selectedEngagement, file);
+      setDatasets(await api.listDatasets(selectedEngagement));
+    } catch (e) {
+      setError(String(e));
+    }
+  }
+
+  if (loading) return <Spinner label="Loading engagements…" />;
+
+  const engagementName =
+    engagements.find((e) => e.id === selectedEngagement)?.name ?? "engagement";
+
+  return (
+    <div className="grid gap-5 md:grid-cols-3">
+      {error && (
+        <div className="md:col-span-3">
+          <ErrorNote message={error} />
+        </div>
+      )}
+
+      <Card title="Clients">
+        {clients.length === 0 ? (
+          <Empty message="No clients yet. Create one below." />
+        ) : (
+          <ul className="space-y-1">
+            {clients.map((c) => (
+              <li key={c.id}>
+                <button
+                  onClick={() => setSelectedClient(c.id)}
+                  className={`w-full rounded px-2 py-1 text-left text-sm ${
+                    selectedClient === c.id ? "bg-slate-800 text-white" : "hover:bg-slate-100"
+                  }`}
+                >
+                  {c.name}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <div className="mt-3 flex gap-2">
+          <input
+            value={newClient}
+            onChange={(e) => setNewClient(e.target.value)}
+            placeholder="New client name"
+            className="flex-1 rounded border border-slate-300 px-2 py-1 text-sm"
+          />
+          <Button onClick={addClient}>Add</Button>
+        </div>
+      </Card>
+
+      <Card title="Engagements">
+        {!selectedClient ? (
+          <Empty message="Select a client first." />
+        ) : engagements.length === 0 ? (
+          <Empty message="No engagements for this client." />
+        ) : (
+          <ul className="space-y-1">
+            {engagements.map((e) => (
+              <li key={e.id}>
+                <button
+                  onClick={() => setSelectedEngagement(e.id)}
+                  className={`w-full rounded px-2 py-1 text-left text-sm ${
+                    selectedEngagement === e.id ? "bg-slate-800 text-white" : "hover:bg-slate-100"
+                  }`}
+                >
+                  {e.name}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        {selectedClient && (
+          <div className="mt-3 flex gap-2">
+            <input
+              value={newEngagement}
+              onChange={(e) => setNewEngagement(e.target.value)}
+              placeholder="New engagement name"
+              className="flex-1 rounded border border-slate-300 px-2 py-1 text-sm"
+            />
+            <Button onClick={addEngagement}>Add</Button>
+          </div>
+        )}
+      </Card>
+
+      <Card title="Datasets">
+        {!selectedEngagement ? (
+          <Empty message="Select an engagement to upload an org CSV." />
+        ) : (
+          <>
+            <label className="mb-3 block">
+              <span className="text-sm text-slate-600">Upload org structure CSV</span>
+              <input
+                type="file"
+                accept=".csv"
+                onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])}
+                className="mt-1 block w-full text-sm"
+              />
+            </label>
+            {datasets.length === 0 ? (
+              <Empty message="No datasets uploaded yet." />
+            ) : (
+              <ul className="space-y-2">
+                {datasets.map((d) => (
+                  <li key={d.id} className="rounded border border-slate-200 p-2 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span>
+                        v{d.version} · {d.row_count} positions
+                      </span>
+                      <Button variant="ghost" onClick={() => onOpenDiagnostics(d.id, engagementName)}>
+                        Diagnose →
+                      </Button>
+                    </div>
+                    {d.validation_warnings && d.validation_warnings.length > 0 && (
+                      <div className="mt-1 text-xs text-amber-600">
+                        {d.validation_warnings.length} validation warning(s)
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
+        )}
+      </Card>
+    </div>
+  );
+}
