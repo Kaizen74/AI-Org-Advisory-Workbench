@@ -65,3 +65,40 @@ One dated entry per session and per completed phase. Never rewrite history.
   asserted the wrong legacy behaviour; corrected the **test** (the ported code was faithful) into
   two precise tests. Gate then GREEN at **13 tests** + clean frontend build.
 - Committed and pushed. **Phase 0 is complete.** Awaiting Eric's go-ahead for Phase 1.
+
+---
+
+## Phase 1 — Engagement core + diagnostics
+
+**Micro-task checklist (written before starting, per Part A; each ends with a commit + LATEST update):**
+- [ ] P1.1 — Backend DB foundation: add `pandas`/`networkx`/`greenlet` deps; `models/database.py`
+      (async engine, `Base`, `get_session`); Alembic scaffolding (`alembic.ini`, `env.py`).
+- [ ] P1.2 — Engagement-core SQLAlchemy models (clients, engagements, datasets, positions,
+      metric_values) per Build Spec B1, with `generate_uuid` PK + `created_at`; model smoke test.
+- [ ] P1.3 — Alembic migration `001` (engagement-core tables) — additive, reversible `downgrade()`;
+      test that create_all/migration round-trips.
+- [ ] P1.4 — Port CSV parser → `parsers/csv_parser.py` with the **breaking fix**: Employee-ID
+      keying + surrogate-key fallback + duplicate-name validation warning. **Test-first**:
+      duplicate-name warning + intact ID-keyed tree, then PAX parse (64 emp / $5.77M / 6 layers).
+- [ ] P1.5 — Port metrics engine → `services/metrics_service.py` (ID-keyed graph). **PAX parity
+      test**: 64 / 16 / 25.0 / 5,770,000 / 6 (baseline fixture #1).
+- [ ] P1.6 — Diagnostics service: compute → typed `metric_values` rows; snapshot the full PAX
+      metrics payload under `backend/tests/baseline/` + byte-parity test (A3 Rule 2).
+- [ ] P1.7 — `engagement_service` + `/api/v1/engagements` router: CRUD clients/engagements;
+      `POST /{id}/datasets` (upload→parse→persist positions+warnings); `DELETE /{id}/purge`.
+- [ ] P1.8 — `diagnostics_service` + `/api/v1/diagnostics` router: `POST /compute`, `GET /summary`,
+      `GET /archetypes`, `GET /activator-screen`. Guard pattern (404 no dataset; non-AI key-free).
+- [ ] P1.9 — Port `resources/archetypes_reference.py` (unchanged) + wire `GET /archetypes`.
+- [ ] P1.10 — Kates-Kesler activator pre-screen: map metrics → Five Activators leading-indicator
+      flags; test on PAX.
+- [ ] P1.11 — Frontend: `Engagements` + `Diagnostics` pages (API-key gate, quick stats, run
+      buttons, loading/empty/error states); typed API client.
+- [ ] P1.12 — Phase close: full gate, append P1 tests + PAX snapshot to BASELINE.md, update all
+      checkpoint files, commit + push.
+
+### Session 3 — 2026-06-11 (Phase 1 start)
+
+- Eric approved Phase 0 ("Proceed"). Read the legacy CSV parser, metrics engine, models, DB layer,
+  and CSV-parser tests to plan a faithful port. Confirmed the legacy graph is **name-keyed** — P1's
+  mandated breaking fix is to re-key on Employee ID (PRD M1). Wrote the P1 micro-task checklist
+  above and began executing it micro-task by micro-task.
