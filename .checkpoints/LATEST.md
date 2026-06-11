@@ -1,29 +1,33 @@
 # LATEST CHECKPOINT
-**Updated:** 2026-06-11T00:30:00 (Phase 0 — COMPLETE)
-**Phase:** P0 — Protocol & scaffold ✅ DONE
-**Last completed micro-task:** P0.12 + P0.13 — ported the JSON parse/repair helpers from
-`legacy/.../work_activities_service.py` into `backend/app/services/_json_utils.py` (with tests),
-and placed baseline fixture #1 (`org_structure_PAX.csv` byte-identical copy + `expected_pax_metrics
-.json`). Gate green at 13 tests.
-**In-flight micro-task:** none. Phase 0 is fully closed and pushed. The `legacy/` folder blocker is
-RESOLVED (Eric uploaded `legacy v1 app.zip` to `main`; extracted into `legacy/` on this branch).
-**Next action (be exact):** WAIT for Eric to confirm Phase 0 looks good. On his go-ahead, START
-**Phase 1 (P1 — Engagement core + diagnostics)**, first micro-task:
-  1. Write the P1 micro-task checklist into `PROGRESS.md`.
-  2. Create Alembic migration `001` for the engagement-core tables (clients, engagements, datasets,
-     positions, metric_values) per Build Spec B1 — additive, reversible `downgrade()`.
-  3. Port the CSV parser from `legacy/backend/app/parsers/csv_parser.py`, adapting to **Employee-ID
-     keying with surrogate-key fallback + duplicate-name validation warning** (write the
-     duplicate-name test FIRST, Part A Rule 6).
-  4. Port the metrics engine from `legacy/.../metrics_service.py` to typed `metric_values`, then add
-     the **PAX parity test** asserting 64 / 16 / 25.0 / 5,770,000 / 6 (baseline fixture #1).
-Do NOT change any completed P0 file's behaviour without a DECISIONS.md entry (additive-only).
-**Test status:** PASS — gate GREEN, 13 backend tests + clean frontend build
-(`✅ GATE PASSED`). Recovery: `bash scripts/gate.sh`.
-**Recovery commands:** `bash scripts/gate.sh`  (or: `cd backend && . .venv/bin/activate &&
-PYTHONPATH=$PWD pytest tests/ -v ; cd ../frontend && npm run build`)
+**Updated:** 2026-06-11T01:30:00 (Phase 1 — IN PROGRESS, parked on a data conflict)
+**Phase:** P1 — Engagement core + diagnostics
+**Last completed micro-task:** P1.4 — ported the CSV parser with the breaking fix (Employee-ID
+keyed graph + surrogate fallback + duplicate-name warning). Faithful: reproduces legacy v1 output on
+the PAX CSV exactly. 22 backend tests green. (P1.1 DB layer, P1.2 models, P1.3 migration 001 also
+done and committed.)
+**In-flight micro-task:** P1.5 (metrics engine port + PAX parity baseline) is **PARKED** pending the
+data conflict in Open Question #1 below — do not lock a parity baseline until Eric resolves it.
+**Next action (be exact):**
+  * IF Eric says "use the provided CSV as truth" → set the P1 parity target to the actual values
+    (total_employees=64, total_managers=34, manager_ratio_pct=53.1, total_cost=6,620,000,
+    organizational_layers=6); update `backend/tests/fixtures/expected_pax_metrics.json` + the
+    `test_pax_fixture.py`/`test_csv_parser.py` asserts accordingly; then port the metrics engine
+    (`legacy/.../metrics_service.py`) to typed `metric_values`, add the parity test, snapshot the
+    payload under `backend/tests/baseline/`, and resume P1.6→P1.12.
+  * IF Eric uploads the correct PAX CSV (yielding 16 / 25.0 / 5,770,000) → replace the fixture, keep
+    the spec's parity numbers, then continue P1.5 as originally specified.
+**Test status:** PASS — gate GREEN, 22 backend tests + clean frontend build. (No baseline locked
+yet for PAX metrics — deliberately deferred.)
+**Recovery commands:** `bash scripts/gate.sh`
 **Open questions for Eric:**
-  1. (Resolved) The `legacy/` folder is now present (extracted from your `legacy v1 app.zip`).
-  2. Minor housekeeping (no action needed now): your `legacy v1 app.zip` lives on the `main` branch;
-     this `claude/compassionate-knuth-wx5bjq` branch carries the unpacked `legacy/` folder instead.
-     When this branch merges to `main`, you may delete the zip from `main` to avoid duplication.
+  1. **BLOCKER for P1 parity — the PAX CSV doesn't match the spec's parity numbers.** Running the
+     faithful port (and the legacy v1 code itself) on the `org_structure_PAX.csv` inside your
+     `legacy v1 app.zip` gives **64 employees, 34 managers (53.1%), $6,620,000 cost, 6 layers**. The
+     Build Spec's P1 parity target is **64 / 16 / 25.0 / 5,770,000 / 6**. Only employees (64) and
+     layers (6) match. Since total_cost is just a salary sum and this CSV sums to 6,620,000, it is a
+     *different file* than the one the spec (and the legacy app's own tests) were validated against.
+     **Choose: (A) treat this CSV as the source of truth and I reset the parity target to the actual
+     numbers, or (B) upload the correct PAX CSV that yields 16 / 25.0 / 5,770,000.** I parked the
+     parity-baseline step rather than fabricate numbers.
+  2. (Housekeeping, no action now) Your `legacy v1 app.zip` is on `main`; this branch carries the
+     unpacked `legacy/` folder. You can delete the zip from `main` after this branch merges.
