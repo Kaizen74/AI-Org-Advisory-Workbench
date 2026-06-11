@@ -56,3 +56,24 @@ expected-metrics test fixture (`backend/tests/fixtures/`) — are **left un-port
 them risks diverging from v1 behaviour and would break the P1 PAX parity baseline
 (total_employees=64, total_cost=5770000, etc.). All other Phase 0 work (which does not depend on
 `legacy/`) is completed so the session is not wasted. Awaiting Eric's delivery of `legacy/`.
+
+## 2026-06-11 — D6: `legacy/` delivered as a zip on `main`; tracked as an unpacked folder on the branch
+
+**Source:** Eric uploaded `legacy v1 app.zip` to the `main` branch (resolving the D5 blocker).
+**Decision:** Extract the zip and **commit the unpacked `legacy/` folder** (61 files, no secrets/db/
+node_modules) on the working branch `claude/compassionate-knuth-wx5bjq`, matching the Build Spec B0
+repo layout (which lists `legacy/` as a tracked reference folder). **Rationale:** Committing the
+unpacked folder (not the zip) gives a fresh-clone session the reference material directly — the
+off-machine memory-resilience goal — and lets phase instructions PORT files path-by-path. The zip
+remains on `main` as Eric's upload artifact; he can delete it after this branch merges (noted in
+LATEST.md). `legacy/` is reference-only and is never imported as a package (B0).
+
+## 2026-06-11 — D7: `_json_utils` port keeps the legacy raw-JSON contract (closing-brace required)
+
+**Source:** Port of `work_activities_service._parse_response` into `app/services/_json_utils.py`.
+**Decision:** Preserve the legacy behaviour exactly: `parse_ai_json` only attempts truncated-JSON
+repair when the extracted span contains a closing `}`; a string with no `}` short-circuits to the
+`{"error": "Could not parse response"}` envelope rather than being repaired. **Rationale:** Faithful
+ports must not silently "improve" behaviour (Part A additive-only / no-silent-change). Tests in
+`test_json_utils.py` lock this contract so a future phase cannot regress it. (A test I first wrote
+asserted the wrong expectation; the test was corrected, not the ported code.)

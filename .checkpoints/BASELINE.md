@@ -9,14 +9,24 @@ stops matching. Each phase appends its passing tests and any baseline snapshots 
 ## Phase 0 — Protocol & scaffold
 
 **Snapshot fixtures under `backend/tests/baseline/`:** none yet (the first is the P1 PAX metrics
-payload — see below).
+payload — see below). **Baseline fixture #1 source data is in place:**
+`backend/tests/fixtures/org_structure_PAX.csv` (ported byte-identical from legacy, md5
+`4d17aa3cf70d9f4618571a5e99561f4c`) + `backend/tests/fixtures/expected_pax_metrics.json` (the
+binding v1 numbers the P1 engine must reproduce).
 
-**Passing tests (P0):**
-- `backend/tests/test_smoke.py::test_health_endpoint` — FastAPI app boots and `/health` returns
-  `{"status": "ok"}`.
-- `backend/tests/test_smoke.py::test_mock_claude_returns_canned_json` — the `mock_claude` fixture
-  monkeypatches the Anthropic client so `messages.create(...).content[0].text` is the fixed JSON
-  from `backend/tests/fixtures/sample_extract.json`, parsed with no network call.
+**Passing tests (P0) — 13 total:**
+- `test_smoke.py::test_health_endpoint` — FastAPI app boots and `/health` returns `{"status":"ok"}`.
+- `test_smoke.py::test_mock_claude_returns_canned_json` — the `mock_claude` fixture makes
+  `claude_service.complete(...)` return fixed JSON from `fixtures/sample_extract.json`, no network.
+- `test_smoke.py::test_mock_claude_response_is_overridable` — a test can swap the canned response.
+- `test_json_utils.py::*` (7 tests) — the ported JSON parse/repair helpers (`parse_ai_json`,
+  `repair_truncated_json`, `extract_partial_data`) locked to legacy behaviour: fenced block, raw
+  object, no-JSON error envelope, brace/bracket repair, balanced→None, truncated-no-brace→error,
+  unbalanced-span→repaired+flagged, partial executive_summary extraction.
+- `test_pax_fixture.py::test_pax_csv_present_and_shaped` — PAX CSV present, ID-keyed (Employee ID
+  E001..E064), exactly 64 rows.
+- `test_pax_fixture.py::test_expected_pax_metrics_match_spec` — recorded baseline numbers equal the
+  binding v1/spec values (64 / 16 / 25.0 / 5,770,000 / 6).
 
 **Frontend gate (P0):** `cd frontend && npm run build` completes with **zero** TypeScript errors.
 

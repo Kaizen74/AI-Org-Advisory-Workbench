@@ -1,0 +1,8 @@
+{
+  "_note": "Baseline fixture #1 (Build Spec A3 Rule 2 / B4 P0). These are the v1 PAX metric values the Phase 1 metrics engine port MUST reproduce byte-identically. Sourced from the legacy app's EXPECTED_PAX_METRICS (legacy/backend/tests/conftest.py) and the Build Spec.",
+  "total_employees": 64,
+  "total_managers": 16,
+  "manager_ratio_pct": 25.0,
+  "total_cost": 5770000,
+  "organizational_layers": 6
+}

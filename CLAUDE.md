@@ -8,15 +8,16 @@
 
 ## CURRENT-STATE SUMMARY (updated each session end)
 
-**As of 2026-06-11 (Phase 0, in progress):** The build is in Phase 0 (Protocol & scaffold). Memory
-files (`CLAUDE.md`, `PROGRESS.md`, `.checkpoints/{LATEST,BASELINE,DECISIONS}.md`), `.gitignore`
-(data-hygiene rules active before first commit), the README stub (B7), the runnable backend
-(FastAPI) + frontend (Vite/React/TS) skeletons, the `mock_claude` pytest fixture, and the
-regression gate (`scripts/gate.sh` / `make gate`) are in place. **BLOCKER:** the `legacy/` folder
-(Eric's v1 `claude-org-design-analyzer` copy) is **missing**, so the two legacy-derived P0 assets —
-the `_json_utils.py` port and the PAX CSV + expected-metrics test fixture — are NOT yet ported (the
-spec forbids reinventing them). See `.checkpoints/LATEST.md` → "Open questions for Eric." Phase 0
-cannot be fully closed until `legacy/` is provided. Do not start Phase 1 until Eric confirms.
+**As of 2026-06-11 (Phase 0 — COMPLETE):** Phase 0 is fully done and pushed. In place: memory files
+(`CLAUDE.md`, `PROGRESS.md`, `.checkpoints/{LATEST,BASELINE,DECISIONS}.md`), data-hygiene
+`.gitignore`, README stub (B7), runnable FastAPI backend + Vite/React/TS frontend, `claude_service`
+singleton, the `mock_claude` offline fixture, and the one-command gate (`scripts/gate.sh` /
+`make gate`). The `legacy/` blocker is **resolved** — Eric uploaded `legacy v1 app.zip` to `main`;
+it's unpacked into `legacy/` on this branch. Both legacy-derived P0 assets are ported:
+`backend/app/services/_json_utils.py` (JSON parse/repair helpers) and baseline fixture #1
+(`org_structure_PAX.csv` + `expected_pax_metrics.json`). **Gate GREEN: 13 backend tests + clean
+frontend build.** Next: await Eric's confirmation, then start **Phase 1 (engagement core +
+diagnostics)** — see `.checkpoints/LATEST.md` "Next action." Do not start P1 until Eric confirms.
 
 ---
 

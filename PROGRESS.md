@@ -21,8 +21,8 @@ One dated entry per session and per completed phase. Never rewrite history.
       smoke tests.
 - [x] P0.10 — `scripts/gate.sh` + `Makefile` (`make gate`) — one-command regression gate.
 - [x] P0.11 — First commit + push to GitHub.
-- [ ] P0.12 — **BLOCKED on `legacy/`:** port `_json_utils.py` from `work_activities_service.py`.
-- [ ] P0.13 — **BLOCKED on `legacy/`:** copy PAX CSV + expected-metrics fixture (baseline #1).
+- [x] P0.12 — Ported `_json_utils.py` from `work_activities_service.py` (+ 7 tests).
+- [x] P0.13 — Placed PAX CSV (byte-identical) + `expected_pax_metrics.json` (baseline #1) (+ 2 tests).
 
 ### Session 1 — 2026-06-11
 
@@ -46,3 +46,22 @@ One dated entry per session and per completed phase. Never rewrite history.
   provide `legacy/`. See `.checkpoints/LATEST.md` → Open questions.
 - Ran the regression gate: GREEN. Committed and pushed each step to
   `claude/compassionate-knuth-wx5bjq`.
+
+### Session 2 — 2026-06-11 (Phase 0 closed)
+
+- Eric resolved the blocker by uploading `legacy v1 app.zip` to the `main` branch. Fetched it,
+  extracted the blob, and unpacked the v1 app into a `legacy/` folder on this branch (81 archive
+  entries → 61 tracked files; scanned clean — no `*.db`, `.env`, or `node_modules`).
+- **P0.12** — Ported the JSON parse/repair helpers (`_parse_response`, `_repair_truncated_json`,
+  `_extract_partial_data`) out of `legacy/.../work_activities_service.py` into
+  `backend/app/services/_json_utils.py` as shared module functions (behaviour preserved). Added
+  `test_json_utils.py` (7 tests) locking the legacy contract — including the subtle rule that the
+  raw-JSON path needs a closing `}` before repair is attempted.
+- **P0.13** — Copied `org_structure_PAX.csv` byte-identically (md5 verified) into
+  `backend/tests/fixtures/` and recorded `expected_pax_metrics.json` (64 / 16 / 25.0 / 5,770,000 /
+  6) as baseline fixture #1. Added `test_pax_fixture.py` (2 tests). Full PAX parity test deferred to
+  P1 with the metrics-engine port (per B4).
+- One self-inflicted red during the session: my first `test_parse_repairs_truncated_and_flags_it`
+  asserted the wrong legacy behaviour; corrected the **test** (the ported code was faithful) into
+  two precise tests. Gate then GREEN at **13 tests** + clean frontend build.
+- Committed and pushed. **Phase 0 is complete.** Awaiting Eric's go-ahead for Phase 1.
