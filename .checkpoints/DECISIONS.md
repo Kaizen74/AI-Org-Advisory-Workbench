@@ -68,6 +68,24 @@ off-machine memory-resilience goal — and lets phase instructions PORT files pa
 remains on `main` as Eric's upload artifact; he can delete it after this branch merges (noted in
 LATEST.md). `legacy/` is reference-only and is never imported as a package (B0).
 
+## 2026-06-11 — D8: PAX fixture CSV conflicts with the Build Spec's P1 parity numbers (ESCALATED)
+
+**Source:** Running the faithful CSV-parser + metrics port (and the legacy v1 code itself) on the
+`org_structure_PAX.csv` from Eric's `legacy v1 app.zip`.
+**Observation:** The provided CSV yields **64 employees, 34 managers (53.1%), $6,620,000 total cost,
+6 layers**. The Build Spec A3 Rule 2 (and PRD) require P1 parity of **64 / 16 / 25.0 / 5,770,000 /
+6**. Only `total_employees` (64) and `organizational_layers` (6) agree. `total_cost` is a raw salary
+sum, and this CSV's salaries sum to 6,620,000 — so no definition of "manager" can reconcile it; the
+zip's CSV is a **different/newer file** than the one the spec parity (and the legacy app's own
+`test_metrics.py`, which also expects 5,770,000) was written against. The port is **faithful** — it
+reproduces the legacy code's numbers on this CSV exactly.
+**Decision (conservative, pending Eric):** Do NOT fabricate metrics to hit the spec numbers and do
+NOT lock a parity baseline yet. The committed parser tests assert (a) the undisputed values
+(64 / 6) and (b) the *actual* fixture output (34 / 6,620,000 / 53.1%) clearly flagged as pending.
+P1.5 (metrics parity baseline + BASELINE.md lock) is **parked** until Eric chooses: (A) treat the
+provided CSV as source of truth and reset the parity target to the actual numbers, or (B) upload the
+correct PAX CSV that produces 16 / 25.0 / 5,770,000. Recorded as an open question in LATEST.md.
+
 ## 2026-06-11 — D7: `_json_utils` port keeps the legacy raw-JSON contract (closing-brace required)
 
 **Source:** Port of `work_activities_service._parse_response` into `app/services/_json_utils.py`.
