@@ -15,8 +15,9 @@ designing future-state options, checking every AI recommendation with a human be
 a deliverable, and producing the slides/documents at the end. **Modules (each line appears here as
 it ships):**
 
-- _Engagement Hub_ — manage clients, engagements and uploaded data sets. _(coming in Phase 1)_
-- _Diagnostics_ — org structure metrics (spans, layers, cost, manager ratio). _(coming in Phase 1)_
+- _Engagement Hub_ — manage clients, engagements, and uploaded org-CSV data sets. ✅ _(Phase 1)_
+- _Diagnostics_ — org-structure metrics (employees, managers, span, layers, cost, manager ratio),
+  the 7-archetype reference, and a Five-Activator pre-screen. ✅ _(Phase 1)_
 - _(later phases: Task Intelligence, Validation Queue, Scenario Studio, Workflow Mapper, Transition
   Planner, Deliverables, Settings.)_
 
@@ -39,22 +40,43 @@ clicking buttons. You'll use it to start the app. You install three things once:
 
 ## 3. Run the app on your own computer
 
-> _Full numbered, copy-paste steps land when Phase 1 ships the first usable screens._ The shape is:
-> you open **two terminal windows** — one for the **backend** (the calculation engine) and one for
-> the **frontend** (the browser view) — leave both running, then open the app in your browser.
+You open **two terminal windows** — one for the **backend** (the calculation engine) and one for
+the **frontend** (the browser view) — leave both running, then open the app in your browser.
 
-Quick check that the foundations work (you can run this today):
+**Terminal 1 — start the backend** (a "terminal" is the text window from Section 2):
+
+```bash
+cd backend
+python3 -m venv .venv                 # makes a private Python sandbox (one time)
+source .venv/bin/activate             # turns the sandbox on (Windows: .venv\Scripts\activate)
+pip install -r requirements.txt       # installs the engine's parts (one time)
+alembic upgrade head                  # creates the local database file (one time per machine)
+uvicorn app.main:app --reload         # starts the engine
+```
+
+Success looks like `Uvicorn running on http://127.0.0.1:8000` — **leave this window open.**
+
+**Terminal 2 — start the frontend** (open a second terminal window):
+
+```bash
+cd frontend
+npm install                           # installs the browser-view parts (one time)
+npm run dev                           # starts the view
+```
+
+Success looks like `Local: http://localhost:5173/` — **leave this window open** and click that link
+(or paste it into your browser). You'll see the Workbench. Go to **Engagements**, add a client and
+an engagement, upload an org CSV, then click **Diagnose →** to compute the metrics.
+
+**One-command health check** (proves nothing is broken — runs the self-tests and a build):
 
 ```bash
 bash scripts/gate.sh
 ```
 
-This runs the app's automated self-tests and builds the frontend. Success looks like a final line
-saying the gate passed. _(The "gate" is a single safety check that proves nothing is broken.)_
-
-You'll enter your **Anthropic API key** (the password-like string that lets the app use Claude AI)
-in the app's Settings screen once it ships. You can create a key at
-<https://console.anthropic.com>. _Where to paste it will be documented here in Phase 1._
+Phase-1 screens (Engagements, Diagnostics) need **no API key**. The **Anthropic API key** (the
+password-like string that lets the app use Claude AI) is only needed from Phase 2 on; you'll create
+one at <https://console.anthropic.com> and paste it into the Settings screen when it ships.
 
 ---
 

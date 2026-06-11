@@ -71,30 +71,21 @@ One dated entry per session and per completed phase. Never rewrite history.
 ## Phase 1 — Engagement core + diagnostics
 
 **Micro-task checklist (written before starting, per Part A; each ends with a commit + LATEST update):**
-- [ ] P1.1 — Backend DB foundation: add `pandas`/`networkx`/`greenlet` deps; `models/database.py`
-      (async engine, `Base`, `get_session`); Alembic scaffolding (`alembic.ini`, `env.py`).
-- [ ] P1.2 — Engagement-core SQLAlchemy models (clients, engagements, datasets, positions,
-      metric_values) per Build Spec B1, with `generate_uuid` PK + `created_at`; model smoke test.
-- [ ] P1.3 — Alembic migration `001` (engagement-core tables) — additive, reversible `downgrade()`;
-      test that create_all/migration round-trips.
-- [ ] P1.4 — Port CSV parser → `parsers/csv_parser.py` with the **breaking fix**: Employee-ID
-      keying + surrogate-key fallback + duplicate-name validation warning. **Test-first**:
-      duplicate-name warning + intact ID-keyed tree, then PAX parse (64 emp / $5.77M / 6 layers).
-- [ ] P1.5 — Port metrics engine → `services/metrics_service.py` (ID-keyed graph). **PAX parity
-      test**: 64 / 16 / 25.0 / 5,770,000 / 6 (baseline fixture #1).
-- [ ] P1.6 — Diagnostics service: compute → typed `metric_values` rows; snapshot the full PAX
-      metrics payload under `backend/tests/baseline/` + byte-parity test (A3 Rule 2).
-- [ ] P1.7 — `engagement_service` + `/api/v1/engagements` router: CRUD clients/engagements;
-      `POST /{id}/datasets` (upload→parse→persist positions+warnings); `DELETE /{id}/purge`.
-- [ ] P1.8 — `diagnostics_service` + `/api/v1/diagnostics` router: `POST /compute`, `GET /summary`,
-      `GET /archetypes`, `GET /activator-screen`. Guard pattern (404 no dataset; non-AI key-free).
-- [ ] P1.9 — Port `resources/archetypes_reference.py` (unchanged) + wire `GET /archetypes`.
-- [ ] P1.10 — Kates-Kesler activator pre-screen: map metrics → Five Activators leading-indicator
-      flags; test on PAX.
-- [ ] P1.11 — Frontend: `Engagements` + `Diagnostics` pages (API-key gate, quick stats, run
-      buttons, loading/empty/error states); typed API client.
-- [ ] P1.12 — Phase close: full gate, append P1 tests + PAX snapshot to BASELINE.md, update all
-      checkpoint files, commit + push.
+- [x] P1.1 — Backend DB foundation (async engine, Base, get_session; pandas/networkx/greenlet;
+      Alembic scaffolding).
+- [x] P1.2 — Engagement-core models + cascade-purge test.
+- [x] P1.3 — Alembic migration 001 (additive, reversible) + round-trip test.
+- [x] P1.4 — CSV parser port with Employee-ID keying + surrogate fallback + duplicate-name warning
+      (test-first). Faithful to v1.
+- [x] P1.5 — Metrics engine port (ID-keyed) + PAX parity + byte-stable snapshot. Baseline LOCKED at
+      the provided CSV's actual values per D9 (64 / 34 / 53.1 / 6,620,000 / 6).
+- [x] P1.6 — Diagnostics service: typed `metric_values` flattening + async compute/persist.
+- [x] P1.7 — `engagement_service` + `/api/v1/engagements` (CRUD, CSV upload, purge).
+- [x] P1.8 — `diagnostics_service` + `/api/v1/diagnostics` (compute/summary/archetypes/activator).
+- [x] P1.9 — Archetype reference ported byte-identical + `GET /archetypes`.
+- [x] P1.10 — Five-Activator leading-indicator pre-screen + `GET /activator-screen`.
+- [x] P1.11 — Frontend Engagements + Diagnostics pages + typed API client.
+- [x] P1.12 — Phase close: gate green, BASELINE locked, checkpoints + README updated, pushed.
 
 ### Session 3 — 2026-06-11 (Phase 1 start)
 
@@ -102,3 +93,17 @@ One dated entry per session and per completed phase. Never rewrite history.
   and CSV-parser tests to plan a faithful port. Confirmed the legacy graph is **name-keyed** — P1's
   mandated breaking fix is to re-key on Employee ID (PRD M1). Wrote the P1 micro-task checklist
   above and began executing it micro-task by micro-task.
+- Built the DB foundation, engagement-core models (+ cascade purge), Alembic migration 001
+  (additive + reversible round-trip test).
+- **Data conflict found & escalated (D8→D9):** the provided `org_structure_PAX.csv` yields
+  64 / 34 / 53.1% / $6,620,000 / 6 — the faithful port reproduces the legacy v1 code's output on it
+  exactly — but the spec's parity target was 64 / 16 / 25.0 / $5,770,000 / 6. Since total_cost is a
+  raw salary sum, the zip's CSV is a different file than the spec was written against. Eric chose
+  "use the provided CSV as truth"; reset and LOCKED the parity baseline to the actual values.
+- Ported the CSV parser (ID-keyed + dup-name warning) and metrics engine; added the PAX parity +
+  byte-stable snapshot. Built the diagnostics service (typed `metric_values`), the engagement +
+  diagnostics routers, ported the 7-archetype reference, and added the Five-Activator pre-screen.
+  Built the frontend Engagements + Diagnostics pages with a typed API client.
+- Verified a **live** uvicorn run end-to-end (migration → create client/engagement → upload PAX →
+  compute → 64 / 34 / $6.62M / 6). Gate GREEN: **33 backend tests + clean frontend build**.
+  **Phase 1 complete.** Awaiting Eric's go-ahead for Phase 2.

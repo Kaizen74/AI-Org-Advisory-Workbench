@@ -8,16 +8,17 @@
 
 ## CURRENT-STATE SUMMARY (updated each session end)
 
-**As of 2026-06-11 (Phase 0 — COMPLETE):** Phase 0 is fully done and pushed. In place: memory files
-(`CLAUDE.md`, `PROGRESS.md`, `.checkpoints/{LATEST,BASELINE,DECISIONS}.md`), data-hygiene
-`.gitignore`, README stub (B7), runnable FastAPI backend + Vite/React/TS frontend, `claude_service`
-singleton, the `mock_claude` offline fixture, and the one-command gate (`scripts/gate.sh` /
-`make gate`). The `legacy/` blocker is **resolved** — Eric uploaded `legacy v1 app.zip` to `main`;
-it's unpacked into `legacy/` on this branch. Both legacy-derived P0 assets are ported:
-`backend/app/services/_json_utils.py` (JSON parse/repair helpers) and baseline fixture #1
-(`org_structure_PAX.csv` + `expected_pax_metrics.json`). **Gate GREEN: 13 backend tests + clean
-frontend build.** Next: await Eric's confirmation, then start **Phase 1 (engagement core +
-diagnostics)** — see `.checkpoints/LATEST.md` "Next action." Do not start P1 until Eric confirms.
+**As of 2026-06-11 (Phase 1 — COMPLETE):** P0 and P1 are done and pushed. P1 shipped: Alembic
+migration 001 (clients/engagements/datasets/positions/metric_values), the ID-keyed CSV parser
+(breaking fix vs v1: keyed on Employee ID + surrogate fallback + duplicate-name warning), the
+ported metrics engine (typed `metric_values`), the diagnostics service, the `/api/v1/engagements`
++ `/api/v1/diagnostics` routers, the ported 7-archetype reference, the Five-Activator pre-screen,
+and the frontend Engagements + Diagnostics pages. **PAX baseline LOCKED (D9): 64 / 34 / 53.1% /
+6,620,000 / 6** — the provided CSV is the source of truth (Eric's call; the spec's 16 / 25.0 /
+5,770,000 referred to a different file). **Gate GREEN: 33 backend tests + clean frontend build;**
+live uvicorn run verified end-to-end. Next: await Eric's go-ahead, then **Phase 2 (Task
+Intelligence)** — see `.checkpoints/LATEST.md`. Do not start P2 until Eric confirms. Completed P0/P1
+code is now **additive-only**.
 
 ---
 

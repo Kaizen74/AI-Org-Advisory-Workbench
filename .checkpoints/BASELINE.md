@@ -32,7 +32,7 @@ binding v1 numbers the P1 engine must reproduce).
 
 ---
 
-## Phase 1 — Engagement core + diagnostics (partial; in progress)
+## Phase 1 — Engagement core + diagnostics (COMPLETE)
 
 **LOCKED PAX baseline (DECISIONS.md D9 — provided CSV is source of truth):**
 `total_employees=64, total_managers=34, manager_ratio_pct=53.1, total_cost=6,620,000,
@@ -42,15 +42,21 @@ organizational_layers=6`. Recorded in `backend/tests/fixtures/expected_pax_metri
 `calculate_all_metrics()` payload for the PAX CSV. `test_metrics.py::test_pax_metrics_snapshot_byte_stable`
 asserts byte-stability.
 
-**Passing tests added in P1 so far:**
+**Passing tests (P1) — 33 backend total (10 from P0 + 23 new):**
 - `test_models.py::*` (2) — engagement-core models + FK cascade purge.
 - `test_migration.py::test_migration_upgrade_then_downgrade` — Alembic 001 additive + reversible.
 - `test_csv_parser.py::*` (6) — ID-keyed parse, manager linkage, duplicate-name warning + intact
   tree, surrogate-key fallback, missing-column guard, locked-baseline metadata.
 - `test_metrics.py::*` (3) — PAX metric parity, byte-stable snapshot, empty-positions guard.
+- `test_diagnostics_service.py::*` (2) — typed-row flattening shape + headline values.
+- `test_engagements_api.py::*` (4) — full diagnostic flow + PAX parity, two-engagement isolation,
+  404 guards, purge cascade.
+- `test_archetypes_activator.py::*` (3) — 7-archetype port, PAX activator triggers, endpoints.
 
-> Still pending in P1: diagnostics service + typed `metric_values` persistence, engagement/
-> diagnostics routers, archetype port, activator pre-screen, frontend pages.
+**Frontend gate (P1):** `npm run build` zero TS errors; Engagements + Diagnostics pages ship.
+
+> Additive-only from here: the engagement-core schema, migration 001, parser/metrics outputs, the
+> `/api/v1/engagements` + `/api/v1/diagnostics` routes, and the locked PAX baseline must not regress.
 
 ## Reserved baseline targets (to be locked when their phase ships)
 
