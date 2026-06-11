@@ -12,6 +12,10 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+import pytest_asyncio
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import StaticPool
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
@@ -64,3 +68,38 @@ def mock_claude(monkeypatch):
             return _make_canned_response(state["text"])
 
     return Controller()
+
+
+# ── Async DB + API client fixtures (Phase 1) ─────────────────────────────────
+@pytest_asyncio.fixture
+async def async_session():
+    """A fresh in-memory SQLite (StaticPool keeps one connection so tables persist)."""
+    from app.models.database import Base
+
+    engine = create_async_engine(
+        "sqlite+aiosqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    async with maker() as session:
+        yield session
+    await engine.dispose()
+
+
+@pytest_asyncio.fixture
+async def api_client(async_session):
+    """httpx client wired to the FastAPI app with the test session injected."""
+    from app.main import app
+    from app.models import get_session
+
+    async def _override():
+        yield async_session
+
+    app.dependency_overrides[get_session] = _override
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        yield client
+    app.dependency_overrides.clear()

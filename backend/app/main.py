@@ -8,6 +8,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from .api import diagnostics, engagements
 from .config import settings
 
 app = FastAPI(
@@ -31,6 +32,5 @@ def health() -> dict:
 
 
 # ── Routers (one `include_router` line per module as phases ship) ────────────
-# P1: app.include_router(engagements.router)
-# P1: app.include_router(diagnostics.router)
-# ...
+app.include_router(engagements.router)
+app.include_router(diagnostics.router)
