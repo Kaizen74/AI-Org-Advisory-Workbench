@@ -1,0 +1,53 @@
+# ──────────────────────────────────────────────────────────────────────────
+# DATA HYGIENE (Build Spec A2) — these must NEVER reach GitHub.
+# The repo is private but still must never contain real client data, secrets,
+# databases, or generated deliverables. Only the synthetic PAX fixture and the
+# taxonomy seed are allowed data files in the repo.
+# ──────────────────────────────────────────────────────────────────────────
+
+# Databases (SQLite dev DBs and any Postgres dumps)
+*.db
+*.sqlite
+*.sqlite3
+*.sqlite-journal
+*.sql
+
+# Secrets / environment configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Client data uploads and generated deliverables
+backend/uploads/
+backend/output/
+*.client.csv
+*.client.xlsx
+
+# ── Python ──────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+env/
+
+# ── Node / frontend ─────────────────────────────────────────────────────────
+node_modules/
+frontend/dist/
+frontend/.vite/
+*.local
+
+# ── Editor / OS ─────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
