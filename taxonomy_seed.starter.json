@@ -1,0 +1,279 @@
+{
+  "_meta": {
+    "purpose": "Illustrative STARTER seed for the Workforce Intelligence module. It shows the exact shape the loader expects and reminds you of the role/task/overlay/crosswalk relationships, so Phase 1 does not begin on a blank schema.",
+    "status": "ILLUSTRATIVE — NOT production data. SFw role/task wording is representative, O*NET codes are plausible but MUST be verified, and ALL WORKBank desire/capability/HAS values are placeholders that MUST be replaced with real pulls before any client-facing use.",
+    "sources_of_truth": {
+      "sfw_air_transport": "https://www.skillsfuture.gov.sg/skills-framework/air-transport (export the Skills Map workbook; verify reuse terms)",
+      "onet": "https://www.onetcenter.org/database.html (Task Statements, Tasks to DWAs; CC BY 4.0 with attribution)",
+      "workbank": "https://github.com/SALT-NLP/workbank and the dataset on Hugging Face (read the Code Book for exact field semantics)"
+    },
+    "modelling_notes": [
+      "WORKBank scores AI *agent* (software) automation/augmentation. It therefore maps cleanly to INFORMATION/COORDINATION tasks (documentation, reconciliation, load planning, rostering) and NOT to physical handling. Physical ramp tasks (loading, GSE operation) are a robotics / ground-support-equipment lever and are intentionally left WITHOUT an overlay row here — the pipeline must tag those 'model-inferred' and flag them as a different (non-agent) automation lever.",
+      "Keep has_level and capability_score INDEPENDENT. A task can be highly capable-to-automate yet sit at H4 because humans should stay in the loop (e.g. safety sign-off).",
+      "Every emitted score must carry a 'source' tag so the UI can show regulator-backed (SFw) and research-backed (WORKBank) versus model-inferred."
+    ],
+    "loader_note": "This single combined file mirrors the four split files named in the spec (sfw_*, onet_subset, workbank_overlay, crosswalk). load_taxonomies.py may read either this combined file or the split files; upsert by the natural keys shown ('code' for sources, 'task_ref' for tasks, 'onet_task_code' for overlay)."
+  },
+
+  "taxonomy_sources": [
+    {
+      "code": "SFW_AIR_TRANSPORT",
+      "name": "Skills Framework for Air Transport (SkillsFuture Singapore)",
+      "region": "SG",
+      "version": "illustrative-2024",
+      "is_default": true,
+      "license_note": "SkillsFuture Singapore material. Verify SSG reuse/redistribution terms before bundling in a client deliverable."
+    },
+    {
+      "code": "SFW_FOOD_SERVICES",
+      "name": "Skills Framework for Food Services (SkillsFuture Singapore)",
+      "region": "SG",
+      "version": "illustrative-2024",
+      "is_default": false,
+      "license_note": "Placeholder source row to show multi-sector extensibility for SATS Food Solutions. Add tasks following the same pattern as Air Transport."
+    },
+    {
+      "code": "ONET",
+      "name": "O*NET (U.S. Department of Labor)",
+      "region": "US",
+      "version": "illustrative",
+      "is_default": false,
+      "license_note": "O*NET is provided under CC BY 4.0; attribution required. Used here as the BRIDGE taxonomy that joins to WORKBank."
+    },
+    {
+      "code": "ESCO",
+      "name": "ESCO (European Commission) — used via TechWolf extraction (model-emulated in v1)",
+      "region": "EU",
+      "version": "placeholder",
+      "is_default": false,
+      "license_note": "No tasks seeded in v1. Reserved for the future TechWolf/embedding extraction upgrade."
+    }
+  ],
+
+  "taxonomy_tasks": [
+    {
+      "task_ref": "SFW_AT_RHO_01",
+      "source_code": "SFW_AIR_TRANSPORT",
+      "role_label": "Ramp Handling Officer",
+      "track": "Airport Ground Handling",
+      "function": "Aircraft Ramp Operations",
+      "task_text": "Load and unload baggage, cargo and mail onto and from aircraft using ground support equipment",
+      "skills": ["Ramp Handling Operations", "Ground Support Equipment Operation", "Workplace Safety and Health"]
+    },
+    {
+      "task_ref": "SFW_AT_RHO_02",
+      "source_code": "SFW_AIR_TRANSPORT",
+      "role_label": "Ramp Handling Officer",
+      "track": "Airport Ground Handling",
+      "function": "Aircraft Ramp Operations",
+      "task_text": "Operate and position ground support equipment (loaders, tugs, belt loaders) around the aircraft",
+      "skills": ["Ground Support Equipment Operation", "Apron Safety Management"]
+    },
+    {
+      "task_ref": "SFW_AT_RHO_03",
+      "source_code": "SFW_AIR_TRANSPORT",
+      "role_label": "Ramp Handling Officer",
+      "track": "Airport Ground Handling",
+      "function": "Aircraft Ramp Operations",
+      "task_text": "Conduct aircraft arrival and departure ramp activities including chocks, cones and marshalling support",
+      "skills": ["Aircraft Turnaround Coordination", "Apron Safety Management"]
+    },
+    {
+      "task_ref": "SFW_AT_BSO_01",
+      "source_code": "SFW_AIR_TRANSPORT",
+      "role_label": "Baggage Services Officer",
+      "track": "Airport Ground Handling",
+      "function": "Baggage Handling",
+      "task_text": "Sort and reconcile baggage against flight manifests",
+      "skills": ["Baggage Reconciliation", "Baggage Handling Systems"]
+    },
+    {
+      "task_ref": "SFW_AT_BSO_02",
+      "source_code": "SFW_AIR_TRANSPORT",
+      "role_label": "Baggage Services Officer",
+      "track": "Airport Ground Handling",
+      "function": "Baggage Handling",
+      "task_text": "Trace, document and process mishandled or delayed baggage and resolve passenger claims",
+      "skills": ["Baggage Tracing", "Customer Service", "Service Recovery"]
+    },
+    {
+      "task_ref": "SFW_AT_PSO_01",
+      "source_code": "SFW_AIR_TRANSPORT",
+      "role_label": "Passenger Services Officer",
+      "track": "Airport Ground Handling",
+      "function": "Passenger Services",
+      "task_text": "Perform passenger check-in, baggage acceptance and boarding pass issuance",
+      "skills": ["Departure Control Systems", "Passenger Check-in", "Customer Service"]
+    },
+    {
+      "task_ref": "SFW_AT_PSO_02",
+      "source_code": "SFW_AIR_TRANSPORT",
+      "role_label": "Passenger Services Officer",
+      "track": "Airport Ground Handling",
+      "function": "Passenger Services",
+      "task_text": "Provide special passenger assistance (reduced mobility, unaccompanied minors) and de-escalate service disruptions",
+      "skills": ["Special Assistance Handling", "Conflict De-escalation", "Service Excellence"]
+    },
+    {
+      "task_ref": "SFW_AT_CGO_01",
+      "source_code": "SFW_AIR_TRANSPORT",
+      "role_label": "Cargo Operations Officer",
+      "track": "Airport Ground Handling",
+      "function": "Cargo Handling",
+      "task_text": "Accept, document and process import and export cargo shipments against air waybills and customs documentation",
+      "skills": ["Cargo Documentation", "Air Waybill Processing", "Customs Compliance"]
+    },
+    {
+      "task_ref": "SFW_AT_CGO_02",
+      "source_code": "SFW_AIR_TRANSPORT",
+      "role_label": "Cargo Operations Officer",
+      "track": "Airport Ground Handling",
+      "function": "Cargo Handling",
+      "task_text": "Build up and break down Unit Load Devices (ULDs) according to load plans",
+      "skills": ["ULD Build-up and Break-down", "Load Planning"]
+    },
+    {
+      "task_ref": "SFW_AT_CGO_03",
+      "source_code": "SFW_AIR_TRANSPORT",
+      "role_label": "Cargo Operations Officer",
+      "track": "Airport Ground Handling",
+      "function": "Cargo Handling",
+      "task_text": "Handle, classify and document dangerous goods in accordance with IATA regulations",
+      "skills": ["Dangerous Goods Handling", "IATA Regulatory Compliance"]
+    },
+    {
+      "task_ref": "SFW_AT_LCO_01",
+      "source_code": "SFW_AIR_TRANSPORT",
+      "role_label": "Load Control Officer",
+      "track": "Airport Ground Handling",
+      "function": "Load Control",
+      "task_text": "Prepare the aircraft load instruction and loadsheet (weight and balance) and verify final load distribution for captain sign-off",
+      "skills": ["Weight and Balance", "Load Control Systems", "Aviation Safety Assurance"]
+    },
+
+    {
+      "task_ref": "ONET_531041_01",
+      "source_code": "ONET",
+      "role_label": "Aircraft Cargo Handling Supervisors",
+      "track": null,
+      "function": "53-1041.00 (VERIFY CODE)",
+      "task_text": "Determine the quantity and orientation of cargo and oversee weight distribution for safe aircraft loading",
+      "task_code": "53-1041.00",
+      "skills": []
+    },
+    {
+      "task_ref": "ONET_435011_01",
+      "source_code": "ONET",
+      "role_label": "Cargo and Freight Agents",
+      "track": null,
+      "function": "43-5011.00 (VERIFY CODE)",
+      "task_text": "Prepare and process documents for shipments, including waybills and customs and hazardous-materials paperwork",
+      "task_code": "43-5011.00",
+      "skills": []
+    },
+    {
+      "task_ref": "ONET_434181_01",
+      "source_code": "ONET",
+      "role_label": "Reservation and Transportation Ticket Agents and Travel Clerks",
+      "track": null,
+      "function": "43-4181.00 (VERIFY CODE)",
+      "task_text": "Check baggage, issue passenger checks/boarding documents and assist passengers at check-in and boarding",
+      "task_code": "43-4181.00",
+      "skills": []
+    },
+    {
+      "task_ref": "ONET_537062_01",
+      "source_code": "ONET",
+      "role_label": "Laborers and Freight, Stock, and Material Movers, Hand",
+      "track": null,
+      "function": "53-7062.00 (VERIFY CODE)",
+      "task_text": "Manually load and unload materials and cargo onto and from vehicles and equipment",
+      "task_code": "53-7062.00",
+      "skills": []
+    }
+  ],
+
+  "task_ai_overlay": [
+    {
+      "onet_task_code": "43-5011.00",
+      "onet_task_text": "Prepare and process shipment documents, waybills, customs and hazardous-materials paperwork",
+      "occupation": "Cargo and Freight Agents",
+      "has_level": 2,
+      "desire_score": 0.70,
+      "capability_score": 0.78,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank (ILLUSTRATIVE — replace with real value)"
+    },
+    {
+      "onet_task_code": "43-4181.00",
+      "onet_task_text": "Passenger check-in, boarding-document issuance and routine passenger queries",
+      "occupation": "Reservation and Transportation Ticket Agents and Travel Clerks",
+      "has_level": 2,
+      "desire_score": 0.58,
+      "capability_score": 0.80,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank (ILLUSTRATIVE — replace with real value)"
+    },
+    {
+      "onet_task_code": "53-1041.00",
+      "onet_task_text": "Determine cargo weight distribution / load planning for safe loading",
+      "occupation": "Aircraft Cargo Handling Supervisors",
+      "has_level": 4,
+      "desire_score": 0.42,
+      "capability_score": 0.60,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank (ILLUSTRATIVE — replace with real value)"
+    }
+  ],
+
+  "taxonomy_crosswalk": [
+    {
+      "from_task_ref": "SFW_AT_CGO_01",
+      "to_source_code": "ONET",
+      "to_task_code": "43-5011.00",
+      "confidence": 0.85,
+      "method": "CURATED",
+      "note": "Cargo documentation / air waybill processing → Cargo and Freight Agents documentation task. WORKBank overlay available (information task)."
+    },
+    {
+      "from_task_ref": "SFW_AT_CGO_03",
+      "to_source_code": "ONET",
+      "to_task_code": "43-5011.00",
+      "confidence": 0.65,
+      "method": "CURATED",
+      "note": "Dangerous goods documentation maps partly to freight-agent hazmat paperwork; the regulatory ACCEPTANCE decision is higher-agency and should be reviewed (consider H4)."
+    },
+    {
+      "from_task_ref": "SFW_AT_PSO_01",
+      "to_source_code": "ONET",
+      "to_task_code": "43-4181.00",
+      "confidence": 0.88,
+      "method": "CURATED",
+      "note": "Check-in / boarding pass issuance → ticket agent task. WORKBank overlay available."
+    },
+    {
+      "from_task_ref": "SFW_AT_PSO_02",
+      "to_source_code": "ONET",
+      "to_task_code": "43-4181.00",
+      "confidence": 0.40,
+      "method": "CURATED",
+      "note": "Special assistance / de-escalation is interpersonal and high-agency; no clean WORKBank agent overlay — pipeline should tag 'model-inferred' and likely H4–H5 / LOW_PRIORITY for agent automation."
+    },
+    {
+      "from_task_ref": "SFW_AT_LCO_01",
+      "to_source_code": "ONET",
+      "to_task_code": "53-1041.00",
+      "confidence": 0.72,
+      "method": "CURATED",
+      "note": "Loadsheet / weight-and-balance → cargo load-planning. Safety sign-off keeps human agency high (H4) even where capability is moderate → RED_LIGHT."
+    },
+    {
+      "from_task_ref": "SFW_AT_RHO_01",
+      "to_source_code": "ONET",
+      "to_task_code": "53-7062.00",
+      "confidence": 0.60,
+      "method": "CURATED",
+      "note": "PHYSICAL handling task. Intentionally has NO WORKBank overlay — automation here is a robotics/GSE lever, not an AI-agent lever. Pipeline must tag 'model-inferred' and surface it as a different lever, not a software-agent opportunity."
+    }
+  ]
+}
