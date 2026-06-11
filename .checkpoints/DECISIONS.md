@@ -68,6 +68,18 @@ off-machine memory-resilience goal — and lets phase instructions PORT files pa
 remains on `main` as Eric's upload artifact; he can delete it after this branch merges (noted in
 LATEST.md). `legacy/` is reference-only and is never imported as a package (B0).
 
+## 2026-06-11 — D9: RESOLVED D8 — the provided PAX CSV is the source of truth
+
+**Source:** Eric's decision in response to the D8 escalation ("Use the provided CSV as truth").
+**Decision:** The P1 PAX parity target is reset to the values the provided `org_structure_PAX.csv`
+actually produces under the faithful port: **total_employees=64, total_managers=34,
+manager_ratio_pct=53.1, total_cost=6,620,000, organizational_layers=6**. These — not the spec's
+illustrative 16 / 25.0 / 5,770,000 — are now the locked golden baseline (`expected_pax_metrics.json`
++ `backend/tests/baseline/`). **Rationale:** Eric confirmed the zip's CSV is the canonical fixture;
+"parity with v1" is preserved in spirit because the port reproduces the legacy v1 code's output on
+this file byte-for-byte. The spec's numbers referred to an earlier PAX file and are superseded for
+baseline purposes. P1.5 is unparked.
+
 ## 2026-06-11 — D8: PAX fixture CSV conflicts with the Build Spec's P1 parity numbers (ESCALATED)
 
 **Source:** Running the faithful CSV-parser + metrics port (and the legacy v1 code itself) on the

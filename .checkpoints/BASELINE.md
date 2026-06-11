@@ -32,6 +32,26 @@ binding v1 numbers the P1 engine must reproduce).
 
 ---
 
+## Phase 1 — Engagement core + diagnostics (partial; in progress)
+
+**LOCKED PAX baseline (DECISIONS.md D9 — provided CSV is source of truth):**
+`total_employees=64, total_managers=34, manager_ratio_pct=53.1, total_cost=6,620,000,
+organizational_layers=6`. Recorded in `backend/tests/fixtures/expected_pax_metrics.json`.
+
+**Snapshot fixture:** `backend/tests/baseline/pax_metrics.json` — the full deterministic
+`calculate_all_metrics()` payload for the PAX CSV. `test_metrics.py::test_pax_metrics_snapshot_byte_stable`
+asserts byte-stability.
+
+**Passing tests added in P1 so far:**
+- `test_models.py::*` (2) — engagement-core models + FK cascade purge.
+- `test_migration.py::test_migration_upgrade_then_downgrade` — Alembic 001 additive + reversible.
+- `test_csv_parser.py::*` (6) — ID-keyed parse, manager linkage, duplicate-name warning + intact
+  tree, surrogate-key fallback, missing-column guard, locked-baseline metadata.
+- `test_metrics.py::*` (3) — PAX metric parity, byte-stable snapshot, empty-positions guard.
+
+> Still pending in P1: diagnostics service + typed `metric_values` persistence, engagement/
+> diagnostics routers, archetype port, activator pre-screen, frontend pages.
+
 ## Reserved baseline targets (to be locked when their phase ships)
 
 > Recorded now so a future session never forgets the byte-exact numbers it must reproduce.

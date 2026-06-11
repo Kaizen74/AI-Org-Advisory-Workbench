@@ -35,26 +35,16 @@ def test_pax_parses_id_keyed_with_no_warnings():
     assert vincent["manager_key"] is None
 
 
-def test_pax_metadata_undisputed_values():
-    """The two values that BOTH the spec and the provided CSV agree on."""
+def test_pax_metadata_matches_locked_baseline():
+    """Parser metadata reproduces the LOCKED PAX baseline (DECISIONS.md D9 — provided CSV is truth)."""
     meta = OrgCSVParser(str(PAX_CSV)).parse()["metadata"]
-    assert meta["total_employees"] == EXPECTED["total_employees"]  # 64 ✓ (spec & data agree)
-    assert meta["organizational_layers"] == EXPECTED["organizational_layers"]  # 6 ✓ (agree)
-
-
-def test_pax_metadata_actual_fixture_values():
-    """Documents the ACTUAL output of the faithful port on the CSV Eric provided in the zip.
-
-    NOTE (open question for Eric): these differ from the Build Spec's P1 parity targets
-    (total_managers=16 / ratio=25.0 / total_cost=5,770,000). `total_cost` is a raw salary sum, so the
-    zip's CSV (sum=6,620,000) is a DIFFERENT file than the one the spec parity was defined against.
-    The legacy v1 code itself produces these same numbers on this CSV. NOT yet locked into
-    BASELINE.md — pending Eric's resolution of the data-vs-spec conflict (see .checkpoints/LATEST.md).
-    """
-    meta = OrgCSVParser(str(PAX_CSV)).parse()["metadata"]
-    assert meta["manager_count"] == 34
-    assert meta["total_salary_cost"] == 6620000
-    assert round(meta["manager_count"] / meta["total_employees"] * 100, 1) == 53.1
+    assert meta["total_employees"] == EXPECTED["total_employees"]  # 64
+    assert meta["manager_count"] == EXPECTED["total_managers"]  # 34
+    assert meta["total_salary_cost"] == EXPECTED["total_cost"]  # 6,620,000
+    assert meta["organizational_layers"] == EXPECTED["organizational_layers"]  # 6
+    assert round(meta["manager_count"] / meta["total_employees"] * 100, 1) == EXPECTED[
+        "manager_ratio_pct"
+    ]  # 53.1
 
 
 # ── Breaking-fix behaviour: duplicate names ─────────────────────────────────

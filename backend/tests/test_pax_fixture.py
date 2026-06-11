@@ -27,11 +27,12 @@ def test_pax_csv_present_and_shaped():
     assert rows[-1]["Employee ID"] == "E064"
 
 
-def test_expected_pax_metrics_match_spec():
-    """The recorded baseline numbers equal the binding v1/Build-Spec values (A3 Rule 2)."""
+def test_expected_pax_metrics_locked_values():
+    """The recorded baseline numbers equal the LOCKED values for the provided PAX CSV (A3 Rule 2;
+    DECISIONS.md D9 — provided CSV is the source of truth)."""
     expected = json.loads(EXPECTED.read_text(encoding="utf-8"))
     assert expected["total_employees"] == 64
-    assert expected["total_managers"] == 16
-    assert expected["manager_ratio_pct"] == 25.0
-    assert expected["total_cost"] == 5770000
+    assert expected["total_managers"] == 34
+    assert expected["manager_ratio_pct"] == 53.1
+    assert expected["total_cost"] == 6620000
     assert expected["organizational_layers"] == 6
