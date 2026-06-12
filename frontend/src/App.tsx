@@ -1,8 +1,9 @@
 import { useState } from "react";
 import Engagements from "./pages/Engagements";
 import Diagnostics from "./pages/Diagnostics";
+import TaskIntelligence from "./pages/TaskIntelligence";
 
-type Tab = "engagements" | "diagnostics";
+type Tab = "engagements" | "diagnostics" | "task-intel";
 
 export default function App() {
   const [tab, setTab] = useState<Tab>("engagements");
@@ -18,6 +19,7 @@ export default function App() {
   const tabs: { id: Tab; label: string }[] = [
     { id: "engagements", label: "Engagements" },
     { id: "diagnostics", label: "Diagnostics" },
+    { id: "task-intel", label: "Task Intelligence" },
   ];
 
   return (
@@ -45,10 +47,10 @@ export default function App() {
       </header>
 
       <main className="mx-auto max-w-6xl px-6 py-6">
-        {tab === "engagements" ? (
-          <Engagements onOpenDiagnostics={openDiagnostics} />
-        ) : (
-          <Diagnostics datasetId={datasetId} title={diagTitle} />
+        {tab === "engagements" && <Engagements onOpenDiagnostics={openDiagnostics} />}
+        {tab === "diagnostics" && <Diagnostics datasetId={datasetId} title={diagTitle} />}
+        {tab === "task-intel" && (
+          <TaskIntelligence datasetId={datasetId} title={diagTitle} />
         )}
       </main>
     </div>

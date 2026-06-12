@@ -61,6 +61,58 @@ export interface ActivatorScreen {
   caveat: string;
 }
 
+export interface QuickStats {
+  positions_total: number;
+  positions_with_activities: number;
+  coverage_pct: number;
+  departments_with_activities: number;
+  estimated_batches: number;
+}
+
+export interface ExtractResult {
+  dataset_id: string;
+  positions_total: number;
+  positions_with_activities: number;
+  batches: number;
+  tasks_created: number;
+  caveats: string[];
+}
+
+export interface BenchmarkResult {
+  dataset_id: string;
+  tasks: number;
+  benchmarks_created: number;
+  matched: number;
+  missing: number;
+  caveats: string[];
+}
+
+export interface AIOpportunityResult {
+  dataset_id: string;
+  scored: number;
+  with_overlay: number;
+  robotics_levers: number;
+  level_breakdown: Record<string, number>;
+  caveats: string[];
+}
+
+export interface RollupBucket {
+  tasks: number;
+  levels: Record<string, number>;
+  zones: Record<string, number>;
+  has: Record<string, number>;
+  with_overlay: number;
+  robotics_levers: number;
+}
+
+export interface RollupResult {
+  dataset_id: string;
+  overall: RollupBucket;
+  by_department: Record<string, RollupBucket>;
+  by_layer: Record<string, RollupBucket>;
+  caveats: string[];
+}
+
 export interface ArchetypeSummary {
   id: string;
   name: string;

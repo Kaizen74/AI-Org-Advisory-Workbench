@@ -2,11 +2,16 @@
 // In dev, Vite proxies /api -> http://127.0.0.1:8000 (see vite.config.ts).
 import type {
   ActivatorScreen,
+  AIOpportunityResult,
   ArchetypeSummary,
+  BenchmarkResult,
   Client,
   Dataset,
   DiagnosticsSummary,
   Engagement,
+  ExtractResult,
+  QuickStats,
+  RollupResult,
 } from "../types";
 
 const BASE = "/api/v1";
@@ -77,4 +82,23 @@ export const api = {
       `/diagnostics/activator-screen?dataset_id=${encodeURIComponent(datasetId)}`,
     ),
   archetypes: () => request<{ archetypes: ArchetypeSummary[] }>("/diagnostics/archetypes"),
+
+  // Task Intelligence
+  quick: (datasetId: string) =>
+    request<QuickStats>(`/task-intel/quick?dataset_id=${encodeURIComponent(datasetId)}`),
+  extract: (datasetId: string) =>
+    request<ExtractResult>(`/task-intel/extract?dataset_id=${encodeURIComponent(datasetId)}`, {
+      method: "POST",
+    }),
+  benchmark: (datasetId: string) =>
+    request<BenchmarkResult>(`/task-intel/benchmark?dataset_id=${encodeURIComponent(datasetId)}`, {
+      method: "POST",
+    }),
+  aiOpportunity: (datasetId: string) =>
+    request<AIOpportunityResult>(
+      `/task-intel/ai-opportunity?dataset_id=${encodeURIComponent(datasetId)}`,
+      { method: "POST" },
+    ),
+  rollup: (datasetId: string) =>
+    request<RollupResult>(`/task-intel/rollup?dataset_id=${encodeURIComponent(datasetId)}`),
 };
