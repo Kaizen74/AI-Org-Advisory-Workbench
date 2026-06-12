@@ -139,3 +139,31 @@ One dated entry per session and per completed phase. Never rewrite history.
   frontend Task Intelligence page. Provenance-presence asserted on every AI row (A4).
 - Gate GREEN: **49 backend tests + clean frontend build**. **Phase 2 complete.** Awaiting Eric's
   go-ahead for Phase 3 (Validation queue + local desire).
+
+---
+
+## Phase 3 — Validation queue + local desire
+
+**Micro-task checklist (written before starting, per Part A; each ends with a commit + LATEST update):**
+- [ ] P3.1 — `validation_service.get_queue`: unified review items from task_benchmarks +
+      task_ai_scores + taxonomy_crosswalk, with a confidence filter. Test incl. **the seed's 0.40
+      crosswalk row appears in the queue**.
+- [ ] P3.2 — `review_items` (bulk approve/edit/reject → review_state + reviewed_at) + crosswalk
+      learning (approve benchmark → CURATED_BY_CONSULTANT row); `get_stats`. Tests.
+- [ ] P3.3 — `client_ready` filter (exclude unreviewed model-inferred) + test that unreviewed items
+      are excluded from the canonical client-ready payload (M6/A4).
+- [ ] P3.4 — `/api/v1/validation` router (`GET /queue`, `POST /review`, `GET /stats`) + integration
+      tests (guards).
+- [ ] P3.5 — Desire pulse: `GET /task-intel/pulse/instrument.xlsx` (top-N tasks) + `POST
+      /task-intel/pulse/responses` (CSV/xlsx import → `desire_score_local` recompute, never touches
+      `desire_score_us`). Tests (openpyxl).
+- [ ] P3.6 — Frontend ValidationQueue page (confidence filter, bulk approve/edit/reject, source
+      badges) + pulse import control.
+- [ ] P3.7 — Phase close: full gate, BASELINE + checkpoints + README, commit + push.
+
+### Session 5 — 2026-06-11 (Phase 3 start)
+
+- Eric approved Phase 2 ("Proceed"). Wrote the P3 checklist and began executing. Binding rules:
+  review is triggered by confidence (<0.70 → unreviewed), `desire_score_us` is never overwritten by
+  local desire, approvals feed back as CURATED_BY_CONSULTANT, and unreviewed model-inferred content
+  must be excluded from client-ready payloads (A4/M6).

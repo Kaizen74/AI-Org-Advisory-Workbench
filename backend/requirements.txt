@@ -18,6 +18,9 @@ networkx>=3.2
 # CSV upload handling
 python-multipart>=0.0.9
 
+# xlsx pulse instrument export/import (Phase 3)
+openpyxl>=3.1
+
 # Claude API
 anthropic>=0.40
 
