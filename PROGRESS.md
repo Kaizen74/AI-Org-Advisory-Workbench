@@ -113,31 +113,29 @@ One dated entry per session and per completed phase. Never rewrite history.
 ## Phase 2 — Task Intelligence
 
 **Micro-task checklist (written before starting, per Part A; each ends with a commit + LATEST update):**
-- [ ] P2.1 — Reference-layer + task SQLAlchemy models (taxonomy_source, taxonomy_task,
-      taxonomy_crosswalk, task_ai_overlay, tasks, task_benchmarks, task_ai_scores,
-      desire_pulse_responses) per B1, with provenance fields; model smoke test.
-- [ ] P2.2 — Migration 002 (reference + task tables) — additive, reversible; round-trip test.
-- [ ] P2.3 — Move `taxonomy_seed.starter.json` → `backend/app/resources/taxonomies/`; idempotent
-      seed loader (upsert by natural keys; `desire_score → desire_score_us`; `desire_score_local`
-      NULL; confidence<0.70 → review_state=unreviewed incl. the seed's 0.40 row). Loader test
-      against the starter (idempotency + dual-desire mapping + 0.40 threshold).
-- [ ] P2.4 — `task_intelligence_service.extract`: batched per department / ~40 positions,
-      deterministic merge; mocked-AI test + **500-position synthetic fixture** proving batching+merge.
-- [ ] P2.5 — benchmark step (task→SFw/O*NET; MATCHED/MISSING/EXTRA; source+confidence+review_state);
-      mocked-AI test.
-- [ ] P2.6 — ai-opportunity step (HAS/zone/desire_us/capability/L0–L3 via O*NET overlay join;
-      physical tasks → no software overlay, tagged model-inferred robotics lever; caveats incl.
-      O*NET occupation-level + WORKBank-illustrative); mocked-AI + provenance-presence test.
-- [ ] P2.7 — rollups (role/department/layer) `GET /rollup`; `GET /quick` (no API key).
-- [ ] P2.8 — `/api/v1/task-intel` router wiring; guards (404 no dataset, 400 no key for AI;
-      `/quick` key-free); mocked-AI integration tests + canonical GET-endpoint snapshot.
-- [ ] P2.9 — Frontend TaskIntelligence page (zone scatter, HAS bars, L0–L3 breakdown, benchmark
-      table w/ provenance badges, caveats callout).
-- [ ] P2.10 — Phase close: full gate, BASELINE update (canonical snapshots + provenance test),
-      checkpoints + README, commit + push.
+- [x] P2.1 — Reference-layer + task models (8) + model smoke test.
+- [x] P2.2 — Migration 002 (additive, reversible) + round-trip test.
+- [x] P2.3 — Seed moved into resources; idempotent loader (dual-desire mapping; 0.40 → unreviewed);
+      4 loader tests.
+- [x] P2.4 — Batched extraction + deterministic merge; 500-position synthetic fixture (3 tests).
+- [x] P2.5 — Benchmark step (status + provenance + confidence routing).
+- [x] P2.6 — AI-opportunity (logical O*NET overlay join; robotics lever; L0–L3) + provenance test.
+- [x] P2.7 — Rollups (department/layer/overall) + `GET /quick` (no key).
+- [x] P2.8 — `/api/v1/task-intel` router + guards (400 no key, 404 no dataset); 3 integration tests.
+- [x] P2.9 — Frontend Task Intelligence page (pipeline runner, L0–L3 + HAS charts, caveats).
+- [x] P2.10 — Phase close: gate green (49 tests), BASELINE + checkpoints + README updated, pushed.
 
 ### Session 4 — 2026-06-11 (Phase 2 start)
 
 - Eric approved Phase 1 ("Proceed"). Wrote the P2 checklist and began executing micro-task by
   micro-task. Binding constraints kept front-of-mind: WORKBank guardrails (A4), the
   logical-overlay-join (D1), and confidence<0.70 → unreviewed (the seed's 0.40 crosswalk row).
+- Built the reference + task schema (migration 002, additive/reversible), the idempotent seed
+  loader (dual-desire mapping; 0.40 crosswalk → unreviewed), and the full mocked-AI pipeline:
+  batched extraction (500-position synthetic fixture proving batching + deterministic merge),
+  benchmarking (provenance + confidence routing), and AI-opportunity via the logical O*NET overlay
+  join (physical tasks → model-inferred robotics levers; deterministic L0–L3). Added rollups and the
+  `/api/v1/task-intel` router with guards (400 no key, 404 no dataset; `/quick` key-free). Built the
+  frontend Task Intelligence page. Provenance-presence asserted on every AI row (A4).
+- Gate GREEN: **49 backend tests + clean frontend build**. **Phase 2 complete.** Awaiting Eric's
+  go-ahead for Phase 3 (Validation queue + local desire).

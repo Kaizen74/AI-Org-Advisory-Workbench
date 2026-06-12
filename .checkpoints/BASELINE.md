@@ -58,6 +58,27 @@ asserts byte-stability.
 > Additive-only from here: the engagement-core schema, migration 001, parser/metrics outputs, the
 > `/api/v1/engagements` + `/api/v1/diagnostics` routes, and the locked PAX baseline must not regress.
 
+## Phase 2 — Task Intelligence (COMPLETE)
+
+**Reference seed (LOCKED counts for `taxonomy_seed.starter.json`):** sources=4, tasks=15,
+overlays=3, crosswalks=6. Loader is idempotent; `desire_score → desire_score_us`;
+`desire_score_local` NULL; the 0.40 crosswalk routes to `review_state=unreviewed`.
+
+**Passing tests (P2) — 49 backend total (33 from P1 + 16 new):**
+- `test_models_p2.py::*` (2) — reference/task models, logical overlay join (no FK), provenance cols.
+- `test_migration.py::test_migration_002_*` — migration 002 additive + reversible (001 survives a
+  single-step downgrade).
+- `test_taxonomy_loader.py::*` (4) — starter counts, idempotency, dual-desire mapping, 0.40 routing.
+- `test_task_extract.py::*` (3) — 500-position batching + deterministic merge + idempotency.
+- `test_task_benchmark.py::*` (3) — benchmark statuses/routing, overlay join + robotics lever,
+  **provenance-presence on every AI row** (A4 canonical-pipeline assertion).
+- `test_task_intel_api.py::*` (3) — `/quick` key-free, AI-endpoint 400 guard, full pipeline via HTTP.
+
+**Frontend gate (P2):** `npm run build` zero TS errors; Task Intelligence page ships.
+
+> Additive-only from here: migration 002 tables, the seed loader contract, the task-intel pipeline
+> outputs + `/api/v1/task-intel` routes, and the WORKBank/O*NET caveats must not regress.
+
 ## Reserved baseline targets (to be locked when their phase ships)
 
 > Recorded now so a future session never forgets the byte-exact numbers it must reproduce.

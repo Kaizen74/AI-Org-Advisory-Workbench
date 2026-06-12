@@ -8,17 +8,18 @@
 
 ## CURRENT-STATE SUMMARY (updated each session end)
 
-**As of 2026-06-11 (Phase 1 — COMPLETE):** P0 and P1 are done and pushed. P1 shipped: Alembic
-migration 001 (clients/engagements/datasets/positions/metric_values), the ID-keyed CSV parser
-(breaking fix vs v1: keyed on Employee ID + surrogate fallback + duplicate-name warning), the
-ported metrics engine (typed `metric_values`), the diagnostics service, the `/api/v1/engagements`
-+ `/api/v1/diagnostics` routers, the ported 7-archetype reference, the Five-Activator pre-screen,
-and the frontend Engagements + Diagnostics pages. **PAX baseline LOCKED (D9): 64 / 34 / 53.1% /
-6,620,000 / 6** — the provided CSV is the source of truth (Eric's call; the spec's 16 / 25.0 /
-5,770,000 referred to a different file). **Gate GREEN: 33 backend tests + clean frontend build;**
-live uvicorn run verified end-to-end. Next: await Eric's go-ahead, then **Phase 2 (Task
-Intelligence)** — see `.checkpoints/LATEST.md`. Do not start P2 until Eric confirms. Completed P0/P1
-code is now **additive-only**.
+**As of 2026-06-11 (Phase 2 — COMPLETE):** P0, P1, P2 are done and pushed. P2 shipped: migration 002
+(reference layer `taxonomy_source/task/crosswalk` + `task_ai_overlay` + `tasks/task_benchmarks/
+task_ai_scores/desire_pulse_responses`), the idempotent seed loader (`desire_score → desire_score_us`,
+`desire_score_local` NULL, confidence<0.70 → unreviewed incl. the seed's 0.40 row), the full
+mocked-AI pipeline (batched extract proven on a 500-position synthetic fixture → benchmark →
+ai-opportunity via the logical O*NET overlay join, physical tasks → model-inferred robotics levers,
+deterministic L0–L3), rollups, the `/api/v1/task-intel` router (guards: 400 no key, 404 no dataset;
+`/quick` key-free), and the frontend Task Intelligence page. Provenance (`source/confidence/
+review_state`) asserted on every AI row. **PAX baseline still LOCKED (D9): 64 / 34 / 53.1% /
+6,620,000 / 6.** **Gate GREEN: 49 backend tests + clean frontend build.** Next: await Eric's
+go-ahead, then **Phase 3 (Validation queue + local desire)** — see `.checkpoints/LATEST.md`. Do not
+start P3 until Eric confirms. Completed P0/P1/P2 code is now **additive-only**.
 
 ---
 

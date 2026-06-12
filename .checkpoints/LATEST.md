@@ -1,30 +1,28 @@
 # LATEST CHECKPOINT
-**Updated:** 2026-06-11T02:30:00 (Phase 1 — COMPLETE)
-**Phase:** P1 — Engagement core + diagnostics ✅ DONE
-**Last completed micro-task:** P1.12 — phase close. Gate green, PAX baseline locked, all checkpoint
-files + README updated, pushed.
-**In-flight micro-task:** none. P1 is fully closed and pushed. Awaiting Eric's go-ahead for P2.
-**Next action (be exact):** WAIT for Eric to confirm P1 looks good. On his go-ahead, START
-**Phase 2 (P2 — Task Intelligence)** per Build Spec B4:
-  1. Write the P2 micro-task checklist into `PROGRESS.md`.
-  2. Migration `002` (reference + task tables): `taxonomy_source`, `taxonomy_task`,
-     `taxonomy_crosswalk`, `task_ai_overlay`, `tasks`, `task_benchmarks`, `task_ai_scores`,
-     `desire_pulse_responses` (Build Spec B1). Additive + reversible.
-  3. Move `taxonomy_seed.starter.json` → `backend/app/resources/taxonomies/`; write the idempotent
-     seed loader with the `desire_score → desire_score_us` mapping (loader test against the starter).
-  4. Batched extract/benchmark/ai-opportunity pipeline with **mocked-AI** tests incl. a 500-position
-     synthetic fixture proving batching+merge; rollups; provenance-presence test; caveats carry the
-     WORKBank-illustrative + O*NET occupation-level flags. TaskIntelligence page.
-  Remember the binding WORKBank guardrails (A4) and the confidence<0.70 → unreviewed rule (lands in
-  P3 but the seed's 0.40 crosswalk row must be handled).
-**Test status:** PASS — gate GREEN, **33 backend tests + clean frontend build**. Live uvicorn run
-verified (PAX → 64 / 34 / $6,620,000 / 6).
+**Updated:** 2026-06-11T04:00:00 (Phase 2 — COMPLETE)
+**Phase:** P2 — Task Intelligence ✅ DONE
+**Last completed micro-task:** P2.10 — phase close. Gate green (49 tests), BASELINE + README +
+checkpoints updated, pushed.
+**In-flight micro-task:** none. P2 fully closed and pushed. Awaiting Eric's go-ahead for P3.
+**Next action (be exact):** WAIT for Eric to confirm P2 looks good. On his go-ahead, START
+**Phase 3 (P3 — Validation queue + local desire)** per Build Spec B4:
+  1. Write the P3 micro-task checklist into `PROGRESS.md`.
+  2. `validation_service` + `/api/v1/validation` router: `GET /queue?filter=confidence<x`,
+     `POST /review` (bulk approve/edit/reject → updates review_state, writes CURATED_BY_CONSULTANT
+     crosswalk rows), `GET /stats`. ValidationQueue page (confidence filter, bulk actions, source
+     badges).
+  3. **confidence<0.70 → unreviewed routing test that catches the seed's 0.40 crosswalk row** (the
+     loader already does this; add the queue-level test).
+  4. Crosswalk learning (approved items → CURATED_BY_CONSULTANT). Pulse export/import + dual desire
+     scores (`desire_score_local` recompute). Test: unreviewed items excluded from the canonical
+     "client-ready" payload.
+  Keep additive-only on P0/P1/P2 code; any change to completed modules needs a DECISIONS.md entry.
+**Test status:** PASS — gate GREEN, **49 backend tests + clean frontend build**.
 **Recovery commands:** `bash scripts/gate.sh`
 **Open questions for Eric:**
-  1. (Confirm-when-convenient) The Five-Activator pre-screen uses descriptive activator labels
-     (Structure & Layers / Lateral Connection & Coordination / Spans of Control / Management
-     Overhead / Structural Health) and heuristic thresholds. If you have the exact Kates-Kesler
-     activator labels + your Observable Outcomes thresholds, share them and I'll map them precisely
-     (additive change). Not blocking.
-  2. (Housekeeping, no action now) Your `legacy v1 app.zip` is on `main`; this branch carries the
-     unpacked `legacy/` folder. You can delete the zip from `main` after this branch merges.
+  1. (Confirm-when-convenient) Five-Activator labels/thresholds are heuristic placeholders — share
+     the exact Kates-Kesler labels + Observable Outcomes thresholds when handy (additive change).
+  2. (Confirm-when-convenient) The L0–L3 derivation from capability/HAS is a deterministic heuristic
+     (caveated). If you have a preferred rubric, I'll wire it in.
+  3. (Housekeeping) `legacy v1 app.zip` is on `main`; this branch carries the unpacked `legacy/`.
+     Delete the zip from `main` after this branch merges if you like.

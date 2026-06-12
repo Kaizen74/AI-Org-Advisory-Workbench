@@ -18,8 +18,11 @@ it ships):**
 - _Engagement Hub_ — manage clients, engagements, and uploaded org-CSV data sets. ✅ _(Phase 1)_
 - _Diagnostics_ — org-structure metrics (employees, managers, span, layers, cost, manager ratio),
   the 7-archetype reference, and a Five-Activator pre-screen. ✅ _(Phase 1)_
-- _(later phases: Task Intelligence, Validation Queue, Scenario Studio, Workflow Mapper, Transition
-  Planner, Deliverables, Settings.)_
+- _Task Intelligence_ — turns each role's work activities into tasks, benchmarks them against
+  skills taxonomies, and scores AI-automation opportunity (L0–L3) with full provenance and caveats.
+  ✅ _(Phase 2; the AI parts need an Anthropic API key.)_
+- _(later phases: Validation Queue, Scenario Studio, Workflow Mapper, Transition Planner,
+  Deliverables, Settings.)_
 
 ---
 
