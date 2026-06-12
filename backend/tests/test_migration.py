@@ -22,6 +22,7 @@ P2_TABLES = {
     "task_ai_scores",
     "desire_pulse_responses",
 }
+P4_TABLES = {"scenarios", "design_moves", "scenario_metrics"}
 
 
 def _alembic_config(db_path: Path) -> Config:
@@ -63,4 +64,23 @@ def test_migration_002_adds_and_removes_reference_and_task_tables(tmp_path):
 
     command.downgrade(cfg, "base")
     assert not ((CORE_TABLES | P2_TABLES) & set(inspect(engine).get_table_names()))
+    engine.dispose()
+
+
+def test_migration_003_adds_and_removes_scenario_tables(tmp_path):
+    db_path = tmp_path / "migration3_test.db"
+    cfg = _alembic_config(db_path)
+
+    command.upgrade(cfg, "head")
+    engine = create_engine(f"sqlite:///{db_path}")
+    tables = set(inspect(engine).get_table_names())
+    assert (CORE_TABLES | P2_TABLES | P4_TABLES) <= tables
+
+    command.downgrade(cfg, "002_reference_and_tasks")
+    after = set(inspect(engine).get_table_names())
+    assert not (P4_TABLES & after), f"P4 left behind: {P4_TABLES & after}"
+    assert (CORE_TABLES | P2_TABLES) <= after  # earlier phases survive
+
+    command.downgrade(cfg, "base")
+    assert not ((CORE_TABLES | P2_TABLES | P4_TABLES) & set(inspect(engine).get_table_names()))
     engine.dispose()

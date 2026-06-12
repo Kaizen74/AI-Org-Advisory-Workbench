@@ -3,10 +3,13 @@ from .database import Base, async_session, engine, generate_uuid, get_session, i
 from .models import (
     Client,
     Dataset,
+    DesignMove,
     DesirePulseResponse,
     Engagement,
     MetricValue,
     Position,
+    Scenario,
+    ScenarioMetric,
     Task,
     TaskAIOverlay,
     TaskAIScore,
@@ -38,4 +41,8 @@ __all__ = [
     "TaskBenchmark",
     "TaskAIScore",
     "DesirePulseResponse",
+    # Scenario design (P4)
+    "Scenario",
+    "DesignMove",
+    "ScenarioMetric",
 ]

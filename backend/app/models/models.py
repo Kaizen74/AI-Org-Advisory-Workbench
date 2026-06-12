@@ -301,3 +301,75 @@ class DesirePulseResponse(Base):
     respondent_hash = Column(String(64), nullable=True)
     desire_rating = Column(Integer, nullable=True)  # 1..5
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# PHASE 4 — Scenario design (the redesign surface). Additive only.
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+class Scenario(Base):
+    """A named future-state design = baseline dataset + an ordered list of design moves.
+
+    Immutable once `status == PRESENTED`; further edits fork a new scenario (`parent_scenario_id`).
+    """
+
+    __tablename__ = "scenarios"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    engagement_id = Column(
+        String(36), ForeignKey("engagements.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    dataset_id = Column(
+        String(36), ForeignKey("datasets.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    name = Column(String(255), nullable=False)
+    status = Column(String(16), nullable=False, default="DRAFT")  # DRAFT | PRESENTED
+    parent_scenario_id = Column(
+        String(36), ForeignKey("scenarios.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    moves = relationship(
+        "DesignMove", back_populates="scenario", cascade="all, delete-orphan",
+        order_by="DesignMove.seq",
+    )
+    metrics = relationship(
+        "ScenarioMetric", back_populates="scenario", cascade="all, delete-orphan"
+    )
+
+
+class DesignMove(Base):
+    """One ordered design move within a scenario. `params` is JSON (variable per move_type)."""
+
+    __tablename__ = "design_moves"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    scenario_id = Column(
+        String(36), ForeignKey("scenarios.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    seq = Column(Integer, nullable=False, default=0)
+    move_type = Column(String(32), nullable=False)
+    params = Column(JSON, nullable=True)
+    rationale = Column(Text, nullable=True)
+    activator_tag = Column(Integer, nullable=True)  # 1..5 (which activator this move serves)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    scenario = relationship("Scenario", back_populates="moves")
+
+
+class ScenarioMetric(Base):
+    """A persisted scenario metric value + its delta vs the baseline dataset's metric_values."""
+
+    __tablename__ = "scenario_metrics"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    scenario_id = Column(
+        String(36), ForeignKey("scenarios.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    metric_code = Column(String(64), nullable=False)
+    value = Column(Float, nullable=True)
+    delta_vs_baseline = Column(Float, nullable=True)
+    computed_at = Column(DateTime, default=datetime.utcnow)
+
+    scenario = relationship("Scenario", back_populates="metrics")

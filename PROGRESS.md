@@ -171,3 +171,28 @@ One dated entry per session and per completed phase. Never rewrite history.
   approve/reject, source badges) + pulse download/import.
 - Gate GREEN: **54 backend tests + clean frontend build**. **Phase 3 complete.** Awaiting Eric's
   go-ahead for Phase 4 (Scenario Studio).
+
+---
+
+## Phase 4 — Scenario Studio
+
+**Micro-task checklist (written before starting, per Part A; each ends with a commit + LATEST update):**
+- [ ] P4.1 — Models + migration 003 (scenarios, design_moves, scenario_metrics) per B1; additive +
+      reversible; round-trip test.
+- [ ] P4.2 — **Pure move engine** `apply_moves(baseline_positions, moves)` (MERGE_UNITS, SPLIT_UNIT,
+      REPARENT, DELETE_POSITION, ADD_POSITION, CHANGE_GRADE, REASSIGN_TASKS, SET_ANCHOR_LAYER,
+      SET_DOCKING_STATION). **Apply/undo byte-parity property test FIRST** (Rule 6): apply never
+      mutates baseline; recompute-from-baseline reproduces baseline metrics byte-identically.
+- [ ] P4.3 — `scenario_service`: CRUD; add/remove moves; delta vs persisted `metric_values`; 3-way
+      compare; present/lock/fork. Persist `scenario_metrics`.
+- [ ] P4.4 — `/api/v1/scenarios` router + integration tests (guards; present locks; edits fork).
+- [ ] P4.5 — Baseline scenario-delta snapshot (fixed move sequence on PAX) + byte-parity test.
+- [ ] P4.6 — Frontend ScenarioStudio page (move builder + live delta panel + 3-way comparison).
+- [ ] P4.7 — Phase close: full gate, BASELINE + checkpoints + README, commit + push.
+
+### Session 6 — 2026-06-11 (Phase 4 start)
+
+- Eric approved Phase 3 ("Proceed"). Wrote the P4 checklist and began executing. Critical guarantee:
+  `apply_moves` is a PURE function (deep-copies baseline, never mutates) so undo = recompute from
+  baseline + remaining moves reproduces baseline metrics byte-identically. Deltas computed vs
+  persisted `metric_values`, not re-parsed CSV.
