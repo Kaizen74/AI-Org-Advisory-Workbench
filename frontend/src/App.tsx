@@ -3,8 +3,9 @@ import Engagements from "./pages/Engagements";
 import Diagnostics from "./pages/Diagnostics";
 import TaskIntelligence from "./pages/TaskIntelligence";
 import ValidationQueue from "./pages/ValidationQueue";
+import ScenarioStudio from "./pages/ScenarioStudio";
 
-type Tab = "engagements" | "diagnostics" | "task-intel" | "validation";
+type Tab = "engagements" | "diagnostics" | "task-intel" | "validation" | "scenarios";
 
 export default function App() {
   const [tab, setTab] = useState<Tab>("engagements");
@@ -24,6 +25,7 @@ export default function App() {
     { id: "diagnostics", label: "Diagnostics" },
     { id: "task-intel", label: "Task Intelligence" },
     { id: "validation", label: "Validation Queue" },
+    { id: "scenarios", label: "Scenario Studio" },
   ];
 
   return (
@@ -56,6 +58,9 @@ export default function App() {
         {tab === "task-intel" && <TaskIntelligence datasetId={datasetId} title={diagTitle} />}
         {tab === "validation" && (
           <ValidationQueue datasetId={datasetId} engagementId={engagementId} />
+        )}
+        {tab === "scenarios" && (
+          <ScenarioStudio datasetId={datasetId} engagementId={engagementId} />
         )}
       </main>
     </div>

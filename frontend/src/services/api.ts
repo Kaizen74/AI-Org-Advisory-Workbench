@@ -16,6 +16,8 @@ import type {
   ReviewAction,
   ReviewResult,
   RollupResult,
+  Scenario,
+  ScenarioDelta,
 } from "../types";
 
 const BASE = "/api/v1";
@@ -134,4 +136,26 @@ export const api = {
       { method: "POST", body: form },
     );
   },
+
+  // Scenarios
+  listScenarios: (engagementId: string) =>
+    request<Scenario[]>(`/scenarios?engagement_id=${encodeURIComponent(engagementId)}`),
+  createScenario: (engagementId: string, datasetId: string, name: string) =>
+    request<Scenario>("/scenarios", json({ engagement_id: engagementId, dataset_id: datasetId, name })),
+  moveTypes: () => request<{ move_types: string[] }>("/scenarios/move-types"),
+  addMove: (scenarioId: string, moveType: string, params: Record<string, unknown>, rationale?: string) =>
+    request<{ id: string; seq: number; move_type: string }>(
+      `/scenarios/${scenarioId}/moves`,
+      json({ move_type: moveType, params, rationale }),
+    ),
+  removeMove: (scenarioId: string, seq: number) =>
+    request<{ removed_seq: number }>(`/scenarios/${scenarioId}/moves/${seq}`, { method: "DELETE" }),
+  scenarioDelta: (scenarioId: string) =>
+    request<ScenarioDelta>(`/scenarios/${scenarioId}/delta`),
+  compareScenarios: (ids: string[]) =>
+    request<{ scenarios: ScenarioDelta[] }>(`/scenarios/compare?ids=${ids.join(",")}`),
+  presentScenario: (scenarioId: string) =>
+    request<Scenario>(`/scenarios/${scenarioId}/present`, { method: "POST" }),
+  forkScenario: (scenarioId: string) =>
+    request<Scenario>(`/scenarios/${scenarioId}/fork`, { method: "POST" }),
 };

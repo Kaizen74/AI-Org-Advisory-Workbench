@@ -145,6 +145,29 @@ export interface PulseImportResult {
   scores_updated: number;
 }
 
+export interface Scenario {
+  id: string;
+  name: string;
+  status: string;
+  parent_scenario_id?: string | null;
+}
+
+export interface DesignMove {
+  id: string;
+  seq: number;
+  move_type: string;
+}
+
+export interface ScenarioDelta {
+  scenario_id: string;
+  name: string;
+  status: string;
+  move_count: number;
+  baseline: Record<string, number>;
+  scenario: Record<string, number>;
+  delta: Record<string, number>;
+}
+
 export interface ArchetypeSummary {
   id: string;
   name: string;
