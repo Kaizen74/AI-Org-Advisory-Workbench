@@ -17,11 +17,27 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import settings
-from ..models import Position, Task
+from ..models import (
+    Position,
+    Task,
+    TaskAIOverlay,
+    TaskAIScore,
+    TaskBenchmark,
+    TaxonomyCrosswalk,
+    TaxonomyTask,
+)
 from ._json_utils import parse_ai_json
 from .claude_service import claude_service
 
 DEFAULT_BATCH_SIZE = 40
+REVIEW_CONFIDENCE_THRESHOLD = 0.70
+
+
+def _review_state_for(confidence: Optional[float]) -> str:
+    """Confidence-triggered routing: <0.70 (or missing) -> unreviewed, else approved (B0)."""
+    if confidence is None or confidence < REVIEW_CONFIDENCE_THRESHOLD:
+        return "unreviewed"
+    return "approved"
 
 # Caveats that must ride along on every Task Intelligence payload until verified (A4 / M2).
 STANDARD_CAVEATS = [
@@ -124,6 +140,197 @@ async def extract_tasks(
         "batches": len(batches),
         "batch_size": batch_size,
         "tasks_created": tasks_created,
+        "caveats": STANDARD_CAVEATS,
+    }
+
+
+async def _load_dataset_tasks(session: AsyncSession, dataset_id: str) -> List[Task]:
+    """All tasks for a dataset (joined via positions), ordered by id for determinism."""
+    rows = await session.scalars(
+        select(Task)
+        .join(Position, Task.position_id == Position.id)
+        .where(Position.dataset_id == dataset_id)
+        .order_by(Task.id)
+    )
+    return list(rows)
+
+
+# ── Benchmark (task -> SFw/O*NET) ────────────────────────────────────────────
+async def _benchmark_grounding(session: AsyncSession) -> List[Dict]:
+    """Compact reference grounding: taxonomy tasks + their crosswalked O*NET code (if any)."""
+    tasks = list(await session.scalars(select(TaxonomyTask)))
+    crosswalks = list(await session.scalars(select(TaxonomyCrosswalk)))
+    onet_by_task_id = {c.from_task_id: c.to_task_code for c in crosswalks if c.from_task_id}
+    return [
+        {
+            "task_ref": t.task_ref,
+            "task_text": t.task_text,
+            "source_code": None,  # filled from source if needed; not required by the model
+            "onet_task_code": onet_by_task_id.get(t.id),
+        }
+        for t in tasks
+    ]
+
+
+def _build_benchmark_prompt(batch: List[Task], grounding: List[Dict]) -> str:
+    payload = [{"task_id": t.id, "task_text": t.task_text} for t in batch]
+    return (
+        "Benchmark each task against the reference taxonomy (SFw primary, O*NET bridge). For each "
+        "task return STRICT JSON {\"benchmarks\": [{\"task_id\": \"...\", \"status\": "
+        "\"MATCHED|MISSING|EXTRA\", \"taxonomy_source_code\": \"...\", \"matched_task_ref\": "
+        "\"...|null\", \"onet_task_code\": \"...|null\", \"source\": \"SFw|ONET|model-inferred\", "
+        "\"confidence\": 0.0}]}. Cite the grounding row when matched.\n\nGROUNDING:\n```json\n"
+        + json.dumps(grounding, ensure_ascii=False)
+        + "\n```\n\nTASKS:\n```json\n"
+        + json.dumps(payload, ensure_ascii=False)
+        + "\n```"
+    )
+
+
+def _benchmark_batch(batch: List[Task], grounding: List[Dict]) -> List[Dict]:
+    raw = claude_service.complete(
+        model=settings.MODEL_EXTRACT,
+        messages=[{"role": "user", "content": _build_benchmark_prompt(batch, grounding)}],
+    )
+    return parse_ai_json(raw).get("benchmarks", [])
+
+
+async def benchmark_tasks(
+    session: AsyncSession, dataset_id: str, batch_size: int = DEFAULT_BATCH_SIZE
+) -> Dict:
+    """Benchmark a dataset's extracted tasks against the taxonomy. Idempotent; provenance-tagged."""
+    tasks = await _load_dataset_tasks(session, dataset_id)
+    if not tasks:
+        return {"dataset_id": dataset_id, "tasks": 0, "benchmarks_created": 0,
+                "matched": 0, "missing": 0, "caveats": STANDARD_CAVEATS}
+
+    task_ids = [t.id for t in tasks]
+    await session.execute(delete(TaskBenchmark).where(TaskBenchmark.task_id.in_(task_ids)))
+
+    grounding = await _benchmark_grounding(session)
+    ref_to_id = {t.task_ref: t.id for t in await session.scalars(select(TaxonomyTask))}
+
+    created = matched = missing = 0
+    for i in range(0, len(tasks), batch_size):
+        batch = tasks[i : i + batch_size]
+        valid_ids = {t.id for t in batch}
+        for b in _benchmark_batch(batch, grounding):
+            tid = b.get("task_id")
+            if tid not in valid_ids:
+                continue
+            status = b.get("status", "MISSING")
+            confidence = b.get("confidence")
+            session.add(
+                TaskBenchmark(
+                    task_id=tid,
+                    taxonomy_source_code=b.get("taxonomy_source_code"),
+                    status=status,
+                    matched_taxonomy_task_id=ref_to_id.get(b.get("matched_task_ref")),
+                    onet_task_code=b.get("onet_task_code"),
+                    source=b.get("source", "model-inferred"),
+                    confidence=confidence,
+                    review_state=_review_state_for(confidence),
+                )
+            )
+            created += 1
+            matched += 1 if status == "MATCHED" else 0
+            missing += 1 if status == "MISSING" else 0
+    await session.flush()
+    return {"dataset_id": dataset_id, "tasks": len(tasks), "benchmarks_created": created,
+            "matched": matched, "missing": missing, "caveats": STANDARD_CAVEATS}
+
+
+# ── AI opportunity (HAS/zone/desire/capability/L0-L3 via logical O*NET overlay join) ──
+def derive_ai_level(capability: Optional[float], has_level: Optional[int]) -> str:
+    """Deterministic L0-L3 from capability + human-agency (heuristic; caveated). Higher capability
+    and lower required human agency -> higher transformation level."""
+    if capability is None:
+        return "L0"
+    if capability >= 0.75 and (has_level or 5) <= 2:
+        return "L3"
+    if capability >= 0.60:
+        return "L2"
+    if capability >= 0.40:
+        return "L1"
+    return "L0"
+
+
+async def score_ai_opportunity(session: AsyncSession, dataset_id: str) -> Dict:
+    """Attach HAS/zone/desire/capability + L0-L3 to each benchmarked task via the overlay.
+
+    The overlay is reached LOGICALLY by `onet_task_code` (D1 — no FK). Tasks with no overlay (e.g.
+    physical ramp handling) get NO software-agent overlay: they are tagged `model-inferred` and
+    surfaced as a robotics/GSE lever (A4). Every score is `unreviewed` (WORKBank values are
+    illustrative) until consultant approval (P3). Idempotent.
+    """
+    tasks = await _load_dataset_tasks(session, dataset_id)
+    if not tasks:
+        return {"dataset_id": dataset_id, "scored": 0, "with_overlay": 0,
+                "robotics_levers": 0, "level_breakdown": {}, "caveats": STANDARD_CAVEATS}
+
+    task_ids = [t.id for t in tasks]
+    await session.execute(delete(TaskAIScore).where(TaskAIScore.task_id.in_(task_ids)))
+
+    benchmarks = {
+        b.task_id: b
+        for b in await session.scalars(
+            select(TaskBenchmark).where(TaskBenchmark.task_id.in_(task_ids))
+        )
+    }
+    overlays = {o.onet_task_code: o for o in await session.scalars(select(TaskAIOverlay))}
+
+    with_overlay = robotics = 0
+    level_breakdown: Dict[str, int] = {}
+    for task in tasks:
+        bench = benchmarks.get(task.id)
+        onet = bench.onet_task_code if bench else None
+        overlay = overlays.get(onet) if onet else None
+
+        if overlay is not None:
+            with_overlay += 1
+            level = derive_ai_level(overlay.capability_score, overlay.has_level)
+            score = TaskAIScore(
+                task_id=task.id,
+                has_level=overlay.has_level,
+                zone=overlay.zone,
+                desire_score_us=overlay.desire_score_us,
+                desire_score_local=overlay.desire_score_local,
+                capability_score=overlay.capability_score,
+                ai_opportunity_level=level,
+                rationale=(
+                    f"Joined to O*NET {onet} overlay (WORKBank, illustrative). "
+                    f"capability={overlay.capability_score}, HAS={overlay.has_level}."
+                ),
+                source="WORKBank",
+                confidence=bench.confidence if bench else None,
+                review_state="unreviewed",
+            )
+        else:
+            robotics += 1
+            level = "L0"
+            score = TaskAIScore(
+                task_id=task.id,
+                has_level=None,
+                zone="ROBOTICS_GSE_LEVER",
+                ai_opportunity_level=level,
+                rationale=(
+                    "No software-agent overlay (likely physical/handling task). Surface as a "
+                    "robotics/GSE automation lever, not a software-agent opportunity."
+                ),
+                source="model-inferred",
+                confidence=0.3,
+                review_state="unreviewed",
+            )
+        level_breakdown[level] = level_breakdown.get(level, 0) + 1
+        session.add(score)
+    await session.flush()
+
+    return {
+        "dataset_id": dataset_id,
+        "scored": len(tasks),
+        "with_overlay": with_overlay,
+        "robotics_levers": robotics,
+        "level_breakdown": level_breakdown,
         "caveats": STANDARD_CAVEATS,
     }
 
