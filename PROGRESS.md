@@ -145,21 +145,17 @@ One dated entry per session and per completed phase. Never rewrite history.
 ## Phase 3 — Validation queue + local desire
 
 **Micro-task checklist (written before starting, per Part A; each ends with a commit + LATEST update):**
-- [ ] P3.1 — `validation_service.get_queue`: unified review items from task_benchmarks +
-      task_ai_scores + taxonomy_crosswalk, with a confidence filter. Test incl. **the seed's 0.40
-      crosswalk row appears in the queue**.
-- [ ] P3.2 — `review_items` (bulk approve/edit/reject → review_state + reviewed_at) + crosswalk
-      learning (approve benchmark → CURATED_BY_CONSULTANT row); `get_stats`. Tests.
-- [ ] P3.3 — `client_ready` filter (exclude unreviewed model-inferred) + test that unreviewed items
-      are excluded from the canonical client-ready payload (M6/A4).
-- [ ] P3.4 — `/api/v1/validation` router (`GET /queue`, `POST /review`, `GET /stats`) + integration
-      tests (guards).
-- [ ] P3.5 — Desire pulse: `GET /task-intel/pulse/instrument.xlsx` (top-N tasks) + `POST
-      /task-intel/pulse/responses` (CSV/xlsx import → `desire_score_local` recompute, never touches
-      `desire_score_us`). Tests (openpyxl).
-- [ ] P3.6 — Frontend ValidationQueue page (confidence filter, bulk approve/edit/reject, source
-      badges) + pulse import control.
-- [ ] P3.7 — Phase close: full gate, BASELINE + checkpoints + README, commit + push.
+- [x] P3.1 — `validation_service.get_queue` (benchmarks + ai_scores + crosswalks; confidence
+      filter); queue catches the seed's 0.40 crosswalk.
+- [x] P3.2 — `review_items` (bulk approve/edit/reject) + CURATED_BY_CONSULTANT crosswalk learning
+      (idempotent); `get_stats`.
+- [x] P3.3 — `client_ready` filter + test that unreviewed model-inferred is excluded (A4/M6).
+- [x] P3.4 — `/api/v1/validation` router (queue/review/stats) + integration tests.
+- [x] P3.5 — Desire pulse: xlsx instrument export + CSV/xlsx import → `desire_score_local` recompute
+      (US score untouched); openpyxl dep.
+- [x] P3.6 — Frontend ValidationQueue page (confidence filter, bulk approve/reject, source badges) +
+      pulse download/import.
+- [x] P3.7 — Phase close: gate green (54 tests), BASELINE + checkpoints + README, pushed.
 
 ### Session 5 — 2026-06-11 (Phase 3 start)
 
@@ -167,3 +163,11 @@ One dated entry per session and per completed phase. Never rewrite history.
   review is triggered by confidence (<0.70 → unreviewed), `desire_score_us` is never overwritten by
   local desire, approvals feed back as CURATED_BY_CONSULTANT, and unreviewed model-inferred content
   must be excluded from client-ready payloads (A4/M6).
+- Built the validation service (unified queue across benchmarks/ai_scores/crosswalks; the seed's
+  0.40 crosswalk surfaces), bulk review with CURATED_BY_CONSULTANT crosswalk learning, the
+  client-ready filter, and the `/api/v1/validation` router. Built the desire-pulse service (xlsx
+  instrument export + CSV/xlsx response import → `desire_score_local` recompute, US score untouched)
+  with `/pulse` endpoints. Built the frontend Validation Queue page (confidence filter, bulk
+  approve/reject, source badges) + pulse download/import.
+- Gate GREEN: **54 backend tests + clean frontend build**. **Phase 3 complete.** Awaiting Eric's
+  go-ahead for Phase 4 (Scenario Studio).

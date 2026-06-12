@@ -8,18 +8,16 @@
 
 ## CURRENT-STATE SUMMARY (updated each session end)
 
-**As of 2026-06-11 (Phase 2 — COMPLETE):** P0, P1, P2 are done and pushed. P2 shipped: migration 002
-(reference layer `taxonomy_source/task/crosswalk` + `task_ai_overlay` + `tasks/task_benchmarks/
-task_ai_scores/desire_pulse_responses`), the idempotent seed loader (`desire_score → desire_score_us`,
-`desire_score_local` NULL, confidence<0.70 → unreviewed incl. the seed's 0.40 row), the full
-mocked-AI pipeline (batched extract proven on a 500-position synthetic fixture → benchmark →
-ai-opportunity via the logical O*NET overlay join, physical tasks → model-inferred robotics levers,
-deterministic L0–L3), rollups, the `/api/v1/task-intel` router (guards: 400 no key, 404 no dataset;
-`/quick` key-free), and the frontend Task Intelligence page. Provenance (`source/confidence/
-review_state`) asserted on every AI row. **PAX baseline still LOCKED (D9): 64 / 34 / 53.1% /
-6,620,000 / 6.** **Gate GREEN: 49 backend tests + clean frontend build.** Next: await Eric's
-go-ahead, then **Phase 3 (Validation queue + local desire)** — see `.checkpoints/LATEST.md`. Do not
-start P3 until Eric confirms. Completed P0/P1/P2 code is now **additive-only**.
+**As of 2026-06-11 (Phase 3 — COMPLETE):** P0, P1, P2, P3 are done and pushed. P3 shipped: the
+`validation_service` (unified review queue across task_benchmarks/task_ai_scores/taxonomy_crosswalk
+incl. the seed's 0.40 row; bulk approve/edit/reject; CURATED_BY_CONSULTANT crosswalk learning;
+`client_ready` filter excluding unreviewed model-inferred per A4/M6), the `/api/v1/validation`
+router, the desire-pulse instrument (xlsx export + CSV/xlsx import → `desire_score_local` recompute,
+`desire_score_us` never overwritten), `/api/v1/task-intel/pulse` endpoints, and the frontend
+Validation Queue page. **PAX baseline still LOCKED (D9): 64 / 34 / 53.1% / 6,620,000 / 6.** **Gate
+GREEN: 54 backend tests + clean frontend build.** Next: await Eric's go-ahead, then **Phase 4
+(Scenario Studio)** — see `.checkpoints/LATEST.md`. Do not start P4 until Eric confirms. Completed
+P0–P3 code is now **additive-only**.
 
 ---
 

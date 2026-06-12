@@ -79,6 +79,21 @@ overlays=3, crosswalks=6. Loader is idempotent; `desire_score → desire_score_u
 > Additive-only from here: migration 002 tables, the seed loader contract, the task-intel pipeline
 > outputs + `/api/v1/task-intel` routes, and the WORKBank/O*NET caveats must not regress.
 
+## Phase 3 — Validation queue + local desire (COMPLETE)
+
+**Passing tests (P3) — 54 backend total (49 from P2 + 5 new):**
+- `test_validation_service.py::*` (3) — queue catches the seed's 0.40 crosswalk; bulk review +
+  CURATED_BY_CONSULTANT crosswalk learning (idempotent); **client-ready excludes unreviewed
+  model-inferred** (A4/M6).
+- `test_validation_pulse_api.py::*` (2) — validation API (queue/review/stats + crosswalk learning);
+  desire-pulse xlsx export + response import sets `desire_score_local` (~0.875) while
+  `desire_score_us` is **never overwritten** (A4).
+
+**Frontend gate (P3):** `npm run build` zero TS errors; Validation Queue page + pulse import ship.
+
+> Additive-only from here: the validation queue/review/client-ready contract, the pulse
+> import→local-desire recompute, and the `/api/v1/validation` + `/pulse` routes must not regress.
+
 ## Reserved baseline targets (to be locked when their phase ships)
 
 > Recorded now so a future session never forgets the byte-exact numbers it must reproduce.

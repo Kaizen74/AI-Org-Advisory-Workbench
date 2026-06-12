@@ -21,8 +21,10 @@ it ships):**
 - _Task Intelligence_ — turns each role's work activities into tasks, benchmarks them against
   skills taxonomies, and scores AI-automation opportunity (L0–L3) with full provenance and caveats.
   ✅ _(Phase 2; the AI parts need an Anthropic API key.)_
-- _(later phases: Validation Queue, Scenario Studio, Workflow Mapper, Transition Planner,
-  Deliverables, Settings.)_
+- _Validation Queue_ — review/approve/reject the AI's mappings in bulk (filtered by confidence);
+  approvals teach the system, and a desire-pulse instrument captures local automation preferences
+  alongside (never overwriting) the US data. ✅ _(Phase 3)_
+- _(later phases: Scenario Studio, Workflow Mapper, Transition Planner, Deliverables, Settings.)_
 
 ---
 
