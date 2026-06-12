@@ -177,18 +177,22 @@ One dated entry per session and per completed phase. Never rewrite history.
 ## Phase 4 — Scenario Studio
 
 **Micro-task checklist (written before starting, per Part A; each ends with a commit + LATEST update):**
-- [ ] P4.1 — Models + migration 003 (scenarios, design_moves, scenario_metrics) per B1; additive +
-      reversible; round-trip test.
-- [ ] P4.2 — **Pure move engine** `apply_moves(baseline_positions, moves)` (MERGE_UNITS, SPLIT_UNIT,
-      REPARENT, DELETE_POSITION, ADD_POSITION, CHANGE_GRADE, REASSIGN_TASKS, SET_ANCHOR_LAYER,
-      SET_DOCKING_STATION). **Apply/undo byte-parity property test FIRST** (Rule 6): apply never
-      mutates baseline; recompute-from-baseline reproduces baseline metrics byte-identically.
-- [ ] P4.3 — `scenario_service`: CRUD; add/remove moves; delta vs persisted `metric_values`; 3-way
-      compare; present/lock/fork. Persist `scenario_metrics`.
-- [ ] P4.4 — `/api/v1/scenarios` router + integration tests (guards; present locks; edits fork).
-- [ ] P4.5 — Baseline scenario-delta snapshot (fixed move sequence on PAX) + byte-parity test.
-- [ ] P4.6 — Frontend ScenarioStudio page (move builder + live delta panel + 3-way comparison).
-- [ ] P4.7 — Phase close: full gate, BASELINE + checkpoints + README, commit + push.
+- [x] P4.1 — Models + migration 003 (additive, reversible) + round-trip test.
+- [x] P4.2 — Pure move engine + apply/undo byte-parity property tests (test-first); 6 tests.
+- [x] P4.3 — `scenario_service`: CRUD, moves, delta vs `metric_values`, compare, present/lock/fork.
+- [x] P4.4 — `/api/v1/scenarios` router + 4 integration tests (present locks → 409; fork edits).
+- [x] P4.5 — Baseline scenario-delta snapshot (fixed PAX sequence) + byte-parity test.
+- [x] P4.6 — Frontend ScenarioStudio page (move builder + live delta + 3-way comparison).
+- [x] P4.7 — Phase close: gate green (66 tests), BASELINE + checkpoints + README, pushed.
+
+### Session 6 close — 2026-06-11
+
+- Built scenario models + migration 003, the **pure move engine** (apply/undo byte-parity proven
+  test-first), the scenario service (delta vs persisted `metric_values`, 3-way compare,
+  present/lock/fork), the `/api/v1/scenarios` router, the scenario-delta baseline snapshot, and the
+  frontend Scenario Studio page (move builder, live delta panel, comparison table).
+- Gate GREEN: **66 backend tests + clean frontend build**. **Phase 4 complete.** Awaiting Eric's
+  go-ahead for Phase 5 (Workflow Mapper + Transition Planner).
 
 ### Session 6 — 2026-06-11 (Phase 4 start)
 

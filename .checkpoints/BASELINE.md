@@ -94,6 +94,26 @@ overlays=3, crosswalks=6. Loader is idempotent; `desire_score → desire_score_u
 > Additive-only from here: the validation queue/review/client-ready contract, the pulse
 > import→local-desire recompute, and the `/api/v1/validation` + `/pulse` routes must not regress.
 
+## Phase 4 — Scenario Studio (COMPLETE)
+
+**Snapshot fixture:** `backend/tests/baseline/scenario_delta.json` — baseline/scenario/delta for a
+fixed move sequence (DELETE E064 + ADD E999 $120k + REPARENT E003) on PAX. Delta: total_cost
++60,000, headcount 0, managers 0. `test_scenario_delta_snapshot.py` asserts byte-parity.
+
+**Passing tests (P4) — 66 backend total (54 from P3 + 12 new):**
+- `test_migration.py::test_migration_003_*` — migration 003 additive + reversible (earlier phases
+  survive single-step downgrade).
+- `test_scenario_engine.py::*` (6) — **apply/undo byte-parity**: no mutation, empty=identity, undo
+  reproduces baseline metrics byte-identically, progressive undo, structural effects, merge/split.
+- `test_scenarios_api.py::*` (4) — delta vs persisted baseline, present-lock + fork-to-edit, 3-way
+  compare, 404 guard.
+- `test_scenario_delta_snapshot.py::*` (1) — fixed-sequence delta snapshot parity.
+
+**Frontend gate (P4):** `npm run build` zero TS errors; Scenario Studio page ships.
+
+> Additive-only from here: the pure `apply_moves` contract, the scenario delta/compare/present/fork
+> behaviour, the `/api/v1/scenarios` routes, and the scenario-delta snapshot must not regress.
+
 ## Reserved baseline targets (to be locked when their phase ships)
 
 > Recorded now so a future session never forgets the byte-exact numbers it must reproduce.

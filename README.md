@@ -24,7 +24,10 @@ it ships):**
 - _Validation Queue_ — review/approve/reject the AI's mappings in bulk (filtered by confidence);
   approvals teach the system, and a desire-pulse instrument captures local automation preferences
   alongside (never overwriting) the US data. ✅ _(Phase 3)_
-- _(later phases: Scenario Studio, Workflow Mapper, Transition Planner, Deliverables, Settings.)_
+- _Scenario Studio_ — design future-state org options as a list of "moves" (merge/split/reparent/
+  add/delete/regrade), see live deltas vs the baseline, and compare scenarios side-by-side; present
+  to lock, fork to keep editing. ✅ _(Phase 4)_
+- _(later phases: Workflow Mapper, Transition Planner, Deliverables, Settings.)_
 
 ---
 
