@@ -6,7 +6,7 @@ import { Button, Card, Empty, ErrorNote, Spinner } from "../components/ui";
 export default function Engagements({
   onOpenDiagnostics,
 }: {
-  onOpenDiagnostics: (datasetId: string, engagementName: string) => void;
+  onOpenDiagnostics: (datasetId: string, engagementId: string, engagementName: string) => void;
 }) {
   const [clients, setClients] = useState<Client[]>([]);
   const [engagements, setEngagements] = useState<Engagement[]>([]);
@@ -179,7 +179,10 @@ export default function Engagements({
                       <span>
                         v{d.version} · {d.row_count} positions
                       </span>
-                      <Button variant="ghost" onClick={() => onOpenDiagnostics(d.id, engagementName)}>
+                      <Button
+                        variant="ghost"
+                        onClick={() => onOpenDiagnostics(d.id, selectedEngagement, engagementName)}
+                      >
                         Diagnose →
                       </Button>
                     </div>

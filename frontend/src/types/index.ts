@@ -113,6 +113,38 @@ export interface RollupResult {
   caveats: string[];
 }
 
+export interface QueueItem {
+  kind: "benchmark" | "ai_score" | "crosswalk";
+  id: string;
+  task_id?: string | null;
+  label: string;
+  source?: string | null;
+  confidence?: number | null;
+  review_state: string;
+}
+
+export interface QueueResult {
+  count: number;
+  items: QueueItem[];
+}
+
+export interface ReviewAction {
+  kind: string;
+  id: string;
+  action: "approve" | "edit" | "reject";
+  edits?: Record<string, unknown>;
+}
+
+export interface ReviewResult {
+  updated: number;
+  crosswalks_created: number;
+}
+
+export interface PulseImportResult {
+  responses_stored: number;
+  scores_updated: number;
+}
+
 export interface ArchetypeSummary {
   id: string;
   name: string;

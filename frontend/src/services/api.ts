@@ -10,7 +10,11 @@ import type {
   DiagnosticsSummary,
   Engagement,
   ExtractResult,
+  PulseImportResult,
+  QueueResult,
   QuickStats,
+  ReviewAction,
+  ReviewResult,
   RollupResult,
 } from "../types";
 
@@ -101,4 +105,33 @@ export const api = {
     ),
   rollup: (datasetId: string) =>
     request<RollupResult>(`/task-intel/rollup?dataset_id=${encodeURIComponent(datasetId)}`),
+
+  // Validation
+  validationQueue: (datasetId?: string, maxConfidence?: number, includeReviewed = false) => {
+    const p = new URLSearchParams();
+    if (datasetId) p.set("dataset_id", datasetId);
+    if (maxConfidence !== undefined) p.set("max_confidence", String(maxConfidence));
+    if (includeReviewed) p.set("include_reviewed", "true");
+    return request<QueueResult>(`/validation/queue?${p.toString()}`);
+  },
+  review: (actions: ReviewAction[]) =>
+    request<ReviewResult>("/validation/review", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(actions),
+    }),
+
+  // Desire pulse
+  pulseInstrumentUrl: (datasetId: string) =>
+    `/api/v1/task-intel/pulse/instrument.xlsx?dataset_id=${encodeURIComponent(datasetId)}`,
+  pulseImport: (engagementId: string, datasetId: string, file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return request<PulseImportResult>(
+      `/task-intel/pulse/responses?engagement_id=${encodeURIComponent(
+        engagementId,
+      )}&dataset_id=${encodeURIComponent(datasetId)}`,
+      { method: "POST", body: form },
+    );
+  },
 };

@@ -2,16 +2,19 @@ import { useState } from "react";
 import Engagements from "./pages/Engagements";
 import Diagnostics from "./pages/Diagnostics";
 import TaskIntelligence from "./pages/TaskIntelligence";
+import ValidationQueue from "./pages/ValidationQueue";
 
-type Tab = "engagements" | "diagnostics" | "task-intel";
+type Tab = "engagements" | "diagnostics" | "task-intel" | "validation";
 
 export default function App() {
   const [tab, setTab] = useState<Tab>("engagements");
   const [datasetId, setDatasetId] = useState<string | null>(null);
+  const [engagementId, setEngagementId] = useState<string | null>(null);
   const [diagTitle, setDiagTitle] = useState<string>("");
 
-  function openDiagnostics(id: string, engagementName: string) {
+  function openDiagnostics(id: string, engId: string, engagementName: string) {
     setDatasetId(id);
+    setEngagementId(engId);
     setDiagTitle(engagementName);
     setTab("diagnostics");
   }
@@ -20,6 +23,7 @@ export default function App() {
     { id: "engagements", label: "Engagements" },
     { id: "diagnostics", label: "Diagnostics" },
     { id: "task-intel", label: "Task Intelligence" },
+    { id: "validation", label: "Validation Queue" },
   ];
 
   return (
@@ -28,7 +32,7 @@ export default function App() {
         <div className="mx-auto flex max-w-6xl items-center justify-between">
           <div>
             <h1 className="text-lg font-semibold">OrgAI Advisory Workbench</h1>
-            <p className="text-xs text-slate-500">Phase 1 — Engagement core + diagnostics</p>
+            <p className="text-xs text-slate-500">Phase 3 — Validation queue + local desire</p>
           </div>
           <nav className="flex gap-1">
             {tabs.map((t) => (
@@ -49,8 +53,9 @@ export default function App() {
       <main className="mx-auto max-w-6xl px-6 py-6">
         {tab === "engagements" && <Engagements onOpenDiagnostics={openDiagnostics} />}
         {tab === "diagnostics" && <Diagnostics datasetId={datasetId} title={diagTitle} />}
-        {tab === "task-intel" && (
-          <TaskIntelligence datasetId={datasetId} title={diagTitle} />
+        {tab === "task-intel" && <TaskIntelligence datasetId={datasetId} title={diagTitle} />}
+        {tab === "validation" && (
+          <ValidationQueue datasetId={datasetId} engagementId={engagementId} />
         )}
       </main>
     </div>
