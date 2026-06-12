@@ -107,3 +107,37 @@ One dated entry per session and per completed phase. Never rewrite history.
 - Verified a **live** uvicorn run end-to-end (migration → create client/engagement → upload PAX →
   compute → 64 / 34 / $6.62M / 6). Gate GREEN: **33 backend tests + clean frontend build**.
   **Phase 1 complete.** Awaiting Eric's go-ahead for Phase 2.
+
+---
+
+## Phase 2 — Task Intelligence
+
+**Micro-task checklist (written before starting, per Part A; each ends with a commit + LATEST update):**
+- [ ] P2.1 — Reference-layer + task SQLAlchemy models (taxonomy_source, taxonomy_task,
+      taxonomy_crosswalk, task_ai_overlay, tasks, task_benchmarks, task_ai_scores,
+      desire_pulse_responses) per B1, with provenance fields; model smoke test.
+- [ ] P2.2 — Migration 002 (reference + task tables) — additive, reversible; round-trip test.
+- [ ] P2.3 — Move `taxonomy_seed.starter.json` → `backend/app/resources/taxonomies/`; idempotent
+      seed loader (upsert by natural keys; `desire_score → desire_score_us`; `desire_score_local`
+      NULL; confidence<0.70 → review_state=unreviewed incl. the seed's 0.40 row). Loader test
+      against the starter (idempotency + dual-desire mapping + 0.40 threshold).
+- [ ] P2.4 — `task_intelligence_service.extract`: batched per department / ~40 positions,
+      deterministic merge; mocked-AI test + **500-position synthetic fixture** proving batching+merge.
+- [ ] P2.5 — benchmark step (task→SFw/O*NET; MATCHED/MISSING/EXTRA; source+confidence+review_state);
+      mocked-AI test.
+- [ ] P2.6 — ai-opportunity step (HAS/zone/desire_us/capability/L0–L3 via O*NET overlay join;
+      physical tasks → no software overlay, tagged model-inferred robotics lever; caveats incl.
+      O*NET occupation-level + WORKBank-illustrative); mocked-AI + provenance-presence test.
+- [ ] P2.7 — rollups (role/department/layer) `GET /rollup`; `GET /quick` (no API key).
+- [ ] P2.8 — `/api/v1/task-intel` router wiring; guards (404 no dataset, 400 no key for AI;
+      `/quick` key-free); mocked-AI integration tests + canonical GET-endpoint snapshot.
+- [ ] P2.9 — Frontend TaskIntelligence page (zone scatter, HAS bars, L0–L3 breakdown, benchmark
+      table w/ provenance badges, caveats callout).
+- [ ] P2.10 — Phase close: full gate, BASELINE update (canonical snapshots + provenance test),
+      checkpoints + README, commit + push.
+
+### Session 4 — 2026-06-11 (Phase 2 start)
+
+- Eric approved Phase 1 ("Proceed"). Wrote the P2 checklist and began executing micro-task by
+  micro-task. Binding constraints kept front-of-mind: WORKBank guardrails (A4), the
+  logical-overlay-join (D1), and confidence<0.70 → unreviewed (the seed's 0.40 crosswalk row).

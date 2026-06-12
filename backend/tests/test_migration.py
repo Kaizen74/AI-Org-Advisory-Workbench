@@ -12,6 +12,16 @@ from sqlalchemy import create_engine, inspect
 
 BACKEND = Path(__file__).resolve().parents[1]
 CORE_TABLES = {"clients", "engagements", "datasets", "positions", "metric_values"}
+P2_TABLES = {
+    "taxonomy_source",
+    "taxonomy_task",
+    "taxonomy_crosswalk",
+    "task_ai_overlay",
+    "tasks",
+    "task_benchmarks",
+    "task_ai_scores",
+    "desire_pulse_responses",
+}
 
 
 def _alembic_config(db_path: Path) -> Config:
@@ -33,4 +43,24 @@ def test_migration_upgrade_then_downgrade(tmp_path):
     command.downgrade(cfg, "base")
     tables_after = set(inspect(engine).get_table_names())
     assert not (CORE_TABLES & tables_after), f"left behind after downgrade: {CORE_TABLES & tables_after}"
+    engine.dispose()
+
+
+def test_migration_002_adds_and_removes_reference_and_task_tables(tmp_path):
+    db_path = tmp_path / "migration2_test.db"
+    cfg = _alembic_config(db_path)
+
+    command.upgrade(cfg, "head")
+    engine = create_engine(f"sqlite:///{db_path}")
+    tables = set(inspect(engine).get_table_names())
+    assert (CORE_TABLES | P2_TABLES) <= tables, f"missing: {(CORE_TABLES | P2_TABLES) - tables}"
+
+    # Downgrade just one step removes only P2 tables; core tables remain (additive within phases).
+    command.downgrade(cfg, "001_engagement_core")
+    after_one = set(inspect(engine).get_table_names())
+    assert not (P2_TABLES & after_one), f"P2 left behind: {P2_TABLES & after_one}"
+    assert CORE_TABLES <= after_one, "001 tables must survive a single-step downgrade"
+
+    command.downgrade(cfg, "base")
+    assert not ((CORE_TABLES | P2_TABLES) & set(inspect(engine).get_table_names()))
     engine.dispose()
