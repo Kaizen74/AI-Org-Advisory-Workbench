@@ -335,6 +335,64 @@ async def score_ai_opportunity(session: AsyncSession, dataset_id: str) -> Dict:
     }
 
 
+# ── Rollup (aggregate AI scores up the org graph) ────────────────────────────
+def _blank_bucket() -> Dict:
+    return {"tasks": 0, "levels": {}, "zones": {}, "has": {}, "with_overlay": 0, "robotics_levers": 0}
+
+
+def _accumulate(bucket: Dict, score: TaskAIScore) -> None:
+    bucket["tasks"] += 1
+    lvl = score.ai_opportunity_level or "L0"
+    bucket["levels"][lvl] = bucket["levels"].get(lvl, 0) + 1
+    if score.zone:
+        bucket["zones"][score.zone] = bucket["zones"].get(score.zone, 0) + 1
+    if score.has_level is not None:
+        key = str(score.has_level)
+        bucket["has"][key] = bucket["has"].get(key, 0) + 1
+    if score.source == "WORKBank":
+        bucket["with_overlay"] += 1
+    if score.zone == "ROBOTICS_GSE_LEVER":
+        bucket["robotics_levers"] += 1
+
+
+async def rollup(session: AsyncSession, dataset_id: str) -> Dict:
+    """Aggregate AI-opportunity scores by department and by layer, plus an overall bucket."""
+    tasks = await _load_dataset_tasks(session, dataset_id)
+    task_ids = [t.id for t in tasks]
+    positions = {
+        p.id: p
+        for p in await session.scalars(select(Position).where(Position.dataset_id == dataset_id))
+    }
+    scores = {
+        s.task_id: s
+        for s in await session.scalars(
+            select(TaskAIScore).where(TaskAIScore.task_id.in_(task_ids))
+        )
+    }
+
+    overall = _blank_bucket()
+    by_department: Dict[str, Dict] = {}
+    by_layer: Dict[str, Dict] = {}
+    for task in tasks:
+        score = scores.get(task.id)
+        if score is None:
+            continue
+        pos = positions.get(task.position_id)
+        dept = (pos.department if pos else None) or "Unknown"
+        layer = str(pos.level if pos and pos.level is not None else 0)
+        _accumulate(overall, score)
+        _accumulate(by_department.setdefault(dept, _blank_bucket()), score)
+        _accumulate(by_layer.setdefault(layer, _blank_bucket()), score)
+
+    return {
+        "dataset_id": dataset_id,
+        "overall": overall,
+        "by_department": by_department,
+        "by_layer": by_layer,
+        "caveats": STANDARD_CAVEATS,
+    }
+
+
 # ── Quick (no API key) — deterministic preview without Claude ────────────────
 def quick_stats(positions: List[Position]) -> Dict:
     """A no-AI preview: coverage of work-activities text across the dataset (M2 GET /quick)."""
