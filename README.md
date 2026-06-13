@@ -27,7 +27,12 @@ it ships):**
 - _Scenario Studio_ — design future-state org options as a list of "moves" (merge/split/reparent/
   add/delete/regrade), see live deltas vs the baseline, and compare scenarios side-by-side; present
   to lock, fork to keep editing. ✅ _(Phase 4)_
-- _(later phases: Workflow Mapper, Transition Planner, Deliverables, Settings.)_
+- _Workflow Mapper_ — map tasks onto end-to-end processes/value streams and score AI opportunity
+  (L0–L3) per process. ✅ _(Phase 5)_
+- _Transition Planner_ — for a scenario, classify how each role is affected (unchanged/augmented/
+  transformed/displaced/new), suggest SkillsFuture reskilling pathways, and export a transition
+  register. ✅ _(Phase 5)_
+- _(later phases: Deliverables, Settings.)_
 
 ---
 

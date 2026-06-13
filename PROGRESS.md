@@ -199,17 +199,24 @@ One dated entry per session and per completed phase. Never rewrite history.
 ## Phase 5 — Workflow Mapper + Transition Planner
 
 **Micro-task checklist (written before starting, per Part A; each ends with a commit + LATEST update):**
-- [ ] P5.1 — Models + migration 004 (processes, process_steps, task_links) per B1; additive +
-      reversible; round-trip test.
-- [ ] P5.2 — `workflow_service`: process/step CRUD, `map_tasks` (link tasks→steps),
-      `opportunity_matrix` (L0–L3 per process; deterministic counts + mocked-AI priority narrative).
-- [ ] P5.3 — `/api/v1/workflows` router + mocked-AI integration tests.
-- [ ] P5.4 — `transition_service`: `compute` role impact classes per scenario
-      (unchanged/augmented/transformed/displaced/new); skill-gap → SFw pathway suggestions
-      (model-inferred, unreviewed); register payload.
-- [ ] P5.5 — `/api/v1/transition` router + transition register **xlsx export** + tests.
-- [ ] P5.6 — Frontend WorkflowMapper + TransitionPlanner pages.
-- [ ] P5.7 — Phase close: full gate, BASELINE + checkpoints + README, commit + push.
+- [x] P5.1 — Models + migration 004 (additive, reversible) + round-trip test.
+- [x] P5.2 — `workflow_service`: process/step CRUD, `map_tasks`, `opportunity_matrix` (L0–L3 counts
+      + mocked-AI priority narrative).
+- [x] P5.3 — `/api/v1/workflows` router + mocked-AI integration test.
+- [x] P5.4 — `transition_service`: deterministic impact classes + mocked-AI SFw pathway suggestions.
+- [x] P5.5 — `/api/v1/transition` router + register xlsx export + tests.
+- [x] P5.6 — Frontend WorkflowMapper + TransitionPlanner pages + `GET /task-intel/tasks`.
+- [x] P5.7 — Phase close: gate green (70 tests), BASELINE + checkpoints + README, pushed.
+
+### Session 7 close — 2026-06-11
+
+- Built process/step/task_link models + migration 004, the `workflow_service` (process CRUD,
+  task→step mapping, deterministic L0–L3 opportunity matrix + mocked-AI priority), the
+  `transition_service` (deterministic impact classes from scenario moves + mocked-AI SFw pathway
+  suggestions, register xlsx export), both routers, and the frontend Workflow Mapper + Transition
+  Planner pages. Added `GET /task-intel/tasks` for mapping.
+- Gate GREEN: **70 backend tests + clean frontend build**. **Phase 5 complete.** Awaiting Eric's
+  go-ahead for Phase 6 (Deliverable Factory).
 
 ### Session 7 — 2026-06-11 (Phase 5 start)
 

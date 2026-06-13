@@ -8,15 +8,16 @@
 
 ## CURRENT-STATE SUMMARY (updated each session end)
 
-**As of 2026-06-11 (Phase 4 — COMPLETE):** P0–P4 are done and pushed. P4 shipped: migration 003
-(scenarios, design_moves, scenario_metrics), the **pure `apply_moves` engine** (9 move types;
-apply/undo byte-parity proven test-first — applying then removing any sequence reproduces baseline
-metrics byte-identically), the `scenario_service` (delta vs persisted `metric_values`, 3-way
-compare, present/lock → fork-to-edit), the `/api/v1/scenarios` router, the scenario-delta baseline
-snapshot, and the frontend Scenario Studio page (move builder + live delta + comparison). **PAX
-baseline still LOCKED (D9): 64 / 34 / 53.1% / 6,620,000 / 6.** **Gate GREEN: 66 backend tests +
-clean frontend build.** Next: await Eric's go-ahead, then **Phase 5 (Workflow Mapper + Transition
-Planner)** — see `.checkpoints/LATEST.md`. Do not start P5 until Eric confirms. Completed P0–P4 code
+**As of 2026-06-11 (Phase 5 — COMPLETE):** P0–P5 are done and pushed. P5 shipped: migration 004
+(processes, process_steps, task_links), the `workflow_service` (process/step CRUD, task→step
+mapping, deterministic L0–L3 opportunity matrix + mocked-AI priority narrative), the
+`transition_service` (deterministic per-role impact classes from scenario moves —
+unchanged/augmented/transformed/displaced/new — plus mocked-AI SkillsFuture pathway suggestions,
+model-inferred/unreviewed, with a transition-register **xlsx export**), the `/api/v1/workflows` +
+`/api/v1/transition` routers, `GET /task-intel/tasks`, and the frontend Workflow Mapper + Transition
+Planner pages. **PAX baseline still LOCKED (D9): 64 / 34 / 53.1% / 6,620,000 / 6.** **Gate GREEN: 70
+backend tests + clean frontend build.** Next: await Eric's go-ahead, then **Phase 6 (Deliverable
+Factory)** — see `.checkpoints/LATEST.md`. Do not start P6 until Eric confirms. Completed P0–P5 code
 is now **additive-only**.
 
 ---

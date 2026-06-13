@@ -114,6 +114,20 @@ fixed move sequence (DELETE E064 + ADD E999 $120k + REPARENT E003) on PAX. Delta
 > Additive-only from here: the pure `apply_moves` contract, the scenario delta/compare/present/fork
 > behaviour, the `/api/v1/scenarios` routes, and the scenario-delta snapshot must not regress.
 
+## Phase 5 — Workflow Mapper + Transition Planner (COMPLETE)
+
+**Passing tests (P5) — 70 backend total (66 from P4 + 4 new):**
+- `test_migration.py::test_migration_004_*` — migration 004 additive + reversible.
+- `test_workflow_transition_api.py::*` (3) — workflow process/step/map + L0–L3 opportunity matrix
+  (mocked-AI priority); transition impact classes (augmented/new/unchanged) + pathway suggestions
+  (model-inferred/unreviewed) + register xlsx export; AI-endpoint 400 key guard.
+- `test_task_intel_api.py` extended — `GET /task-intel/tasks` lists extracted tasks (no key).
+
+**Frontend gate (P5):** `npm run build` zero TS errors; Workflow Mapper + Transition Planner ship.
+
+> Additive-only from here: migration 004 tables, the workflow/transition service contracts, the
+> `/api/v1/workflows` + `/api/v1/transition` routes, and the register xlsx schema must not regress.
+
 ## Reserved baseline targets (to be locked when their phase ships)
 
 > Recorded now so a future session never forgets the byte-exact numbers it must reproduce.
