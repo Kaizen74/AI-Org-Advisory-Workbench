@@ -194,6 +194,29 @@ One dated entry per session and per completed phase. Never rewrite history.
 - Gate GREEN: **66 backend tests + clean frontend build**. **Phase 4 complete.** Awaiting Eric's
   go-ahead for Phase 5 (Workflow Mapper + Transition Planner).
 
+---
+
+## Phase 5 — Workflow Mapper + Transition Planner
+
+**Micro-task checklist (written before starting, per Part A; each ends with a commit + LATEST update):**
+- [ ] P5.1 — Models + migration 004 (processes, process_steps, task_links) per B1; additive +
+      reversible; round-trip test.
+- [ ] P5.2 — `workflow_service`: process/step CRUD, `map_tasks` (link tasks→steps),
+      `opportunity_matrix` (L0–L3 per process; deterministic counts + mocked-AI priority narrative).
+- [ ] P5.3 — `/api/v1/workflows` router + mocked-AI integration tests.
+- [ ] P5.4 — `transition_service`: `compute` role impact classes per scenario
+      (unchanged/augmented/transformed/displaced/new); skill-gap → SFw pathway suggestions
+      (model-inferred, unreviewed); register payload.
+- [ ] P5.5 — `/api/v1/transition` router + transition register **xlsx export** + tests.
+- [ ] P5.6 — Frontend WorkflowMapper + TransitionPlanner pages.
+- [ ] P5.7 — Phase close: full gate, BASELINE + checkpoints + README, commit + push.
+
+### Session 7 — 2026-06-11 (Phase 5 start)
+
+- Eric approved Phase 4 ("Proceed"). Wrote the P5 checklist and began executing. Impact classes are
+  derived deterministically from a scenario's moves; skill-gap pathway suggestions are model-inferred
+  + unreviewed (carry provenance, excluded from client-ready exports per A4/M6).
+
 ### Session 6 — 2026-06-11 (Phase 4 start)
 
 - Eric approved Phase 3 ("Proceed"). Wrote the P4 checklist and began executing. Critical guarantee:

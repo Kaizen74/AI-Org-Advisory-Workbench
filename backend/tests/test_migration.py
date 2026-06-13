@@ -23,6 +23,7 @@ P2_TABLES = {
     "desire_pulse_responses",
 }
 P4_TABLES = {"scenarios", "design_moves", "scenario_metrics"}
+P5_TABLES = {"processes", "process_steps", "task_links"}
 
 
 def _alembic_config(db_path: Path) -> Config:
@@ -83,4 +84,22 @@ def test_migration_003_adds_and_removes_scenario_tables(tmp_path):
 
     command.downgrade(cfg, "base")
     assert not ((CORE_TABLES | P2_TABLES | P4_TABLES) & set(inspect(engine).get_table_names()))
+    engine.dispose()
+
+
+def test_migration_004_adds_and_removes_workflow_tables(tmp_path):
+    db_path = tmp_path / "migration4_test.db"
+    cfg = _alembic_config(db_path)
+
+    command.upgrade(cfg, "head")
+    engine = create_engine(f"sqlite:///{db_path}")
+    assert (CORE_TABLES | P2_TABLES | P4_TABLES | P5_TABLES) <= set(inspect(engine).get_table_names())
+
+    command.downgrade(cfg, "003_scenarios")
+    after = set(inspect(engine).get_table_names())
+    assert not (P5_TABLES & after)
+    assert (CORE_TABLES | P2_TABLES | P4_TABLES) <= after
+
+    command.downgrade(cfg, "base")
+    assert not (P5_TABLES & set(inspect(engine).get_table_names()))
     engine.dispose()

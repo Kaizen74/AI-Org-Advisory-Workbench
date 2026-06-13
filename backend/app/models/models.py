@@ -373,3 +373,57 @@ class ScenarioMetric(Base):
     computed_at = Column(DateTime, default=datetime.utcnow)
 
     scenario = relationship("Scenario", back_populates="metrics")
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# PHASE 5 — Workflow / value-stream mapping (follow the work). Additive only.
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+class Process(Base):
+    """A process / value stream within an engagement (the 'follow the work' view)."""
+
+    __tablename__ = "processes"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    engagement_id = Column(
+        String(36), ForeignKey("engagements.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    name = Column(String(255), nullable=False)
+    value_stream = Column(String(255), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    steps = relationship("ProcessStep", back_populates="process", cascade="all, delete-orphan",
+                         order_by="ProcessStep.seq")
+
+
+class ProcessStep(Base):
+    """An ordered step within a process."""
+
+    __tablename__ = "process_steps"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    process_id = Column(
+        String(36), ForeignKey("processes.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    seq = Column(Integer, nullable=False, default=0)
+    name = Column(String(255), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    process = relationship("Process", back_populates="steps")
+    task_links = relationship("TaskLink", back_populates="step", cascade="all, delete-orphan")
+
+
+class TaskLink(Base):
+    """Links a task (from M2) to a process step — the cross-org-box 'follow the work' join."""
+
+    __tablename__ = "task_links"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    process_step_id = Column(
+        String(36), ForeignKey("process_steps.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    task_id = Column(String(36), ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    step = relationship("ProcessStep", back_populates="task_links")
