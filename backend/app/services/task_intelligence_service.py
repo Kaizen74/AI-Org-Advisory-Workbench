@@ -393,6 +393,23 @@ async def rollup(session: AsyncSession, dataset_id: str) -> Dict:
     }
 
 
+async def list_tasks(session: AsyncSession, dataset_id: str) -> List[Dict]:
+    """List a dataset's extracted tasks (id + text + position) for mapping/UI. No AI."""
+    tasks = await _load_dataset_tasks(session, dataset_id)
+    positions = {
+        p.id: p
+        for p in await session.scalars(select(Position).where(Position.dataset_id == dataset_id))
+    }
+    return [
+        {
+            "id": t.id,
+            "task_text": t.task_text,
+            "employee_key": positions[t.position_id].employee_key if t.position_id in positions else None,
+        }
+        for t in tasks
+    ]
+
+
 # ── Quick (no API key) — deterministic preview without Claude ────────────────
 def quick_stats(positions: List[Position]) -> Dict:
     """A no-AI preview: coverage of work-activities text across the dataset (M2 GET /quick)."""

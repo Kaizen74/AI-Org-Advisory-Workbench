@@ -66,6 +66,12 @@ async def quick(dataset_id: str, session: AsyncSession = Depends(get_session)):
     return tis.quick_stats(positions)
 
 
+@router.get("/tasks")
+async def list_tasks(dataset_id: str, session: AsyncSession = Depends(get_session)):
+    """List a dataset's extracted tasks (no API key) — used by the Workflow Mapper."""
+    return {"tasks": await tis.list_tasks(session, dataset_id)}
+
+
 # ── Desire pulse (local desire capture; no API key) ──────────────────────────
 _XLSX_MEDIA = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 

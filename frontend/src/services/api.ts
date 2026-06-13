@@ -15,9 +15,13 @@ import type {
   QuickStats,
   ReviewAction,
   ReviewResult,
+  OpportunityMatrix,
+  ProcessInfo,
   RollupResult,
   Scenario,
   ScenarioDelta,
+  TaskItem,
+  TransitionResult,
 } from "../types";
 
 const BASE = "/api/v1";
@@ -158,4 +162,29 @@ export const api = {
     request<Scenario>(`/scenarios/${scenarioId}/present`, { method: "POST" }),
   forkScenario: (scenarioId: string) =>
     request<Scenario>(`/scenarios/${scenarioId}/fork`, { method: "POST" }),
+
+  // Task list (for workflow mapping)
+  tasks: (datasetId: string) =>
+    request<{ tasks: TaskItem[] }>(`/task-intel/tasks?dataset_id=${encodeURIComponent(datasetId)}`),
+
+  // Workflows
+  listProcesses: (engagementId: string) =>
+    request<ProcessInfo[]>(`/workflows?engagement_id=${encodeURIComponent(engagementId)}`),
+  createProcess: (engagementId: string, name: string, valueStream?: string) =>
+    request<ProcessInfo>("/workflows", json({ engagement_id: engagementId, name, value_stream: valueStream })),
+  addStep: (processId: string, name: string) =>
+    request<{ id: string; seq: number; name: string }>(`/workflows/${processId}/steps`, json({ name })),
+  mapTasks: (stepId: string, taskIds: string[]) =>
+    request<{ linked: number }>(`/workflows/steps/${stepId}/map-tasks`, json({ task_ids: taskIds })),
+  opportunityMatrix: (processId: string) =>
+    request<OpportunityMatrix>(`/workflows/${processId}/opportunity-matrix`, { method: "POST" }),
+
+  // Transition
+  transitionCompute: (scenarioId: string) =>
+    request<TransitionResult>(
+      `/transition/compute?scenario_id=${encodeURIComponent(scenarioId)}`,
+      { method: "POST" },
+    ),
+  transitionRegisterUrl: (scenarioId: string) =>
+    `/api/v1/transition/register.xlsx?scenario_id=${encodeURIComponent(scenarioId)}`,
 };

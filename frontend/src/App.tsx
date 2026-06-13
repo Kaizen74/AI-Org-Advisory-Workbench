@@ -4,8 +4,17 @@ import Diagnostics from "./pages/Diagnostics";
 import TaskIntelligence from "./pages/TaskIntelligence";
 import ValidationQueue from "./pages/ValidationQueue";
 import ScenarioStudio from "./pages/ScenarioStudio";
+import WorkflowMapper from "./pages/WorkflowMapper";
+import TransitionPlanner from "./pages/TransitionPlanner";
 
-type Tab = "engagements" | "diagnostics" | "task-intel" | "validation" | "scenarios";
+type Tab =
+  | "engagements"
+  | "diagnostics"
+  | "task-intel"
+  | "validation"
+  | "scenarios"
+  | "workflows"
+  | "transition";
 
 export default function App() {
   const [tab, setTab] = useState<Tab>("engagements");
@@ -26,6 +35,8 @@ export default function App() {
     { id: "task-intel", label: "Task Intelligence" },
     { id: "validation", label: "Validation Queue" },
     { id: "scenarios", label: "Scenario Studio" },
+    { id: "workflows", label: "Workflow Mapper" },
+    { id: "transition", label: "Transition Planner" },
   ];
 
   return (
@@ -62,6 +73,10 @@ export default function App() {
         {tab === "scenarios" && (
           <ScenarioStudio datasetId={datasetId} engagementId={engagementId} />
         )}
+        {tab === "workflows" && (
+          <WorkflowMapper datasetId={datasetId} engagementId={engagementId} />
+        )}
+        {tab === "transition" && <TransitionPlanner engagementId={engagementId} />}
       </main>
     </div>
   );

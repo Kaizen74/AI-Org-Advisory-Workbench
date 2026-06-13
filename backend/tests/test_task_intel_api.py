@@ -95,6 +95,9 @@ async def test_full_pipeline_via_api(api_client, async_session, monkeypatch):
     assert aiopp.json()["with_overlay"] == 2
     assert aiopp.json()["robotics_levers"] >= 1
 
+    tasks = await api_client.get("/api/v1/task-intel/tasks", params={"dataset_id": dataset_id})
+    assert len(tasks.json()["tasks"]) == 4  # GET /tasks lists extracted tasks (no key)
+
     roll = await api_client.get("/api/v1/task-intel/rollup", params={"dataset_id": dataset_id})
     body = roll.json()
     assert body["overall"]["tasks"] == 4

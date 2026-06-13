@@ -168,6 +168,46 @@ export interface ScenarioDelta {
   delta: Record<string, number>;
 }
 
+export interface TaskItem {
+  id: string;
+  task_text: string;
+  employee_key?: string | null;
+}
+
+export interface ProcessInfo {
+  id: string;
+  name: string;
+  value_stream?: string | null;
+}
+
+export interface OpportunityMatrix {
+  process_id: string;
+  name: string;
+  matrix: Record<string, number>;
+  steps: { step_id: string; name: string; seq: number; level_counts: Record<string, number> }[];
+  assessment: { priority: string; complexity: string; rationale: string; review_state: string };
+  caveats: string[];
+}
+
+export interface RegisterRow {
+  employee_key: string;
+  display_name: string;
+  job_title: string;
+  impact_class: string;
+  skill_gaps: string[];
+  suggested_pathway: string;
+  source: string;
+  review_state: string;
+}
+
+export interface TransitionResult {
+  scenario_id: string;
+  name: string;
+  summary: Record<string, number>;
+  register: RegisterRow[];
+  caveats: string[];
+}
+
 export interface ArchetypeSummary {
   id: string;
   name: string;
