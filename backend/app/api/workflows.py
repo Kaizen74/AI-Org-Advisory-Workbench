@@ -1,0 +1,64 @@
+"""Workflow Mapper router — /api/v1/workflows (Phase 5, Build Spec B2)."""
+from __future__ import annotations
+
+from typing import List, Optional
+
+from fastapi import APIRouter, Body, Depends, HTTPException
+from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from ..models import get_session
+from ..services import workflow_service as svc
+from ..services.claude_service import claude_service
+
+router = APIRouter(prefix="/api/v1/workflows", tags=["workflows"])
+
+
+class ProcessCreate(BaseModel):
+    engagement_id: str
+    name: str
+    value_stream: Optional[str] = None
+
+
+class StepCreate(BaseModel):
+    name: str
+
+
+@router.post("", status_code=201)
+async def create_process(body: ProcessCreate, session: AsyncSession = Depends(get_session)):
+    proc = await svc.create_process(session, engagement_id=body.engagement_id, name=body.name,
+                                    value_stream=body.value_stream)
+    return {"id": proc.id, "name": proc.name, "value_stream": proc.value_stream}
+
+
+@router.get("")
+async def list_processes(engagement_id: str, session: AsyncSession = Depends(get_session)):
+    rows = await svc.list_processes(session, engagement_id)
+    return [{"id": p.id, "name": p.name, "value_stream": p.value_stream} for p in rows]
+
+
+@router.post("/{process_id}/steps", status_code=201)
+async def add_step(process_id: str, body: StepCreate, session: AsyncSession = Depends(get_session)):
+    step = await svc.add_step(session, process_id, body.name)
+    if step is None:
+        raise HTTPException(status_code=404, detail="Process not found")
+    return {"id": step.id, "seq": step.seq, "name": step.name}
+
+
+@router.post("/steps/{step_id}/map-tasks")
+async def map_tasks(step_id: str, task_ids: List[str] = Body(..., embed=True),
+                    session: AsyncSession = Depends(get_session)):
+    result = await svc.map_tasks(session, step_id, task_ids)
+    if result.get("error"):
+        raise HTTPException(status_code=404, detail=result["error"])
+    return result
+
+
+@router.post("/{process_id}/opportunity-matrix")
+async def opportunity_matrix(process_id: str, session: AsyncSession = Depends(get_session)):
+    if not claude_service.has_api_key:
+        raise HTTPException(status_code=400, detail="Anthropic API key not configured")
+    result = await svc.opportunity_matrix(session, process_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Process not found")
+    return result

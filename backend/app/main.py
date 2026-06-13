@@ -8,7 +8,15 @@ from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .api import diagnostics, engagements, scenarios, task_intel, validation
+from .api import (
+    diagnostics,
+    engagements,
+    scenarios,
+    task_intel,
+    transition,
+    validation,
+    workflows,
+)
 from .config import settings
 
 app = FastAPI(
@@ -37,3 +45,5 @@ app.include_router(diagnostics.router)
 app.include_router(task_intel.router)
 app.include_router(validation.router)
 app.include_router(scenarios.router)
+app.include_router(workflows.router)
+app.include_router(transition.router)
