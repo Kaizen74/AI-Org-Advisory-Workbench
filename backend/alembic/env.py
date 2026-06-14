@@ -18,6 +18,7 @@ from sqlalchemy import engine_from_config, pool
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.config import settings  # noqa: E402
+from app.db_url import to_sync_url  # noqa: E402
 from app.models import Base  # noqa: E402  (imports all models so metadata is populated)
 import app.models.models  # noqa: E402,F401
 
@@ -29,21 +30,12 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 
-def _sync_url(url: str) -> str:
-    """Translate an async DB URL to its sync equivalent for migrations."""
-    return (
-        url.replace("+aiosqlite", "")
-        .replace("+asyncpg", "+psycopg2")
-        .replace("+aiomysql", "+pymysql")
-    )
-
-
 def _get_url() -> str:
     # An explicit url on the config (e.g. from tests) wins; otherwise use app settings.
     override = config.get_main_option("sqlalchemy.url")
     if override:
-        return _sync_url(override)
-    return _sync_url(settings.DATABASE_URL)
+        return to_sync_url(override)
+    return to_sync_url(settings.DATABASE_URL)
 
 
 def run_migrations_offline() -> None:

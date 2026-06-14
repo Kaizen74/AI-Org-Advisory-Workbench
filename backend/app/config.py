@@ -21,6 +21,9 @@ class Settings:
     # Database. SQLite for dev; Postgres-ready via the same SQLAlchemy models (PRD §7).
     DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./advisory_workbench.db")
 
+    # Salt for stable anonymization pseudonyms (P7/M7). Override in production via env.
+    ANON_SALT: str = os.getenv("ANON_SALT", "dev-anon-salt-change-me")
+
     # CORS origins for the local frontend dev server.
     CORS_ORIGINS: list[str] = os.getenv(
         "CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173"

@@ -26,6 +26,7 @@ P4_TABLES = {"scenarios", "design_moves", "scenario_metrics"}
 P5_TABLES = {"processes", "process_steps", "task_links"}
 P6_TABLES = {"deliverables"}
 SETTINGS_TABLES = {"app_settings"}
+AUDIT_TABLES = {"audit_events"}
 
 
 def _alembic_config(db_path: Path) -> Config:
@@ -142,4 +143,24 @@ def test_migration_006_adds_and_removes_app_settings(tmp_path):
 
     command.downgrade(cfg, "base")
     assert not (SETTINGS_TABLES & set(inspect(engine).get_table_names()))
+    engine.dispose()
+
+
+def test_migration_007_adds_and_removes_audit_events(tmp_path):
+    db_path = tmp_path / "migration7_test.db"
+    cfg = _alembic_config(db_path)
+
+    command.upgrade(cfg, "head")
+    engine = create_engine(f"sqlite:///{db_path}")
+    everything = (CORE_TABLES | P2_TABLES | P4_TABLES | P5_TABLES | P6_TABLES
+                  | SETTINGS_TABLES | AUDIT_TABLES)
+    assert everything <= set(inspect(engine).get_table_names())
+
+    command.downgrade(cfg, "006_app_settings")
+    after = set(inspect(engine).get_table_names())
+    assert not (AUDIT_TABLES & after)
+    assert SETTINGS_TABLES <= after
+
+    command.downgrade(cfg, "base")
+    assert not (AUDIT_TABLES & set(inspect(engine).get_table_names()))
     engine.dispose()

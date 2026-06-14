@@ -16,8 +16,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import settings
-from ..models import DesignMove, Position, Scenario
+from ..models import DesignMove, Engagement, Position, Scenario
 from ._json_utils import parse_ai_json
+from .anonymization import display_label
 from .claude_service import claude_service
 from .diagnostics_service import positions_to_dicts
 
@@ -91,7 +92,7 @@ def _suggest_pathways(impacted: List[Dict]) -> List[Dict]:
 async def _scenario_context(session: AsyncSession, scenario_id: str):
     scenario = await session.get(Scenario, scenario_id)
     if scenario is None:
-        return None, None, None
+        return None, None, None, False
     positions = list(await session.scalars(
         select(Position).where(Position.dataset_id == scenario.dataset_id)
     ))
@@ -101,11 +102,13 @@ async def _scenario_context(session: AsyncSession, scenario_id: str):
             select(DesignMove).where(DesignMove.scenario_id == scenario_id).order_by(DesignMove.seq)
         )
     ]
-    return scenario, positions, moves
+    engagement = await session.get(Engagement, scenario.engagement_id)
+    anonymized = bool(engagement.anonymized) if engagement else False
+    return scenario, positions, moves, anonymized
 
 
 async def compute(session: AsyncSession, scenario_id: str) -> Optional[Dict]:
-    scenario, positions, moves = await _scenario_context(session, scenario_id)
+    scenario, positions, moves, anonymized = await _scenario_context(session, scenario_id)
     if scenario is None:
         return None
     pos_dicts = positions_to_dicts(positions)
@@ -126,7 +129,10 @@ async def compute(session: AsyncSession, scenario_id: str) -> Optional[Dict]:
         pw = pathways.get(key, {})
         register.append({
             "employee_key": key,
-            "display_name": p.get("display_name", key),
+            "display_name": display_label(  # pseudonym when anonymized (M7)
+                anonymized=anonymized, display_name=p.get("display_name"),
+                pseudonym=p.get("pseudonym"), employee_key=key,
+            ),
             "job_title": p.get("job_title", ""),
             "impact_class": cls,
             "skill_gaps": pw.get("skill_gaps", []),

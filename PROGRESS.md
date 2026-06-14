@@ -260,6 +260,33 @@ One dated entry per session and per completed phase. Never rewrite history.
 provider switch to local routes to an OpenAI-compatible endpoint; brand logo/palette drive the deck).
 Gate GREEN: **90 backend tests + clean frontend build**, zero regressions. Ready for P7 on Eric's go.
 
+- **SATS brand preconfigured (2026-06-14):** extracted palette (red EE2536, grey D5D7D7, Arial) +
+  logo from Eric's SATS Corporate Presentation Template; committed the logo as a resource; set SATS
+  as the default brand (overridable in UI). `template="brand"` renders SATS out of the box. 91 tests.
+
+---
+
+## Phase 7 — Security & deploy
+
+**Micro-task checklist (written before starting, per Part A):**
+- [ ] P7.1 — Anonymization end-to-end: salted pseudonym at ingest when `engagement.anonymized`;
+      API/exports use pseudonyms; real names only in `display_name`. **Test: no real name in any export.**
+- [ ] P7.2 — `audit_events` (migration 007) + `audit_service`; record uploads/AI/validation/exports/
+      purge; `GET /api/v1/audit`. Tests.
+- [ ] P7.3 — Real-name purge (PDPA) endpoint (nulls `display_name`, keeps pseudonymized analytics) +
+      test; full engagement purge already exists.
+- [ ] P7.4 — Postgres compatibility + env hardening (ANON_SALT; asyncpg/psycopg deps; config check).
+- [ ] P7.5 — Finalize README per B7 (troubleshooting table, Vercel+Railway deploy guide, data/privacy,
+      updating, dev section).
+- [ ] P7.6 — Phase close: full gate, checkpoints, push. **Live deploy + verbatim README verification
+      flagged for Eric (needs his Vercel/Railway accounts + a browser).**
+
+### Session 10 — 2026-06-14 (Phase 7 start)
+
+- Eric supplied the SATS template (preconfigured, above) and approved P7. Building the security layer
+  (anonymization, audit, PDPA purge) + Postgres/env hardening + the deploy README. Live cloud deploy
+  itself needs Eric's accounts; that step is documented and flagged.
+
 ### Session 9 — 2026-06-14 (pre-P7 Settings block)
 
 - Eric requested three additive capabilities before P7: swappable brand logo/palette driving the deck

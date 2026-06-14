@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models import get_session
+from ..services import audit_service
 from ..services import engagement_service as svc
 from .schemas import (
     ClientCreate,
@@ -73,6 +74,8 @@ async def upload_dataset(
     )
     if dataset is None:
         raise HTTPException(status_code=404, detail="Engagement not found")
+    await audit_service.record(session, engagement_id, "dataset_uploaded",
+                               {"dataset_id": dataset.id, "row_count": dataset.row_count})
     return dataset
 
 
@@ -82,6 +85,16 @@ async def list_datasets(engagement_id: str, session: AsyncSession = Depends(get_
 
 
 # ── Purge ────────────────────────────────────────────────────────────────────
+@router.delete("/{engagement_id}/real-names", status_code=200)
+async def purge_real_names(engagement_id: str, session: AsyncSession = Depends(get_session)):
+    """PDPA: scrub real names (keep pseudonymized analytics). Audited."""
+    count = await svc.purge_real_names(session, engagement_id)
+    if count is None:
+        raise HTTPException(status_code=404, detail="Engagement not found")
+    await audit_service.record(session, engagement_id, "real_names_purged", {"positions": count})
+    return {"engagement_id": engagement_id, "names_scrubbed": count}
+
+
 @router.delete("/{engagement_id}/purge", status_code=200)
 async def purge(engagement_id: str, session: AsyncSession = Depends(get_session)):
     ok = await svc.purge_engagement(session, engagement_id)

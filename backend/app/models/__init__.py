@@ -2,6 +2,7 @@
 from .database import Base, async_session, engine, generate_uuid, get_session, init_db
 from .models import (
     AppSetting,
+    AuditEvent,
     Client,
     Dataset,
     Deliverable,
@@ -58,4 +59,6 @@ __all__ = [
     "Deliverable",
     # Settings (pre-P7)
     "AppSetting",
+    # Security (P7)
+    "AuditEvent",
 ]

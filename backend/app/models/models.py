@@ -451,6 +451,20 @@ class Deliverable(Base):
     generated_at = Column(DateTime, default=datetime.utcnow)
 
 
+class AuditEvent(Base):
+    """Append-only audit trail (uploads, AI calls, validations, exports, PDPA purges) — M7."""
+
+    __tablename__ = "audit_events"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    engagement_id = Column(
+        String(36), ForeignKey("engagements.id", ondelete="CASCADE"), nullable=True, index=True
+    )
+    event_type = Column(String(64), nullable=False)
+    detail = Column(JSON, nullable=True)
+    at = Column(DateTime, default=datetime.utcnow)
+
+
 class AppSetting(Base):
     """Global key/value app settings (LLM provider/key/models, brand palette + logo path).
 

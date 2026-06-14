@@ -13,6 +13,7 @@ from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models import Deliverable, get_session
+from ..services import audit_service
 from ..services import deliverable_service as svc
 
 router = APIRouter(prefix="/api/v1/deliverables", tags=["deliverables"])
@@ -38,6 +39,8 @@ async def generate(
                                 dataset_id=dataset_id, scenario_id=scenario_id)
     if result is None:
         raise HTTPException(status_code=400, detail="Could not generate deliverable")
+    await audit_service.record(session, engagement_id, "deliverable_generated",
+                               {"type": type, "template": result.get("template")})
     return result
 
 

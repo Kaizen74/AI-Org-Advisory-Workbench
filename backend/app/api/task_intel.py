@@ -13,9 +13,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models import Position
 from ..models import get_session
+from ..services import audit_service
 from ..services import pulse_service
 from ..services import task_intelligence_service as tis
 from ..services.claude_service import claude_service
+
+
+async def _audit(session, dataset_id, event_type, result=None):
+    pos = await session.scalar(select(Position).where(Position.dataset_id == dataset_id))
+    eng_id = None
+    if pos is not None:
+        from ..models import Dataset
+        ds = await session.get(Dataset, dataset_id)
+        eng_id = ds.engagement_id if ds else None
+    await audit_service.record(session, eng_id, event_type, {"dataset_id": dataset_id})
 
 router = APIRouter(prefix="/api/v1/task-intel", tags=["task-intelligence"])
 
@@ -37,21 +48,27 @@ async def extract(dataset_id: str, batch_size: int = tis.DEFAULT_BATCH_SIZE,
                   session: AsyncSession = Depends(get_session)):
     _require_api_key()
     await _positions(session, dataset_id)
-    return await tis.extract_tasks(session, dataset_id, batch_size=batch_size)
+    result = await tis.extract_tasks(session, dataset_id, batch_size=batch_size)
+    await _audit(session, dataset_id, "ai_extract")
+    return result
 
 
 @router.post("/benchmark")
 async def benchmark(dataset_id: str, session: AsyncSession = Depends(get_session)):
     _require_api_key()
     await _positions(session, dataset_id)
-    return await tis.benchmark_tasks(session, dataset_id)
+    result = await tis.benchmark_tasks(session, dataset_id)
+    await _audit(session, dataset_id, "ai_benchmark")
+    return result
 
 
 @router.post("/ai-opportunity")
 async def ai_opportunity(dataset_id: str, session: AsyncSession = Depends(get_session)):
     _require_api_key()
     await _positions(session, dataset_id)
-    return await tis.score_ai_opportunity(session, dataset_id)
+    result = await tis.score_ai_opportunity(session, dataset_id)
+    await _audit(session, dataset_id, "ai_opportunity")
+    return result
 
 
 @router.get("/rollup")

@@ -10,6 +10,9 @@ SQLAlchemy>=2.0,<3.0
 aiosqlite>=0.20
 alembic>=1.13
 greenlet>=3.0
+# Postgres drivers for production (async runtime + sync alembic migrations)
+asyncpg>=0.29
+psycopg2-binary>=2.9
 
 # Org-graph + CSV parsing (ported v1 stack). NOT heavy ML (torch/transformers banned, A3 Rule 5).
 pandas>=2.2

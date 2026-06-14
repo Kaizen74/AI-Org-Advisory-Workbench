@@ -5,10 +5,13 @@ lines and startup config — never edits to existing routes of completed phases.
 """
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .api import (
+    audit,
     deliverables,
     diagnostics,
     engagements,
@@ -21,9 +24,25 @@ from .api import (
 )
 from .config import settings
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """On boot, hydrate the settings cache from the DB so the LLM provider/key/brand are active (D11)."""
+    from .models import async_session
+    from .services import settings_service
+
+    try:
+        async with async_session() as session:
+            await settings_service.load_from_db(session)
+    except Exception:  # noqa: BLE001 - a fresh/unmigrated DB must not block startup
+        pass
+    yield
+
+
 app = FastAPI(
     title="OrgAI Advisory Workbench API",
     version="0.0.0",  # bumps as phases ship
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -33,19 +52,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-@app.on_event("startup")
-async def _load_settings_cache() -> None:
-    """Hydrate the settings cache from the DB so the LLM provider/key/brand are active at boot (D11)."""
-    from .models import async_session
-    from .services import settings_service
-
-    try:
-        async with async_session() as session:
-            await settings_service.load_from_db(session)
-    except Exception:  # noqa: BLE001 - a fresh/unmigrated DB must not block startup
-        pass
 
 
 @app.get("/health")
@@ -64,3 +70,4 @@ app.include_router(workflows.router)
 app.include_router(transition.router)
 app.include_router(deliverables.router)
 app.include_router(settings_api.router)
+app.include_router(audit.router)

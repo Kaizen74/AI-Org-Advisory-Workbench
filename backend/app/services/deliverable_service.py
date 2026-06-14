@@ -185,15 +185,22 @@ async def _gen_xlsx_metrics(session, theme, dataset_id, **_) -> bytes:
 
 async def _gen_xlsx_transition(session, theme, scenario_id, **_) -> bytes:
     # Deterministic register (impact classes only; pathway suggestions are AI/live-only).
-    scenario, positions, moves = await transition_service._scenario_context(session, scenario_id)
+    scenario, positions, moves, anonymized = await transition_service._scenario_context(
+        session, scenario_id
+    )
     if scenario is None:
         return transition_service.register_to_xlsx([])
+    from .anonymization import display_label
     from .diagnostics_service import positions_to_dicts
     pos = positions_to_dicts(positions)
     classes = transition_service.classify_impacts(pos, moves)
     by_key = {p["employee_key"]: p for p in pos}
     register = [{
-        "employee_key": k, "display_name": by_key.get(k, {}).get("display_name", k),
+        "employee_key": k,
+        "display_name": display_label(  # pseudonym when anonymized (M7)
+            anonymized=anonymized, display_name=by_key.get(k, {}).get("display_name"),
+            pseudonym=by_key.get(k, {}).get("pseudonym"), employee_key=k,
+        ),
         "job_title": by_key.get(k, {}).get("job_title", ""), "impact_class": cls,
         "skill_gaps": [], "suggested_pathway": "(run Transition Planner for AI pathways)",
         "source": "structural", "review_state": "n/a",

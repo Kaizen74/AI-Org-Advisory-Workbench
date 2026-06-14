@@ -63,6 +63,7 @@ def positions_to_dicts(positions: List[Position]) -> List[Dict]:
             "employee_key": p.employee_key,
             "manager_key": p.manager_key,
             "display_name": p.display_name,
+            "pseudonym": p.pseudonym,
             "job_title": p.job_title,
             "grade": p.grade,
             "level": p.level or 0,

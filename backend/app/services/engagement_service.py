@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models import Client, Dataset, Engagement, MetricValue, Position
 from ..parsers.csv_parser import OrgCSVParser
+from .anonymization import pseudonym_for
 
 
 # ── Clients ──────────────────────────────────────────────────────────────────
@@ -83,12 +84,15 @@ async def create_dataset_from_csv(
     session.add(dataset)
     await session.flush()
 
+    anonymized = bool(engagement.anonymized)
     for p in positions:
         session.add(
             Position(
                 dataset_id=dataset.id,
                 employee_key=p["employee_key"],
                 display_name=p["display_name"],
+                # Stable salted pseudonym generated at ingest when the engagement is anonymized (M7).
+                pseudonym=(pseudonym_for(engagement_id, p["employee_key"]) if anonymized else None),
                 job_title=p.get("job_title"),
                 grade=p.get("grade"),
                 level=p.get("level"),
@@ -115,6 +119,28 @@ async def get_dataset_positions(session: AsyncSession, dataset_id: str) -> List[
 
 
 # ── Purge ────────────────────────────────────────────────────────────────────
+async def purge_real_names(session: AsyncSession, engagement_id: str) -> Optional[int]:
+    """PDPA: null out real names (display_name) across the engagement, keeping pseudonymized
+    analytics intact. Returns the number of positions scrubbed, or None if engagement not found."""
+    engagement = await session.get(Engagement, engagement_id)
+    if engagement is None:
+        return None
+    dataset_ids = select(Dataset.id).where(Dataset.engagement_id == engagement_id)
+    positions = list(await session.scalars(
+        select(Position).where(Position.dataset_id.in_(dataset_ids))
+    ))
+    count = 0
+    for p in positions:
+        if p.display_name is not None:
+            # Ensure a pseudonym exists so the position stays referenceable after scrub.
+            if not p.pseudonym:
+                p.pseudonym = pseudonym_for(engagement_id, p.employee_key)
+            p.display_name = None
+            count += 1
+    await session.flush()
+    return count
+
+
 async def purge_engagement(session: AsyncSession, engagement_id: str) -> bool:
     """Delete an engagement and everything under it. Returns False if not found.
 
