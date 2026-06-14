@@ -179,6 +179,21 @@ Eric's accounts/browser — documented in README §4, flagged in LATEST.**
 > Additive-only: migration 007, anonymization + audit + purge contracts, the `/api/v1/audit` route,
 > and the Postgres/env hardening must not regress.
 
+## Access control (D13) — COMPLETE
+
+**Passing tests — 108 backend total (100 + 8 new):**
+- `test_migration.py::test_migration_008_*` — `access_users` migration additive + reversible.
+- `test_auth.py::*` (7) — HMAC token round-trip + tamper + expiry; protected route 401 without
+  token; `/health` public; login (good/bad) then token unlocks routes; owner-only access mgmt;
+  bootstrap seeds owners from `ACCESS_USERS`.
+
+**Gate (D13):** every `/api/v1/*` route except `auth` requires a valid Bearer token; the frontend is
+behind a neutral login screen. `api_client` test fixture overrides `require_auth` (existing suites
+unaffected); `anon_client` exercises the real gate. Live-verified: 401 → login → token → 200.
+
+> Additive-only: the auth gate, token contract, and `/api/v1/auth` + `/api/v1/access` routes must
+> not regress; do not expose feature routes without `require_auth`.
+
 > Recorded now so a future session never forgets the byte-exact numbers it must reproduce.
 
 **P1 — PAX fixture metrics (MUST match v1 exactly):**

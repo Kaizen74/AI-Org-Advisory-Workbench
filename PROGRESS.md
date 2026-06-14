@@ -294,6 +294,20 @@ Gate GREEN: **90 backend tests + clean frontend build**, zero regressions. Ready
   Remaining: the live cloud deploy + following the README verbatim — needs Eric's accounts/browser.
   **All seven phases (P0–P7) are now built.**
 
+### Session 11 — 2026-06-14 (Private access control, D13)
+
+- Eric required the app to be **private** (not public): selected people sign in with email + passcode
+  so the SATS look-and-feel is never shown publicly. Built `access_users` (migration 008),
+  `access_service` (PBKDF2 hashing, bootstrap from `ACCESS_USERS`), `token_service` (HMAC-signed
+  tokens, stdlib — no JWT dep), an auth dependency gating **every `/api/v1/*` route except `auth`**
+  (`/health` stays open), `/auth/login|me`, and owner-only `/api/v1/access` allowlist management.
+  Frontend: a neutral login screen, token storage + `Authorization` header + 401→sign-out, and an
+  owner-only Access-control panel in Settings. Added `python-dotenv` so local `.env` is read.
+  Updated the README deploy guide for private hosting (`AUTH_SECRET`, `ACCESS_USERS`).
+- Tests: `api_client` overrides the auth dep (existing suites unaffected); `anon_client` exercises
+  the real gate. **108 backend tests + clean frontend build; zero regressions.** Live-verified:
+  unauthenticated 401 → login token → authenticated 200. Decision D13 recorded.
+
 ### Session 9 — 2026-06-14 (pre-P7 Settings block)
 
 - Eric requested three additive capabilities before P7: swappable brand logo/palette driving the deck

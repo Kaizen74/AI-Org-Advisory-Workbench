@@ -37,6 +37,13 @@ still LOCKED (D9): 64 / 34 / 53.1% / 6,620,000 / 6.** **Gate GREEN: 100 backend 
 build, zero regressions.** **Remaining (Eric, manual): the live Vercel+Railway deploy and verifying
 the README verbatim — needs his accounts + a browser.** All completed code is **additive-only**.
 
+**Private access control added (2026-06-14 — D13):** the app is **not public** — `access_users`
+(migration 008) + `access_service` (PBKDF2) + `token_service` (HMAC, stdlib) + an auth gate on every
+`/api/v1/*` route except `auth`; neutral login screen; owners manage the email+passcode allowlist in
+Settings → Access control; bootstrap from `ACCESS_USERS` env, tokens signed by `AUTH_SECRET`. README
+deploy guide updated for private hosting. **Gate GREEN: 108 backend tests + clean frontend build;**
+live-verified (401 → login → token → 200). Deploy must set `AUTH_SECRET` + `ACCESS_USERS`.
+
 ---
 
 # PART A — OPERATING PROTOCOL FOR CLAUDE CODE (MANDATORY)
