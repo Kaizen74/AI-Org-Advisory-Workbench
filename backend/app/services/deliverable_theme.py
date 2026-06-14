@@ -7,7 +7,12 @@ later without touching generator logic.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Dict
+
+SATS_LOGO_PATH = str(
+    Path(__file__).resolve().parents[1] / "resources" / "brand" / "sats_logo.png"
+)
 
 
 @dataclass(frozen=True)
@@ -34,16 +39,18 @@ MINIMAL = Theme(
     body_font="Calibri",
 )
 
-# Stub for a future SATS-branded theme (awaiting brand assets — D10 open question).
+# SATS brand theme — extracted from the SATS Corporate Presentation Template (Dec 2024):
+# brand red EE2536, deep purple 50284F, light grey D5D7D7, Arial. Logo committed as a resource.
 SATS = Theme(
-    name="sats",
-    ink="10243E",
-    muted="5B6B7B",
-    accent="C8102E",      # placeholder SATS red — replace with verified brand value
-    rule="E5E7EB",
+    name="SATS",
+    ink="1F2933",
+    muted="6B7280",
+    accent="EE2536",      # SATS brand red
+    rule="D5D7D7",        # SATS light grey
     ground="FFFFFF",
-    title_font="Calibri Light",
-    body_font="Calibri",
+    title_font="Arial",
+    body_font="Arial",
+    extras={"logo_path": SATS_LOGO_PATH, "secondary": "50284F"},
 )
 
 THEMES = {"minimal": MINIMAL, "sats": SATS}

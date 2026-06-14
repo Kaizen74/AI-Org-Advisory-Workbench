@@ -19,8 +19,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import settings as env
 from ..models import AppSetting
+from .deliverable_theme import SATS, SATS_LOGO_PATH
 
 SECRET_KEYS = {"anthropic_api_key", "local_api_key"}
+
+# Default brand = SATS (preconfigured from the supplied corporate template); overridable in the UI.
+_SATS_PALETTE = json.dumps({
+    "ink": SATS.ink, "accent": SATS.accent, "muted": SATS.muted,
+    "rule": SATS.rule, "ground": SATS.ground,
+})
 
 DEFAULTS: Dict[str, str] = {
     "llm_provider": "anthropic",
@@ -30,9 +37,9 @@ DEFAULTS: Dict[str, str] = {
     "local_base_url": "http://localhost:11434/v1",
     "local_model": "llama3.1",
     "local_api_key": "",
-    "brand_name": "",
-    "brand_palette": "",      # JSON string: {ink,accent,muted,rule,ground}
-    "brand_logo_path": "",
+    "brand_name": "SATS",
+    "brand_palette": _SATS_PALETTE,   # JSON string: {ink,accent,muted,rule,ground}
+    "brand_logo_path": SATS_LOGO_PATH,
 }
 
 # Process-wide cache (env-seeded). Updated on every DB write and on startup load.

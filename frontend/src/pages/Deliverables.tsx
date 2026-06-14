@@ -74,7 +74,7 @@ export default function Deliverables({
             className="ml-2 rounded border border-slate-300 px-2 py-1"
           >
             <option value="minimal">Modern minimalist</option>
-            <option value="brand">Brand (from Settings)</option>
+            <option value="brand">Brand — SATS (from Settings)</option>
           </select>
         </label>
         <div className="flex flex-wrap gap-2">

@@ -61,6 +61,18 @@ async def test_brand_template_records_name_and_embeds_logo(async_session, tmp_pa
     assert any(s.shape_type == MSO_SHAPE_TYPE.PICTURE for s in first_slide_shapes), "logo missing"
 
 
+async def test_default_brand_is_sats_with_logo(async_session):
+    """Out of the box (no UI changes), template='brand' renders SATS with its logo (preconfigured)."""
+    eng_id, ds_id = await _seed(async_session)
+    result = await deliverable_service.generate(
+        async_session, engagement_id=eng_id, type="PPTX_DIAGNOSTIC", template="brand",
+        dataset_id=ds_id,
+    )
+    assert result["template"] == "SATS"
+    prs = Presentation(io.BytesIO(Path(result["file_path"]).read_bytes()))
+    assert any(s.shape_type == MSO_SHAPE_TYPE.PICTURE for s in prs.slides[0].shapes)
+
+
 async def test_minimal_template_still_default(async_session):
     eng_id, ds_id = await _seed(async_session)
     result = await deliverable_service.generate(
