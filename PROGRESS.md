@@ -269,23 +269,30 @@ Gate GREEN: **90 backend tests + clean frontend build**, zero regressions. Ready
 ## Phase 7 — Security & deploy
 
 **Micro-task checklist (written before starting, per Part A):**
-- [ ] P7.1 — Anonymization end-to-end: salted pseudonym at ingest when `engagement.anonymized`;
-      API/exports use pseudonyms; real names only in `display_name`. **Test: no real name in any export.**
-- [ ] P7.2 — `audit_events` (migration 007) + `audit_service`; record uploads/AI/validation/exports/
-      purge; `GET /api/v1/audit`. Tests.
-- [ ] P7.3 — Real-name purge (PDPA) endpoint (nulls `display_name`, keeps pseudonymized analytics) +
-      test; full engagement purge already exists.
-- [ ] P7.4 — Postgres compatibility + env hardening (ANON_SALT; asyncpg/psycopg deps; config check).
-- [ ] P7.5 — Finalize README per B7 (troubleshooting table, Vercel+Railway deploy guide, data/privacy,
-      updating, dev section).
-- [ ] P7.6 — Phase close: full gate, checkpoints, push. **Live deploy + verbatim README verification
-      flagged for Eric (needs his Vercel/Railway accounts + a browser).**
+- [x] P7.1 — Anonymization end-to-end: salted pseudonym at ingest; exports use pseudonyms;
+      **test: no real name in any export** (transition JSON + xlsx).
+- [x] P7.2 — `audit_events` (migration 007) + `audit_service`; record uploads/AI/validation/
+      deliverables/purge; `GET /api/v1/audit`.
+- [x] P7.3 — Real-name purge (PDPA) endpoint (nulls `display_name`, keeps pseudonyms) + test.
+- [x] P7.4 — Postgres compatibility + env hardening (ANON_SALT, asyncpg/psycopg2, `db_url.to_sync_url`).
+- [x] P7.5 — Finalized README per B7 (Vercel+Railway deploy guide, troubleshooting table, data/
+      privacy); deploy enablement (configurable API base, Procfile).
+- [x] P7.6 — Phase close: gate green (100 tests), checkpoints, push. **Live deploy + verbatim README
+      verification handed to Eric (needs his Vercel/Railway accounts + a browser).**
 
-### Session 10 — 2026-06-14 (Phase 7 start)
+### Session 10 — 2026-06-14 (Phase 7)
 
-- Eric supplied the SATS template (preconfigured, above) and approved P7. Building the security layer
-  (anonymization, audit, PDPA purge) + Postgres/env hardening + the deploy README. Live cloud deploy
-  itself needs Eric's accounts; that step is documented and flagged.
+- Eric supplied the SATS template (preconfigured) and approved P7. Built the full security layer:
+  anonymization end-to-end (pseudonyms at ingest; transition register JSON + xlsx carry no real
+  names — test-enforced), the audit trail (`audit_events` + `audit_service` wired into uploads/AI/
+  validation/deliverables/purge), and the PDPA real-name purge. Hardened for Postgres (asyncpg/
+  psycopg2 drivers, `db_url.to_sync_url`, dialect-compile test) and env (`ANON_SALT`, `CORS_ORIGINS`).
+  Made the frontend API base configurable (`VITE_API_BASE_URL`) + added a Railway `Procfile`, and
+  finalized the B7 README (click-by-click Vercel+Railway deploy, troubleshooting table, privacy).
+  Replaced the deprecated `on_event` with a lifespan handler.
+- Gate GREEN: **100 backend tests + clean frontend build**, zero regressions. **P7 code complete.**
+  Remaining: the live cloud deploy + following the README verbatim — needs Eric's accounts/browser.
+  **All seven phases (P0–P7) are now built.**
 
 ### Session 9 — 2026-06-14 (pre-P7 Settings block)
 

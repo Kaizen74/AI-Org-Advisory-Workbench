@@ -20,13 +20,22 @@ frontend Deliverables page. **PAX baseline still LOCKED (D9): 64 / 34 / 53.1% / 
 (Security & deploy)** — see `.checkpoints/LATEST.md`. Do not start P7 until Eric confirms. Completed
 P0–P6 code is now **additive-only**.
 
-**Pre-P7 Settings block (2026-06-14 — COMPLETE):** Added an `app_settings` table (migration 006) +
-`settings_service` + `/api/v1/settings` so the **Anthropic API key is managed via the UI** (masked),
-the **LLM provider can switch to a local OpenAI-compatible endpoint** for frontier-outage fallback
-(D11 — `claude_service.complete` now routes by provider via httpx, public signatures preserved), and
-the **brand logo + palette are swappable and drive the deck template** (`template="brand"`, D12). New
-**Settings** frontend page + Deliverables template selector. **Gate GREEN: 90 backend tests + clean
-frontend build, zero regressions.** Next: **Phase 7 (Security & deploy)** on Eric's go-ahead.
+**Pre-P7 Settings block (2026-06-14 — COMPLETE):** `app_settings` (migration 006) + `settings_service`
++ `/api/v1/settings`: UI-managed Anthropic key (masked), local-LLM provider fallback (D11), swappable
+brand logo+palette driving the deck (D12); **SATS brand preconfigured** from Eric's corporate
+template (logo committed as a resource; red `EE2536`/Arial).
+
+**As of 2026-06-14 (Phase 7 — CODE COMPLETE; live deploy pending Eric):** All seven phases (P0–P7)
+are built and pushed. P7 shipped: end-to-end **anonymization** (salted pseudonyms at ingest;
+transition register JSON + xlsx carry no real names — test-enforced), the **audit trail**
+(`audit_events`, migration 007; wired into uploads/AI/validation/deliverables/purge; `/api/v1/audit`),
+**PDPA real-name purge** + full purge, **Postgres readiness** (asyncpg/psycopg2, `db_url.to_sync_url`,
+dialect-compile test) + env hardening (`ANON_SALT`, `CORS_ORIGINS`), a configurable frontend API base
+(`VITE_API_BASE_URL`) + Railway `Procfile`, and the finalized **B7 README** (Vercel+Railway deploy
+guide, troubleshooting table, privacy). Lifespan startup hydrates the settings cache. **PAX baseline
+still LOCKED (D9): 64 / 34 / 53.1% / 6,620,000 / 6.** **Gate GREEN: 100 backend tests + clean frontend
+build, zero regressions.** **Remaining (Eric, manual): the live Vercel+Railway deploy and verifying
+the README verbatim — needs his accounts + a browser.** All completed code is **additive-only**.
 
 ---
 

@@ -162,7 +162,22 @@ Deliverables template selector (minimal | brand), Settings tab. Builds zero TS e
 > Provider routing preserves the prior Anthropic path (regression-proven). Brand assets live in
 > gitignored `backend/uploads/brand/`. D11 supersedes A4 "Claude-only"; D12 extends D10.
 
-## Reserved baseline targets (to be locked when their phase ships)
+## Phase 7 — Security & deploy (code COMPLETE; live deploy pending Eric)
+
+**Passing tests (P7) — 100 backend total (91 from P6/Settings + 9 new):**
+- `test_migration.py::test_migration_007_*` — migration 007 (`audit_events`) additive + reversible.
+- `test_security_p7.py::*` (5) — pseudonyms at ingest (deterministic); **no real name in the
+  transition compute JSON or xlsx export when anonymized**; non-anonymized control; real-name purge
+  scrubs `display_name` but keeps pseudonyms; audit records uploads + purges.
+- `test_postgres_compat.py::*` (4) — all models compile under the Postgres dialect; asyncpg engine
+  builds; async→sync URL translation; `ANON_SALT` read from env.
+
+**Deploy enablement:** frontend API base via `VITE_API_BASE_URL`; backend `Procfile`; Postgres
+drivers (asyncpg/psycopg2). **Live Vercel+Railway deploy + verbatim README verification require
+Eric's accounts/browser — documented in README §4, flagged in LATEST.**
+
+> Additive-only: migration 007, anonymization + audit + purge contracts, the `/api/v1/audit` route,
+> and the Postgres/env hardening must not regress.
 
 > Recorded now so a future session never forgets the byte-exact numbers it must reproduce.
 
