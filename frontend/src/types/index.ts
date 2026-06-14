@@ -208,6 +208,24 @@ export interface TransitionResult {
   caveats: string[];
 }
 
+export interface ProvenanceSummary {
+  by_source: Record<string, number>;
+  total: number;
+  client_ready: number;
+  excluded_unreviewed_model_inferred: number;
+  caveats: string[];
+}
+
+export interface DeliverableInfo {
+  id: string;
+  type: string;
+  template: string;
+  file_path?: string | null;
+  provenance_summary?: ProvenanceSummary | null;
+  generated_at?: string;
+  bytes?: number;
+}
+
 export interface ArchetypeSummary {
   id: string;
   name: string;

@@ -15,6 +15,7 @@ import type {
   QuickStats,
   ReviewAction,
   ReviewResult,
+  DeliverableInfo,
   OpportunityMatrix,
   ProcessInfo,
   RollupResult,
@@ -187,4 +188,22 @@ export const api = {
     ),
   transitionRegisterUrl: (scenarioId: string) =>
     `/api/v1/transition/register.xlsx?scenario_id=${encodeURIComponent(scenarioId)}`,
+
+  // Deliverables
+  generateDeliverable: (
+    engagementId: string,
+    type: string,
+    opts: { datasetId?: string; scenarioId?: string; template?: string } = {},
+  ) => {
+    const p = new URLSearchParams({ engagement_id: engagementId, type });
+    if (opts.template) p.set("template", opts.template);
+    if (opts.datasetId) p.set("dataset_id", opts.datasetId);
+    if (opts.scenarioId) p.set("scenario_id", opts.scenarioId);
+    return request<DeliverableInfo>(`/deliverables/generate?${p.toString()}`, { method: "POST" });
+  },
+  listDeliverables: (engagementId: string) =>
+    request<{ deliverables: DeliverableInfo[] }>(
+      `/deliverables/list?engagement_id=${encodeURIComponent(engagementId)}`,
+    ),
+  deliverableDownloadUrl: (id: string) => `/api/v1/deliverables/${id}/download`,
 };

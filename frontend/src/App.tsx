@@ -6,6 +6,7 @@ import ValidationQueue from "./pages/ValidationQueue";
 import ScenarioStudio from "./pages/ScenarioStudio";
 import WorkflowMapper from "./pages/WorkflowMapper";
 import TransitionPlanner from "./pages/TransitionPlanner";
+import Deliverables from "./pages/Deliverables";
 
 type Tab =
   | "engagements"
@@ -14,7 +15,8 @@ type Tab =
   | "validation"
   | "scenarios"
   | "workflows"
-  | "transition";
+  | "transition"
+  | "deliverables";
 
 export default function App() {
   const [tab, setTab] = useState<Tab>("engagements");
@@ -37,6 +39,7 @@ export default function App() {
     { id: "scenarios", label: "Scenario Studio" },
     { id: "workflows", label: "Workflow Mapper" },
     { id: "transition", label: "Transition Planner" },
+    { id: "deliverables", label: "Deliverables" },
   ];
 
   return (
@@ -77,6 +80,9 @@ export default function App() {
           <WorkflowMapper datasetId={datasetId} engagementId={engagementId} />
         )}
         {tab === "transition" && <TransitionPlanner engagementId={engagementId} />}
+        {tab === "deliverables" && (
+          <Deliverables datasetId={datasetId} engagementId={engagementId} />
+        )}
       </main>
     </div>
   );
