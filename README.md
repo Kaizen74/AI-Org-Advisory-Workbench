@@ -102,9 +102,42 @@ Phase-1 screens (Engagements, Diagnostics) need **no API key**. For the AI featu
 **Settings** tab in the app and paste your **Anthropic API key** (create one at
 <https://console.anthropic.com>) — it is stored on the server, never shown back in full, and you
 never edit any file. If online AI models are ever disrupted, switch the provider in Settings to
-**Local LLM** and point it at a local server on your computer (e.g. Ollama at
-`http://localhost:11434/v1`). Settings is also where you set a **brand logo + colour palette** for
+**Local LLM** (see Section 3b). Settings is also where you set a **brand logo + colour palette** for
 the generated decks (choose the “Brand” template on the Deliverables tab).
+
+---
+
+## 3b. Using a local LLM (LM Studio / Qwen) — optional
+
+When the online Claude models are disrupted (or you simply prefer to keep everything on your own
+machine), you can run the AI features against a **local model** such as **Qwen** served by
+**LM Studio**. Nothing in the app changes except a few settings — flip back to Anthropic any time.
+
+**One-time setup in LM Studio:**
+1. Install **LM Studio** (<https://lmstudio.ai>) and, in its **Search/Discover** tab, download a
+   model (e.g. a **Qwen** instruct model that fits your laptop's memory).
+2. Open the **Developer / Local Server** tab → **Load** the model → **Start Server**. LM Studio will
+   show a base URL, normally **`http://localhost:1234/v1`**, and the **model identifier** of the
+   loaded model (copy it exactly).
+
+**In the Workbench (Settings → AI model provider):**
+1. Set **Provider** to **Local LLM**.
+2. Set **Local base URL** to `http://localhost:1234/v1` (LM Studio's address).
+3. Set **Local model** to the model id LM Studio showed (e.g. `qwen3-27b-instruct`).
+4. Click **Test connection** — you should see “Connection OK (local)”. Click **Save**.
+
+From now on, extraction, benchmarking, AI-opportunity, and the deck’s priority text all run on your
+local model. (Local models are slower and a little less precise than the frontier Claude models —
+keep the validation queue in mind before exporting.)
+
+> **Important — where the backend runs:** the *backend* makes the model call, so LM Studio must be
+> reachable from wherever the backend runs.
+> - **All on your laptop** (local backend from Section 3 **+** LM Studio): works out of the box —
+>   this is the intended “offline / disruption” setup.
+> - **Backend in the cloud (Railway) + LM Studio on your laptop:** the cloud server cannot see
+>   `localhost` on your laptop. Either run the backend locally when you want the local model, or
+>   expose LM Studio over the internet with a tunnel (e.g. ngrok/Cloudflare Tunnel) and put that
+>   public URL in **Local base URL**. For everyday cloud use, keep the provider on **Anthropic**.
 
 ---
 
