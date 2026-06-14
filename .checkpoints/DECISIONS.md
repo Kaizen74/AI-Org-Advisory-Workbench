@@ -68,6 +68,31 @@ off-machine memory-resilience goal — and lets phase instructions PORT files pa
 remains on `main` as Eric's upload artifact; he can delete it after this branch merges (noted in
 LATEST.md). `legacy/` is reference-only and is never imported as a package (B0).
 
+## 2026-06-14 — D11: LLM provider + API key configurable via UI; local-LLM fallback allowed
+
+**Source:** Eric's pre-P7 request ("review where Claude API is captured/stored and ensure this is
+done through the UI ... allow connect to local LLM on my laptop ... when online frontier AI models
+are disrupted").
+**Decision:** Introduce an `app_settings` key/value table + `settings_service` (DB-backed with an
+in-memory cache) and a `/api/v1/settings` UI. The Anthropic API key is entered/stored **through the
+UI** (DB, gitignored; masked on read) with env as fallback. A `llm_provider` setting switches between
+`anthropic` and a **local OpenAI-compatible endpoint** (e.g. Ollama/LM Studio) configured by
+`local_base_url` + `local_model`. `claude_service.complete(...)` keeps its public signature/return
+shape but routes by provider (local calls go via `httpx` to `{base_url}/chat/completions` — no heavy
+ML deps added, A4 ban respected). **This SUPERSEDES the A4 "Claude API only for inference" guardrail**
+at the owner's explicit instruction, to keep the tool usable during frontier-model outages.
+Regression tests prove the prior Anthropic path is preserved.
+
+## 2026-06-14 — D12: Brand template configurable (logo + palette) via Settings
+
+**Source:** Eric's pre-P7 request ("allow brand logo and color palette to be changed/swapped which
+in turn adjusts the brand deck template accordingly").
+**Decision:** Brand name, palette (ink/accent/muted/rule/ground) and a logo are stored via
+`settings_service` (logo file in gitignored `backend/uploads/brand/`). `deliverable_theme` gains
+`theme_from_settings()`; the deliverable generators accept `template="brand"` to render with the
+stored palette + logo on the title slide. The modern-minimalist theme (D10) remains the default and
+fallback. Extends D10 (does not reverse it).
+
 ## 2026-06-14 — D10: Deliverable template — modern-minimalist default; SATS brand deferred
 
 **Source:** Eric's P6 instruction ("adopt a modern minimalistic style deck template ... refer to my

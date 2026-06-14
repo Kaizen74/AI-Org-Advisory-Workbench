@@ -1,6 +1,7 @@
 """ORM models package — re-export Base, session helpers, and all models."""
 from .database import Base, async_session, engine, generate_uuid, get_session, init_db
 from .models import (
+    AppSetting,
     Client,
     Dataset,
     Deliverable,
@@ -55,4 +56,6 @@ __all__ = [
     "TaskLink",
     # Deliverables (P6)
     "Deliverable",
+    # Settings (pre-P7)
+    "AppSetting",
 ]

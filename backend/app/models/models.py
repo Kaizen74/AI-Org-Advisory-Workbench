@@ -449,3 +449,17 @@ class Deliverable(Base):
     file_path = Column(String(1024), nullable=True)
     provenance_summary = Column(JSON, nullable=True)
     generated_at = Column(DateTime, default=datetime.utcnow)
+
+
+class AppSetting(Base):
+    """Global key/value app settings (LLM provider/key/models, brand palette + logo path).
+
+    Lets the Anthropic key and a local-LLM endpoint be managed through the UI (D11) and the brand
+    deck template be swapped (D12). Secret values are masked when read back over the API.
+    """
+
+    __tablename__ = "app_settings"
+
+    key = Column(String(64), primary_key=True)
+    value = Column(Text, nullable=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

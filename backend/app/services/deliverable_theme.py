@@ -49,5 +49,37 @@ SATS = Theme(
 THEMES = {"minimal": MINIMAL, "sats": SATS}
 
 
+def theme_from_settings() -> Theme:
+    """Build a Theme from the UI-managed brand settings (D12), falling back to MINIMAL tokens.
+
+    `brand_palette` may supply any of ink/accent/muted/rule/ground (hex, no '#'); a `brand_logo_path`
+    is carried in `extras['logo_path']` so the title slide can render the logo.
+    """
+    from . import settings_service  # local import avoids any import-order coupling
+
+    palette = settings_service.brand_palette()
+    logo = settings_service.get("brand_logo_path")
+    name = settings_service.get("brand_name") or "brand"
+
+    def pick(key: str, default: str) -> str:
+        val = str(palette.get(key, "") or "").lstrip("#").strip()
+        return val or default
+
+    return Theme(
+        name=name,
+        ink=pick("ink", MINIMAL.ink),
+        muted=pick("muted", MINIMAL.muted),
+        accent=pick("accent", MINIMAL.accent),
+        rule=pick("rule", MINIMAL.rule),
+        ground=pick("ground", MINIMAL.ground),
+        title_font=MINIMAL.title_font,
+        body_font=MINIMAL.body_font,
+        extras={"logo_path": logo} if logo else {},
+    )
+
+
 def get_theme(name: str | None) -> Theme:
-    return THEMES.get((name or "minimal").lower(), MINIMAL)
+    key = (name or "minimal").lower()
+    if key == "brand":
+        return theme_from_settings()
+    return THEMES.get(key, MINIMAL)

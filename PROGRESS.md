@@ -243,6 +243,28 @@ One dated entry per session and per completed phase. Never rewrite history.
 - Gate GREEN: **74 backend tests + clean frontend build**. **Phase 6 complete.** Awaiting Eric's
   go-ahead for Phase 7 (Security & deploy).
 
+---
+
+## Pre-P7 feature block — Settings (branding, UI-managed API key, local-LLM fallback)
+
+**Requested by Eric (2026-06-14) before P7.** Micro-task checklist:
+- [ ] FA.1 — `AppSetting` model + migration 006 + `settings_service` (DB + in-memory cache) + tests.
+- [ ] FA.2 — Route `claude_service.complete` by provider (anthropic | local OpenAI-compatible via
+      httpx), key from settings/env; keep public signatures; regression + provider tests. (D11)
+- [ ] FA.3 — `/api/v1/settings` router (get/update masked, brand-logo upload/get, test-llm) + tests.
+- [ ] FA.4 — Brand deck: `theme_from_settings` + logo on title slide; `template="brand"` generator;
+      test brand palette/logo flow into a generated deck. (D12)
+- [ ] FA.5 — Frontend Settings page (provider/key/models/local + brand palette + logo) + Deliverables
+      template selector + Settings tab.
+- [ ] FA.6 — Comprehensive gate (no regression), checkpoints, commit/push.
+
+### Session 9 — 2026-06-14 (pre-P7 Settings block)
+
+- Eric requested three additive capabilities before P7: swappable brand logo/palette driving the deck
+  template; the Anthropic API key captured/stored via the UI; and a local-LLM fallback for frontier-
+  model outages. Recorded D11 (UI key + local provider, supersedes A4 "Claude only") and D12 (brand
+  theme). Building with full mock tests + a regression-safe gate.
+
 ### Session 8 — 2026-06-14 (Phase 6 start)
 
 - Eric approved Phase 5 ("Proceed to Phase 6") and asked for a modern-minimalist deck template

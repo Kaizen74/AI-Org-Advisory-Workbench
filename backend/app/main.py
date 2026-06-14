@@ -13,6 +13,7 @@ from .api import (
     diagnostics,
     engagements,
     scenarios,
+    settings as settings_api,
     task_intel,
     transition,
     validation,
@@ -49,3 +50,4 @@ app.include_router(scenarios.router)
 app.include_router(workflows.router)
 app.include_router(transition.router)
 app.include_router(deliverables.router)
+app.include_router(settings_api.router)

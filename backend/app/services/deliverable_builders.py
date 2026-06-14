@@ -58,11 +58,21 @@ def _accent_rule(slide, theme: Theme, top=Inches(1.5), left=Inches(0.9), width=I
 
 def title_slide(prs: Presentation, theme: Theme, title: str, subtitle: str) -> None:
     slide = _blank(prs)
+    # Brand logo (top-left) when one is configured (D12).
+    logo_path = (theme.extras or {}).get("logo_path")
+    if logo_path:
+        try:
+            slide.shapes.add_picture(logo_path, Inches(0.9), Inches(0.7), height=Inches(0.8))
+        except Exception:  # noqa: BLE001 - a bad/missing logo must never break generation
+            pass
     _textbox(slide, Inches(0.9), Inches(2.6), Inches(11.5), Inches(1.6), title,
              size=40, color=theme.ink, bold=False, font=theme.title_font)
     _accent_rule(slide, theme, top=Inches(2.4))
     _textbox(slide, Inches(0.9), Inches(4.0), Inches(11.5), Inches(1.0), subtitle,
              size=16, color=theme.muted, font=theme.body_font)
+    if theme.name and theme.name not in ("minimal", "brand"):
+        _textbox(slide, Inches(0.9), Inches(6.7), Inches(11.5), Inches(0.5), theme.name,
+                 size=11, color=theme.muted, font=theme.body_font)
 
 
 def section_slide(prs: Presentation, theme: Theme, heading: str, bullets: Sequence[str]) -> None:
