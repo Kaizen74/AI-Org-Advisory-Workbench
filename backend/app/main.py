@@ -9,6 +9,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .api import (
+    deliverables,
     diagnostics,
     engagements,
     scenarios,
@@ -47,3 +48,4 @@ app.include_router(validation.router)
 app.include_router(scenarios.router)
 app.include_router(workflows.router)
 app.include_router(transition.router)
+app.include_router(deliverables.router)
