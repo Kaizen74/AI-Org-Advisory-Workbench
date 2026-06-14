@@ -1,6 +1,7 @@
 """ORM models package — re-export Base, session helpers, and all models."""
 from .database import Base, async_session, engine, generate_uuid, get_session, init_db
 from .models import (
+    AccessUser,
     AppSetting,
     AuditEvent,
     Client,
@@ -61,4 +62,6 @@ __all__ = [
     "AppSetting",
     # Security (P7)
     "AuditEvent",
+    # Access control (D13)
+    "AccessUser",
 ]

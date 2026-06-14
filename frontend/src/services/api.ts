@@ -31,8 +31,31 @@ import type {
 const API_ORIGIN = import.meta.env.VITE_API_BASE_URL ?? "";
 const BASE = `${API_ORIGIN}/api/v1`;
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const resp = await fetch(`${BASE}${path}`, init);
+// ── Auth token (D13) ─────────────────────────────────────────────────────────
+let authToken: string | null = localStorage.getItem("token");
+let onUnauthorized: () => void = () => {};
+
+export function setAuthToken(t: string | null): void {
+  authToken = t;
+  if (t) localStorage.setItem("token", t);
+  else localStorage.removeItem("token");
+}
+export function getAuthToken(): string | null {
+  return authToken;
+}
+export function setUnauthorizedHandler(fn: () => void): void {
+  onUnauthorized = fn;
+}
+
+async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const headers = new Headers(init.headers || {});
+  if (authToken) headers.set("Authorization", `Bearer ${authToken}`);
+  const resp = await fetch(`${BASE}${path}`, { ...init, headers });
+  if (resp.status === 401 && !path.startsWith("/auth/login")) {
+    setAuthToken(null);
+    onUnauthorized();
+    throw new Error("Your session expired — please sign in again.");
+  }
   if (!resp.ok) {
     let detail = `${resp.status} ${resp.statusText}`;
     try {
@@ -55,6 +78,23 @@ function json(body: unknown): RequestInit {
 }
 
 export const api = {
+  // Auth + access (D13)
+  login: async (email: string, passcode: string) => {
+    const data = await request<{ token: string; email: string; owner: boolean }>(
+      "/auth/login", json({ email, passcode }),
+    );
+    setAuthToken(data.token);
+    return data;
+  },
+  me: () => request<{ email: string; owner: boolean }>("/auth/me"),
+  logout: () => setAuthToken(null),
+  listAccess: () =>
+    request<{ users: { email: string; is_owner: boolean }[] }>("/access"),
+  addAccess: (email: string, passcode: string, is_owner: boolean) =>
+    request<{ email: string }>("/access", json({ email, passcode, is_owner })),
+  removeAccess: (email: string) =>
+    request<{ removed: string }>(`/access/${encodeURIComponent(email)}`, { method: "DELETE" }),
+
   // Clients
   listClients: () => request<Client[]>("/engagements/clients"),
   createClient: (name: string, industry?: string) =>

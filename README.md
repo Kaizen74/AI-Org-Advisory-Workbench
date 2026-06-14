@@ -38,8 +38,9 @@ it ships):**
 - _Settings_ — enter your Anthropic API key in the app (no editing files), switch to a **local LLM**
   on your computer for when online models are down, and set a **brand logo + colour palette** that
   the deck template adopts (SATS preconfigured). ✅ _(pre-P7)_
-- _Security_ — per-engagement anonymization (pseudonyms; no real names in exports), real-name purge
-  + full purge (PDPA), and an audit trail; Postgres-ready for cloud deploy. ✅ _(Phase 7)_
+- _Security_ — **private sign-in** (email + passcode allowlist; the app is never public),
+  per-engagement anonymization (pseudonyms; no real names in exports), real-name purge + full purge
+  (PDPA), and an audit trail; Postgres-ready for cloud deploy. ✅ _(Phase 7)_
 
 ---
 
@@ -70,10 +71,13 @@ cd backend
 python3 -m venv .venv                 # makes a private Python sandbox (one time)
 source .venv/bin/activate             # turns the sandbox on (Windows: .venv\Scripts\activate)
 pip install -r requirements.txt       # installs the engine's parts (one time)
+cp .env.example .env                  # one time — then open .env and set ACCESS_USERS (your login)
 alembic upgrade head                  # creates the local database file (one time per machine)
 uvicorn app.main:app --reload         # starts the engine
 ```
 
+The app is private, so you sign in with an email + passcode. In `backend/.env`, set for example
+`ACCESS_USERS=you@example.com:my-passcode` — that's the login you'll type on the sign-in screen.
 Success looks like `Uvicorn running on http://127.0.0.1:8000` — **leave this window open.**
 
 **Terminal 2 — start the frontend** (open a second terminal window):
@@ -111,6 +115,12 @@ You host the **backend** (the engine) on **Railway** and the **frontend** (the b
 "**environment variable**" is a setting you type into the hosting website (not into a file) — like
 your API key or database address.
 
+> **The app is private.** It is hosted on the internet but **locked behind a sign-in screen** — only
+> people you put on the allowlist (email + passcode) can get in, so the public never sees the SATS
+> look-and-feel. The public sees only a neutral "please sign in" page. You set the first owner
+> account with the `ACCESS_USERS` variable below, then add/remove others inside the app
+> (**Settings → Access control**).
+
 > **Note:** these steps were written from the services' standard flow. The exact button wording can
 > change as Vercel/Railway update their sites; the names below are what to look for. Do this once.
 
@@ -124,6 +134,10 @@ your API key or database address.
    - `DATABASE_URL` — change the prefix Railway gives you from `postgresql://` to
      **`postgresql+asyncpg://`** (everything else stays the same).
    - `ANON_SALT` — any long random string (e.g. mash the keyboard for 30+ characters).
+   - `AUTH_SECRET` — another long random string (this signs the sign-in tokens).
+   - `ACCESS_USERS` — your first owner login as `email:passcode` (e.g.
+     `you@company.com:a-strong-passcode`). You can add more people later in the app. **This is what
+     keeps the app private** — without a matching login, no one gets past the sign-in screen.
    - `CORS_ORIGINS` — leave blank for now; you'll paste the Vercel URL here in step 4c.
    - _(You do NOT need to set the Anthropic key here — you'll enter it in the app's Settings page.)_
 5. Set the **Start Command** (Settings → Deploy) to:
@@ -145,8 +159,9 @@ your API key or database address.
 ### 4c. Connect the two
 1. Back in Railway → your service → **Variables** → set `CORS_ORIGINS` to your Vercel URL
    (e.g. `https://your-app.vercel.app`) and redeploy.
-2. Open the Vercel URL, go to **Settings** in the app, paste your **Anthropic API key**, and you're
-   live.
+2. Open the Vercel URL — you'll see the **sign-in screen**. Log in with the `ACCESS_USERS` email +
+   passcode you set in step 4a-4. Then go to **Settings**, paste your **Anthropic API key**, and (in
+   **Settings → Access control**) add any other people who should have access. You're live and private.
 
 ### 4d. Redeploying after changes
 Just push to `main` (or merge a branch into `main`). Railway and Vercel both rebuild automatically.
@@ -177,6 +192,8 @@ Just push to `main` (or merge a branch into `main`). Railway and Vercel both reb
 | Railway build fails | Wrong root dir or missing start command | Root dir must be `backend`; set the Start Command in step 4a-5 |
 | Vercel shows a 404 / API calls fail | Root dir or env var wrong | Root dir must be `frontend`; set `VITE_API_BASE_URL` (step 4b-3) |
 | CORS error in browser console | Backend not allowing the Vercel origin | Set `CORS_ORIGINS` on Railway to your Vercel URL (step 4c) |
+| Can't sign in / "Invalid email or passcode" | Not on the allowlist, or typo | Use an `ACCESS_USERS` login; an owner can add you in Settings → Access control |
+| Locked out (no owner) | `ACCESS_USERS` was never set | Set `ACCESS_USERS` on Railway and redeploy — it seeds an owner if the list is empty |
 
 If you're stuck, copy the red error text and paste it to Claude Code with a note of what you did.
 
@@ -184,6 +201,9 @@ If you're stuck, copy the red error text and paste it to Claude Code with a note
 
 ## 7. Data & privacy notes
 
+- The deployed app is **private**: it sits behind a sign-in screen and only allowlisted users
+  (email + passcode) can enter — the public never sees the SATS brand or any content. Owners manage
+  the allowlist in **Settings → Access control**; passcodes are stored only as salted hashes.
 - This GitHub repository is **private** — it may hold client-derived data during development and
   must never be made public.
 - **Client data is never committed** to the repo. The `.gitignore` file blocks databases, uploaded

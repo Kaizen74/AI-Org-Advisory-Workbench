@@ -32,13 +32,52 @@ function Field({ label, value, onChange, type = "text", placeholder }: {
   );
 }
 
-export default function Settings() {
+interface AccessUserRow {
+  email: string;
+  is_owner: boolean;
+}
+
+export default function Settings({ owner = false }: { owner?: boolean }) {
   const [s, setS] = useState<AppSettings | null>(null);
   const [form, setForm] = useState<Record<string, string>>({});
   const [palette, setPalette] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
   const [note, setNote] = useState("");
   const [logoBump, setLogoBump] = useState(0);
+
+  // Access management (owner only)
+  const [accessUsers, setAccessUsers] = useState<AccessUserRow[]>([]);
+  const [newUser, setNewUser] = useState({ email: "", passcode: "", is_owner: false });
+
+  async function loadAccess() {
+    if (!owner) return;
+    try {
+      setAccessUsers((await api.listAccess()).users);
+    } catch (e) {
+      setError(String((e as Error).message ?? e));
+    }
+  }
+
+  async function addAccessUser() {
+    if (!newUser.email || !newUser.passcode) return;
+    try {
+      await api.addAccess(newUser.email.trim(), newUser.passcode, newUser.is_owner);
+      setNewUser({ email: "", passcode: "", is_owner: false });
+      setNote("Access granted.");
+      await loadAccess();
+    } catch (e) {
+      setError(String((e as Error).message ?? e));
+    }
+  }
+
+  async function removeAccessUser(emailToRemove: string) {
+    try {
+      await api.removeAccess(emailToRemove);
+      await loadAccess();
+    } catch (e) {
+      setError(String((e as Error).message ?? e));
+    }
+  }
 
   async function load() {
     try {
@@ -66,6 +105,8 @@ export default function Settings() {
 
   useEffect(() => {
     load();
+    loadAccess();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function set(k: string, v: string) {
@@ -201,6 +242,69 @@ export default function Settings() {
           <Button onClick={save}>Save brand</Button>
         </div>
       </Card>
+
+      {owner && (
+        <Card title="Access control (who can sign in)">
+          <p className="mb-3 text-xs text-slate-500">
+            This app is private. Only people on this list can sign in with their email + passcode.
+          </p>
+          {accessUsers.length === 0 ? (
+            <p className="text-sm text-slate-400">No users loaded.</p>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 text-left text-xs uppercase text-slate-500">
+                  <th className="py-2">Email</th>
+                  <th>Role</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {accessUsers.map((u) => (
+                  <tr key={u.email} className="border-b border-slate-100">
+                    <td className="py-1">{u.email}</td>
+                    <td>{u.is_owner ? "owner" : "user"}</td>
+                    <td>
+                      <button
+                        onClick={() => removeAccessUser(u.email)}
+                        className="rounded border border-red-300 px-2 py-0.5 text-xs text-red-700 hover:bg-red-50"
+                      >
+                        Remove
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          <div className="mt-3 grid gap-2 md:grid-cols-4">
+            <input
+              value={newUser.email}
+              onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+              placeholder="email"
+              className="rounded border border-slate-300 px-2 py-1 text-sm md:col-span-2"
+            />
+            <input
+              value={newUser.passcode}
+              onChange={(e) => setNewUser({ ...newUser, passcode: e.target.value })}
+              placeholder="passcode"
+              type="password"
+              className="rounded border border-slate-300 px-2 py-1 text-sm"
+            />
+            <label className="flex items-center gap-1 text-xs text-slate-600">
+              <input
+                type="checkbox"
+                checked={newUser.is_owner}
+                onChange={(e) => setNewUser({ ...newUser, is_owner: e.target.checked })}
+              />
+              owner
+            </label>
+          </div>
+          <div className="mt-2">
+            <Button onClick={addAccessUser}>Grant access</Button>
+          </div>
+        </Card>
+      )}
     </div>
   );
 }

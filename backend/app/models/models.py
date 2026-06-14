@@ -465,6 +465,18 @@ class AuditEvent(Base):
     at = Column(DateTime, default=datetime.utcnow)
 
 
+class AccessUser(Base):
+    """An allowlisted user who may log in (D13). Passcode stored as a salted PBKDF2 hash."""
+
+    __tablename__ = "access_users"
+
+    email = Column(String(255), primary_key=True)
+    passcode_hash = Column(String(255), nullable=False)
+    salt = Column(String(64), nullable=False)
+    is_owner = Column(Boolean, nullable=False, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class AppSetting(Base):
     """Global key/value app settings (LLM provider/key/models, brand palette + logo path).
 

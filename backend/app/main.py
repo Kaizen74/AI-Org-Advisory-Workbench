@@ -7,11 +7,13 @@ from __future__ import annotations
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .api import (
+    access,
     audit,
+    auth,
     deliverables,
     diagnostics,
     engagements,
@@ -22,6 +24,7 @@ from .api import (
     validation,
     workflows,
 )
+from .api.auth_dep import require_auth
 from .config import settings
 
 
@@ -31,9 +34,13 @@ async def lifespan(app: FastAPI):
     from .models import async_session
     from .services import settings_service
 
+    from .services import access_service
+
     try:
         async with async_session() as session:
             await settings_service.load_from_db(session)
+            await access_service.bootstrap(session)  # seed the allowlist from ACCESS_USERS (D13)
+            await session.commit()
     except Exception:  # noqa: BLE001 - a fresh/unmigrated DB must not block startup
         pass
     yield
@@ -60,14 +67,19 @@ def health() -> dict:
     return {"status": "ok"}
 
 
-# ── Routers (one `include_router` line per module as phases ship) ────────────
-app.include_router(engagements.router)
-app.include_router(diagnostics.router)
-app.include_router(task_intel.router)
-app.include_router(validation.router)
-app.include_router(scenarios.router)
-app.include_router(workflows.router)
-app.include_router(transition.router)
-app.include_router(deliverables.router)
-app.include_router(settings_api.router)
-app.include_router(audit.router)
+# ── Routers ──────────────────────────────────────────────────────────────────
+# Public: auth (login). All feature routers are gated by require_auth (D13 — private app).
+app.include_router(auth.router)
+app.include_router(access.router)  # routes are owner-only (require_owner)
+
+_protected = [Depends(require_auth)]
+app.include_router(engagements.router, dependencies=_protected)
+app.include_router(diagnostics.router, dependencies=_protected)
+app.include_router(task_intel.router, dependencies=_protected)
+app.include_router(validation.router, dependencies=_protected)
+app.include_router(scenarios.router, dependencies=_protected)
+app.include_router(workflows.router, dependencies=_protected)
+app.include_router(transition.router, dependencies=_protected)
+app.include_router(deliverables.router, dependencies=_protected)
+app.include_router(settings_api.router, dependencies=_protected)
+app.include_router(audit.router, dependencies=_protected)

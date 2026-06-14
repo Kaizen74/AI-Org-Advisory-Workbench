@@ -91,7 +91,25 @@ async def async_session():
 
 @pytest_asyncio.fixture
 async def api_client(async_session):
-    """httpx client wired to the FastAPI app with the test session injected."""
+    """httpx client wired to the app, authenticated as an owner (auth gate overridden)."""
+    from app.api.auth_dep import require_auth
+    from app.main import app
+    from app.models import get_session
+
+    async def _override():
+        yield async_session
+
+    app.dependency_overrides[get_session] = _override
+    app.dependency_overrides[require_auth] = lambda: {"email": "test@example.com", "owner": True}
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        yield client
+    app.dependency_overrides.clear()
+
+
+@pytest_asyncio.fixture
+async def anon_client(async_session):
+    """httpx client with the REAL auth gate active (for login + 401 tests)."""
     from app.main import app
     from app.models import get_session
 

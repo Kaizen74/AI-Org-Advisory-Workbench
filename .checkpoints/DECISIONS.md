@@ -83,6 +83,22 @@ ML deps added, A4 ban respected). **This SUPERSEDES the A4 "Claude API only for 
 at the owner's explicit instruction, to keep the tool usable during frontier-model outages.
 Regression tests prove the prior Anthropic path is preserved.
 
+## 2026-06-14 — D13: Private access control (email + passcode allowlist), app not public
+
+**Source:** Eric's pre-deploy instruction ("this app is not deployed in a public space ... provide
+an identifier (email) and passcode for select ones to access ... cannot show the default brand look
+and feel to the public").
+**Decision:** Add **app-level authentication**: a neutral (un-branded) login screen; a backend
+allowlist of `access_users` (email + salted-PBKDF2 passcode hash, `is_owner` flag); `POST
+/api/v1/auth/login` returns an HMAC-signed token (stdlib only — no new deps) with a TTL; **every
+`/api/v1/*` route except `auth` is protected** (`/health` stays open for platform health checks).
+Owners manage the allowlist via `/api/v1/access` (owner-only) and a Settings UI. The allowlist is
+bootstrapped from an `ACCESS_USERS` env var on first run; `AUTH_SECRET` signs tokens. The app is
+still hosted on Vercel/Railway but **content + SATS branding sit entirely behind login** — the public
+sees only a generic sign-in. Tests override the auth dependency so existing suites are unaffected; new
+tests cover the login + gate. This refines the deploy plan (README §4) — it does not change any
+feature behaviour.
+
 ## 2026-06-14 — D12: Brand template configurable (logo + palette) via Settings
 
 **Source:** Eric's pre-P7 request ("allow brand logo and color palette to be changed/swapped which

@@ -27,6 +27,7 @@ P5_TABLES = {"processes", "process_steps", "task_links"}
 P6_TABLES = {"deliverables"}
 SETTINGS_TABLES = {"app_settings"}
 AUDIT_TABLES = {"audit_events"}
+ACCESS_TABLES = {"access_users"}
 
 
 def _alembic_config(db_path: Path) -> Config:
@@ -163,4 +164,22 @@ def test_migration_007_adds_and_removes_audit_events(tmp_path):
 
     command.downgrade(cfg, "base")
     assert not (AUDIT_TABLES & set(inspect(engine).get_table_names()))
+    engine.dispose()
+
+
+def test_migration_008_adds_and_removes_access_users(tmp_path):
+    db_path = tmp_path / "migration8_test.db"
+    cfg = _alembic_config(db_path)
+
+    command.upgrade(cfg, "head")
+    engine = create_engine(f"sqlite:///{db_path}")
+    assert ACCESS_TABLES <= set(inspect(engine).get_table_names())
+
+    command.downgrade(cfg, "007_audit_events")
+    after = set(inspect(engine).get_table_names())
+    assert not (ACCESS_TABLES & after)
+    assert AUDIT_TABLES <= after
+
+    command.downgrade(cfg, "base")
+    assert not (ACCESS_TABLES & set(inspect(engine).get_table_names()))
     engine.dispose()
