@@ -26,7 +26,10 @@ import type {
   TransitionResult,
 } from "../types";
 
-const BASE = "/api/v1";
+// In dev, Vite proxies "/api" to the backend. In production (frontend on Vercel, backend on
+// Railway), set VITE_API_BASE_URL to the backend's URL so calls reach the right origin.
+const API_ORIGIN = import.meta.env.VITE_API_BASE_URL ?? "";
+const BASE = `${API_ORIGIN}/api/v1`;
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const resp = await fetch(`${BASE}${path}`, init);
@@ -131,7 +134,7 @@ export const api = {
 
   // Desire pulse
   pulseInstrumentUrl: (datasetId: string) =>
-    `/api/v1/task-intel/pulse/instrument.xlsx?dataset_id=${encodeURIComponent(datasetId)}`,
+    `${API_ORIGIN}/api/v1/task-intel/pulse/instrument.xlsx?dataset_id=${encodeURIComponent(datasetId)}`,
   pulseImport: (engagementId: string, datasetId: string, file: File) => {
     const form = new FormData();
     form.append("file", file);
@@ -188,7 +191,7 @@ export const api = {
       { method: "POST" },
     ),
   transitionRegisterUrl: (scenarioId: string) =>
-    `/api/v1/transition/register.xlsx?scenario_id=${encodeURIComponent(scenarioId)}`,
+    `${API_ORIGIN}/api/v1/transition/register.xlsx?scenario_id=${encodeURIComponent(scenarioId)}`,
 
   // Deliverables
   generateDeliverable: (
@@ -206,7 +209,7 @@ export const api = {
     request<{ deliverables: DeliverableInfo[] }>(
       `/deliverables/list?engagement_id=${encodeURIComponent(engagementId)}`,
     ),
-  deliverableDownloadUrl: (id: string) => `/api/v1/deliverables/${id}/download`,
+  deliverableDownloadUrl: (id: string) => `${API_ORIGIN}/api/v1/deliverables/${id}/download`,
 
   // Settings
   getSettings: () => request<AppSettings>("/settings"),
@@ -224,7 +227,7 @@ export const api = {
       body: form,
     });
   },
-  brandLogoUrl: () => `/api/v1/settings/brand-logo?t=${Date.now()}`,
+  brandLogoUrl: () => `${API_ORIGIN}/api/v1/settings/brand-logo?t=${Date.now()}`,
   testLlm: () =>
     request<{ ok: boolean; provider: string; sample: string }>("/settings/test-llm", {
       method: "POST",

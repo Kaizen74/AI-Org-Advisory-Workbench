@@ -37,8 +37,9 @@ it ships):**
   page; unreviewed AI content is automatically blocked. ✅ _(Phase 6 — modern-minimalist template)_
 - _Settings_ — enter your Anthropic API key in the app (no editing files), switch to a **local LLM**
   on your computer for when online models are down, and set a **brand logo + colour palette** that
-  the deck template adopts. ✅ _(pre-P7)_
-- _(later phase: Security & deploy.)_
+  the deck template adopts (SATS preconfigured). ✅ _(pre-P7)_
+- _Security_ — per-engagement anonymization (pseudonyms; no real names in exports), real-name purge
+  + full purge (PDPA), and an audit trail; Postgres-ready for cloud deploy. ✅ _(Phase 7)_
 
 ---
 
@@ -105,27 +106,79 @@ the generated decks (choose the “Brand” template on the Deliverables tab).
 
 ## 4. Deploy to the cloud (Vercel + Railway)
 
-> _Click-by-click instructions with the actual button names will be captured during the Phase 7
-> deployment and finalized here._ In short: connect this GitHub repo to **Vercel** (hosts the
-> frontend) and **Railway** (hosts the backend), set the environment variables (your API key and
-> model settings — explained here when we get there), and deploy. After that, pushing changes to
-> the `main` branch redeploys automatically.
+You host the **backend** (the engine) on **Railway** and the **frontend** (the browser view) on
+**Vercel**. Both connect to this GitHub repo, so pushing to `main` redeploys automatically. A
+"**environment variable**" is a setting you type into the hosting website (not into a file) — like
+your API key or database address.
+
+> **Note:** these steps were written from the services' standard flow. The exact button wording can
+> change as Vercel/Railway update their sites; the names below are what to look for. Do this once.
+
+### 4a. Backend on Railway
+1. Go to <https://railway.app> → sign in with GitHub.
+2. Click **New Project** → **Deploy from GitHub repo** → pick
+   `Kaizen74/AI-Org-Advisory-Workbench` → when asked for the root/subdirectory, choose **`backend`**.
+3. Add a database: in the project, click **New** → **Database** → **Add PostgreSQL**. Railway creates
+   it and a `DATABASE_URL` variable.
+4. Open your service → **Variables** and set:
+   - `DATABASE_URL` — change the prefix Railway gives you from `postgresql://` to
+     **`postgresql+asyncpg://`** (everything else stays the same).
+   - `ANON_SALT` — any long random string (e.g. mash the keyboard for 30+ characters).
+   - `CORS_ORIGINS` — leave blank for now; you'll paste the Vercel URL here in step 4c.
+   - _(You do NOT need to set the Anthropic key here — you'll enter it in the app's Settings page.)_
+5. Set the **Start Command** (Settings → Deploy) to:
+   `alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+   (a `Procfile` in `backend/` already contains this, so Railway usually picks it up automatically).
+6. Click **Deploy**. When it's live, copy the public URL (looks like
+   `https://your-app.up.railway.app`) — this is your **backend URL**.
+
+### 4b. Frontend on Vercel
+1. Go to <https://vercel.com> → sign in with GitHub → **Add New… → Project** → import
+   `Kaizen74/AI-Org-Advisory-Workbench`.
+2. Set **Root Directory** to **`frontend`**. Vercel auto-detects Vite (Build: `npm run build`,
+   Output: `dist`).
+3. Under **Environment Variables** add `VITE_API_BASE_URL` = your **backend URL** from step 4a-6
+   (e.g. `https://your-app.up.railway.app`, no trailing slash).
+4. Click **Deploy**. When done, copy the frontend URL (looks like
+   `https://your-app.vercel.app`) — this is the link you open to use the app.
+
+### 4c. Connect the two
+1. Back in Railway → your service → **Variables** → set `CORS_ORIGINS` to your Vercel URL
+   (e.g. `https://your-app.vercel.app`) and redeploy.
+2. Open the Vercel URL, go to **Settings** in the app, paste your **Anthropic API key**, and you're
+   live.
+
+### 4d. Redeploying after changes
+Just push to `main` (or merge a branch into `main`). Railway and Vercel both rebuild automatically.
 
 ---
 
 ## 5. Updating the app
 
-> _Finalized in Phase 7._ In GitHub Desktop: open the repo → **Fetch origin** → **Pull** to get the
-> latest version, then restart the two terminals from Section 3.
+- **On your computer:** in GitHub Desktop open the repo → **Fetch origin** → **Pull**, then restart
+  the two terminals from Section 3 (run `pip install -r requirements.txt`, `alembic upgrade head`,
+  and `npm install` again if you were told dependencies changed).
+- **In the cloud:** nothing to do — pushing to `main` redeploys Railway + Vercel automatically.
 
 ---
 
 ## 6. If something goes wrong
 
-> _A full troubleshooting table (port already in use, missing API key, `pip`/`npm` not found,
-> database locked, blank page, Railway build failure, etc.) is filled in as those situations become
-> reachable in later phases._ For now, if `bash scripts/gate.sh` fails, copy the red error text and
-> paste it to Claude Code with a note of what you did.
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| `command not found: python3` / `pip` | Python not installed or not on PATH | Re-install Python 3.11+ (Section 2); on Windows tick "Add to PATH" during install |
+| `command not found: node` / `npm` | Node.js not installed | Install Node LTS (Section 2), then reopen the terminal |
+| Backend won't start: `address already in use` / port 8000 busy | Another program (or an old run) holds the port | Close the other window, or run `uvicorn app.main:app --reload --port 8001` |
+| App opens but every action errors / "Failed to fetch" | Backend not running, or frontend pointing at the wrong API | Make sure Terminal 1 shows `Uvicorn running`; in the cloud, check `VITE_API_BASE_URL` on Vercel matches the Railway URL |
+| AI buttons say "Anthropic API key not configured" | No key set (or wrong provider) | Open **Settings** → paste your key, or switch provider to **Local LLM** |
+| Local LLM doesn't respond | Local server not running / wrong URL | Start Ollama/LM Studio; set the right URL in Settings (`http://localhost:11434/v1` for Ollama, `http://localhost:1234/v1` for LM Studio) |
+| `database is locked` (SQLite) | Two processes writing at once | Stop extra backend windows; for production use Postgres (Section 4) |
+| Blank white page in browser | Frontend build/old cache | Hard-refresh (Ctrl/Cmd+Shift+R); locally re-run `npm run dev` |
+| Railway build fails | Wrong root dir or missing start command | Root dir must be `backend`; set the Start Command in step 4a-5 |
+| Vercel shows a 404 / API calls fail | Root dir or env var wrong | Root dir must be `frontend`; set `VITE_API_BASE_URL` (step 4b-3) |
+| CORS error in browser console | Backend not allowing the Vercel origin | Set `CORS_ORIGINS` on Railway to your Vercel URL (step 4c) |
+
+If you're stuck, copy the red error text and paste it to Claude Code with a note of what you did.
 
 ---
 
@@ -134,12 +187,19 @@ the generated decks (choose the “Brand” template on the Deliverables tab).
 - This GitHub repository is **private** — it may hold client-derived data during development and
   must never be made public.
 - **Client data is never committed** to the repo. The `.gitignore` file blocks databases, uploaded
-  CSVs, secret keys (`.env`), and generated deliverables from ever being sent to GitHub. The only
-  data files allowed in the repo are the synthetic PAX sample and the taxonomy seed.
-- **Anonymization mode** (per engagement) replaces real names with stable pseudonyms so exports
-  carry no real names. _(Ships in Phase 7.)_
-- **Purging an engagement** deletes all of its data on demand (a PDPA "right to deletion" feature).
-  _(Ships in Phase 7.)_
+  CSVs, secret keys (`.env`), uploaded logos, and generated deliverables from ever reaching GitHub.
+  The only data files in the repo are the synthetic PAX sample, the taxonomy seed, and the SATS
+  brand logo.
+- **Anonymization mode** (tick "anonymized" when creating an engagement): real names are replaced
+  with stable pseudonyms (e.g. `EMP-1A2B3C4D`) at upload, and **no real name appears in any export**
+  (verified by an automated test). Real names live only inside the app's database.
+- **Purge real names** (PDPA "right to deletion" of personal data): `DELETE` the engagement's
+  `/real-names` — it scrubs the names but keeps the (pseudonymized) analysis.
+- **Purge an engagement** entirely: deletes all of its data on demand.
+- **Audit trail:** uploads, AI calls, validations, exports, and purges are logged per engagement
+  (viewable via the audit endpoint).
+- **Your API key** is stored in the app's database (never in the repo) and is shown back only
+  masked.
 
 ---
 
