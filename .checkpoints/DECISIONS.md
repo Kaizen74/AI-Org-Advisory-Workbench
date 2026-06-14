@@ -68,6 +68,20 @@ off-machine memory-resilience goal — and lets phase instructions PORT files pa
 remains on `main` as Eric's upload artifact; he can delete it after this branch merges (noted in
 LATEST.md). `legacy/` is reference-only and is never imported as a package (B0).
 
+## 2026-06-14 — D10: Deliverable template — modern-minimalist default; SATS brand deferred
+
+**Source:** Eric's P6 instruction ("adopt a modern minimalistic style deck template ... refer to my
+project 'business ideas' for inspiration ... for now").
+**Decision:** Ship a **modern-minimalist** template as the default (`deliverable_theme.py`):
+near-black ink `#1F2933`, muted-teal accent `#2F6F6A`, light rule `#E5E7EB`, white ground, generous
+whitespace, light-weight large titles, thin divider rules. The Build Spec B4 said "SATS-brand
+template first, generic second"; this is **superseded for now** by Eric's explicit request for a
+minimalist style. **Rationale:** Eric's 'business ideas' project is not reachable from this
+repo-scoped session, so its exact tokens can't be pulled; the minimalist palette is a safe, on-brief
+default. The generator takes a `template` arg and the theme is centralized, so a SATS-branded theme
+(logo/palette/fonts) drops in later without touching generator logic. **Open question logged** for
+Eric to supply brand assets or 'business ideas' tokens when convenient.
+
 ## 2026-06-11 — D9: RESOLVED D8 — the provided PAX CSV is the source of truth
 
 **Source:** Eric's decision in response to the D8 escalation ("Use the provided CSV as truth").

@@ -3,6 +3,7 @@ from .database import Base, async_session, engine, generate_uuid, get_session, i
 from .models import (
     Client,
     Dataset,
+    Deliverable,
     DesignMove,
     DesirePulseResponse,
     Engagement,
@@ -52,4 +53,6 @@ __all__ = [
     "Process",
     "ProcessStep",
     "TaskLink",
+    # Deliverables (P6)
+    "Deliverable",
 ]

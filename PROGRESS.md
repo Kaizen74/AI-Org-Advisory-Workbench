@@ -218,6 +218,29 @@ One dated entry per session and per completed phase. Never rewrite history.
 - Gate GREEN: **70 backend tests + clean frontend build**. **Phase 5 complete.** Awaiting Eric's
   go-ahead for Phase 6 (Deliverable Factory).
 
+---
+
+## Phase 6 — Deliverable Factory
+
+**Micro-task checklist (written before starting, per Part A; each ends with a commit + LATEST update):**
+- [ ] P6.1 — Deliverable model + migration 005 (additive, reversible) + round-trip test; add
+      python-pptx / python-docx deps; ensure `backend/output/` is gitignored.
+- [ ] P6.2 — `deliverable_theme` (modern-minimalist tokens) + pptx/docx builder helpers;
+      `provenance_summary` util (% content by source tag + caveats) + export-block helper.
+- [ ] P6.3 — Generators: XLSX_METRICS, XLSX_TRANSITION, PPTX_DIAGNOSTIC, PPTX_SCENARIOS,
+      PPTX_AI_ROADMAP, DOCX_TOM — each with an auto-generated provenance disclosure page/section.
+- [ ] P6.4 — **Export-block test**: unreviewed model-inferred content excluded/bannered (A4/M6);
+      provenance-disclosure presence test.
+- [ ] P6.5 — `/api/v1/deliverables` router (`POST /generate`, `GET /list`, download) + tests.
+- [ ] P6.6 — Frontend Deliverables page (generate buttons per type, list, download).
+- [ ] P6.7 — Phase close: full gate, BASELINE + checkpoints + README, commit + push.
+
+### Session 8 — 2026-06-14 (Phase 6 start)
+
+- Eric approved Phase 5 ("Proceed to Phase 6") and asked for a modern-minimalist deck template
+  (referencing his 'business ideas' project — not accessible from this repo-scoped session, so a
+  neutral minimalist palette is used for now; recorded as D10). Wrote the P6 checklist and began.
+
 ### Session 7 — 2026-06-11 (Phase 5 start)
 
 - Eric approved Phase 4 ("Proceed"). Wrote the P5 checklist and began executing. Impact classes are

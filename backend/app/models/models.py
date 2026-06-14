@@ -427,3 +427,25 @@ class TaskLink(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     step = relationship("ProcessStep", back_populates="task_links")
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# PHASE 6 — Deliverable Factory. Additive only.
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+class Deliverable(Base):
+    """A generated client deliverable (pptx/docx/xlsx). The file lives in backend/output/ (gitignored);
+    `provenance_summary` records % of content by source tag + caveats (transparency as a feature)."""
+
+    __tablename__ = "deliverables"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    engagement_id = Column(
+        String(36), ForeignKey("engagements.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    type = Column(String(32), nullable=False)  # PPTX_DIAGNOSTIC|PPTX_SCENARIOS|PPTX_AI_ROADMAP|DOCX_TOM|XLSX_METRICS|XLSX_TRANSITION
+    template = Column(String(32), nullable=False, default="minimal")
+    file_path = Column(String(1024), nullable=True)
+    provenance_summary = Column(JSON, nullable=True)
+    generated_at = Column(DateTime, default=datetime.utcnow)
