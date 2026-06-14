@@ -8,17 +8,17 @@
 
 ## CURRENT-STATE SUMMARY (updated each session end)
 
-**As of 2026-06-11 (Phase 5 — COMPLETE):** P0–P5 are done and pushed. P5 shipped: migration 004
-(processes, process_steps, task_links), the `workflow_service` (process/step CRUD, task→step
-mapping, deterministic L0–L3 opportunity matrix + mocked-AI priority narrative), the
-`transition_service` (deterministic per-role impact classes from scenario moves —
-unchanged/augmented/transformed/displaced/new — plus mocked-AI SkillsFuture pathway suggestions,
-model-inferred/unreviewed, with a transition-register **xlsx export**), the `/api/v1/workflows` +
-`/api/v1/transition` routers, `GET /task-intel/tasks`, and the frontend Workflow Mapper + Transition
-Planner pages. **PAX baseline still LOCKED (D9): 64 / 34 / 53.1% / 6,620,000 / 6.** **Gate GREEN: 70
-backend tests + clean frontend build.** Next: await Eric's go-ahead, then **Phase 6 (Deliverable
-Factory)** — see `.checkpoints/LATEST.md`. Do not start P6 until Eric confirms. Completed P0–P5 code
-is now **additive-only**.
+**As of 2026-06-14 (Phase 6 — COMPLETE):** P0–P6 are done and pushed. P6 shipped: migration 005
+(`deliverables`), the modern-minimalist deliverable template (`deliverable_theme`, D10; SATS theme
+stubbed pending brand assets), pptx/docx builders, six generators (PPTX diagnostic / scenario
+comparison / AI roadmap, DOCX TOM, XLSX metrics / transition register) — each with an auto-generated
+**provenance disclosure** (% content by source tag + caveats) and the **export-block** rule
+(unreviewed model-inferred content excluded from client content, count disclosed), the
+`/api/v1/deliverables` router (generate/list/download; files → gitignored `backend/output/`), and the
+frontend Deliverables page. **PAX baseline still LOCKED (D9): 64 / 34 / 53.1% / 6,620,000 / 6.**
+**Gate GREEN: 74 backend tests + clean frontend build.** Next: await Eric's go-ahead, then **Phase 7
+(Security & deploy)** — see `.checkpoints/LATEST.md`. Do not start P7 until Eric confirms. Completed
+P0–P6 code is now **additive-only**.
 
 ---
 

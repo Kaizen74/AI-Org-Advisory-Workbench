@@ -32,7 +32,10 @@ it ships):**
 - _Transition Planner_ — for a scenario, classify how each role is affected (unchanged/augmented/
   transformed/displaced/new), suggest SkillsFuture reskilling pathways, and export a transition
   register. ✅ _(Phase 5)_
-- _(later phases: Deliverables, Settings.)_
+- _Deliverables_ — one-click branded PowerPoint/Word/Excel exports (diagnostic, scenario
+  comparison, AI roadmap, TOM, metrics, transition register), each with an auto-generated provenance
+  page; unreviewed AI content is automatically blocked. ✅ _(Phase 6 — modern-minimalist template)_
+- _(later phase: Security & deploy / Settings.)_
 
 ---
 

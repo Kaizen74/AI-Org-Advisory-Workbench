@@ -128,6 +128,21 @@ fixed move sequence (DELETE E064 + ADD E999 $120k + REPARENT E003) on PAX. Delta
 > Additive-only from here: migration 004 tables, the workflow/transition service contracts, the
 > `/api/v1/workflows` + `/api/v1/transition` routes, and the register xlsx schema must not regress.
 
+## Phase 6 — Deliverable Factory (COMPLETE)
+
+**Passing tests (P6) — 74 backend total (70 from P5 + 4 new):**
+- `test_migration.py::test_migration_005_*` — migration 005 additive + reversible.
+- `test_deliverables_api.py::*` (3) — all 6 deliverable types generate valid files (PK/zip) with a
+  provenance summary; **export-block** excludes unreviewed model-inferred from the AI roadmap and
+  discloses the excluded count + caveats; unknown type → 400.
+
+**Template:** modern-minimalist default (`deliverable_theme.MINIMAL`, D10); SATS theme stubbed.
+**Frontend gate (P6):** `npm run build` zero TS errors; Deliverables page ships. Generated files go
+to gitignored `backend/output/`.
+
+> Additive-only from here: migration 005, the deliverable generators + provenance/export-block
+> contract, and the `/api/v1/deliverables` routes must not regress.
+
 ## Reserved baseline targets (to be locked when their phase ships)
 
 > Recorded now so a future session never forgets the byte-exact numbers it must reproduce.

@@ -223,17 +223,25 @@ One dated entry per session and per completed phase. Never rewrite history.
 ## Phase 6 — Deliverable Factory
 
 **Micro-task checklist (written before starting, per Part A; each ends with a commit + LATEST update):**
-- [ ] P6.1 — Deliverable model + migration 005 (additive, reversible) + round-trip test; add
-      python-pptx / python-docx deps; ensure `backend/output/` is gitignored.
-- [ ] P6.2 — `deliverable_theme` (modern-minimalist tokens) + pptx/docx builder helpers;
-      `provenance_summary` util (% content by source tag + caveats) + export-block helper.
-- [ ] P6.3 — Generators: XLSX_METRICS, XLSX_TRANSITION, PPTX_DIAGNOSTIC, PPTX_SCENARIOS,
-      PPTX_AI_ROADMAP, DOCX_TOM — each with an auto-generated provenance disclosure page/section.
-- [ ] P6.4 — **Export-block test**: unreviewed model-inferred content excluded/bannered (A4/M6);
-      provenance-disclosure presence test.
-- [ ] P6.5 — `/api/v1/deliverables` router (`POST /generate`, `GET /list`, download) + tests.
-- [ ] P6.6 — Frontend Deliverables page (generate buttons per type, list, download).
-- [ ] P6.7 — Phase close: full gate, BASELINE + checkpoints + README, commit + push.
+- [x] P6.1 — Deliverable model + migration 005 (additive, reversible) + round-trip test; pptx/docx
+      deps; `backend/output/` gitignored.
+- [x] P6.2 — `deliverable_theme` (minimal, D10) + pptx/docx builders; `provenance_summary` +
+      export-block helper.
+- [x] P6.3 — 6 generators (PPTX diagnostic/scenarios/roadmap, DOCX TOM, XLSX metrics/transition)
+      with auto provenance disclosure.
+- [x] P6.4 — Export-block test (unreviewed model-inferred excluded) + provenance presence.
+- [x] P6.5 — `/api/v1/deliverables` router (generate/list/types/download) + tests.
+- [x] P6.6 — Frontend Deliverables page.
+- [x] P6.7 — Phase close: gate green (74 tests), BASELINE + checkpoints + README, pushed.
+
+### Session 8 close — 2026-06-14
+
+- Built the deliverable model + migration 005, the modern-minimalist theme + pptx/docx builders, the
+  6 generators (each with an auto-generated provenance disclosure), the export-block (AI roadmap uses
+  client-ready scores only; excluded count disclosed), the `/api/v1/deliverables` router, and the
+  frontend Deliverables page. Files write to gitignored `backend/output/`.
+- Gate GREEN: **74 backend tests + clean frontend build**. **Phase 6 complete.** Awaiting Eric's
+  go-ahead for Phase 7 (Security & deploy).
 
 ### Session 8 — 2026-06-14 (Phase 6 start)
 
