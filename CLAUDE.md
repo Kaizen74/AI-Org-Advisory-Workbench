@@ -20,6 +20,14 @@ frontend Deliverables page. **PAX baseline still LOCKED (D9): 64 / 34 / 53.1% / 
 (Security & deploy)** — see `.checkpoints/LATEST.md`. Do not start P7 until Eric confirms. Completed
 P0–P6 code is now **additive-only**.
 
+**Pre-P7 Settings block (2026-06-14 — COMPLETE):** Added an `app_settings` table (migration 006) +
+`settings_service` + `/api/v1/settings` so the **Anthropic API key is managed via the UI** (masked),
+the **LLM provider can switch to a local OpenAI-compatible endpoint** for frontier-outage fallback
+(D11 — `claude_service.complete` now routes by provider via httpx, public signatures preserved), and
+the **brand logo + palette are swappable and drive the deck template** (`template="brand"`, D12). New
+**Settings** frontend page + Deliverables template selector. **Gate GREEN: 90 backend tests + clean
+frontend build, zero regressions.** Next: **Phase 7 (Security & deploy)** on Eric's go-ahead.
+
 ---
 
 # PART A — OPERATING PROTOCOL FOR CLAUDE CODE (MANDATORY)

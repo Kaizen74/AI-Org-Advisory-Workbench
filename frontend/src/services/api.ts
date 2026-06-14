@@ -3,6 +3,7 @@
 import type {
   ActivatorScreen,
   AIOpportunityResult,
+  AppSettings,
   ArchetypeSummary,
   BenchmarkResult,
   Client,
@@ -206,4 +207,26 @@ export const api = {
       `/deliverables/list?engagement_id=${encodeURIComponent(engagementId)}`,
     ),
   deliverableDownloadUrl: (id: string) => `/api/v1/deliverables/${id}/download`,
+
+  // Settings
+  getSettings: () => request<AppSettings>("/settings"),
+  updateSettings: (updates: Record<string, string>) =>
+    request<AppSettings>("/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updates),
+    }),
+  uploadBrandLogo: (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return request<{ brand_logo_path: string }>("/settings/brand-logo", {
+      method: "POST",
+      body: form,
+    });
+  },
+  brandLogoUrl: () => `/api/v1/settings/brand-logo?t=${Date.now()}`,
+  testLlm: () =>
+    request<{ ok: boolean; provider: string; sample: string }>("/settings/test-llm", {
+      method: "POST",
+    }),
 };

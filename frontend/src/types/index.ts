@@ -226,6 +226,21 @@ export interface DeliverableInfo {
   bytes?: number;
 }
 
+export interface AppSettings {
+  llm_provider: string;
+  anthropic_api_key_set: boolean;
+  anthropic_api_key_last4: string;
+  local_api_key_set: boolean;
+  local_api_key_last4: string;
+  model_extract: string;
+  model_synth: string;
+  local_base_url: string;
+  local_model: string;
+  brand_name: string;
+  brand_palette: string;
+  brand_logo_path: string;
+}
+
 export interface ArchetypeSummary {
   id: string;
   name: string;

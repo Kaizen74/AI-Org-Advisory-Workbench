@@ -248,15 +248,17 @@ One dated entry per session and per completed phase. Never rewrite history.
 ## Pre-P7 feature block — Settings (branding, UI-managed API key, local-LLM fallback)
 
 **Requested by Eric (2026-06-14) before P7.** Micro-task checklist:
-- [ ] FA.1 — `AppSetting` model + migration 006 + `settings_service` (DB + in-memory cache) + tests.
-- [ ] FA.2 — Route `claude_service.complete` by provider (anthropic | local OpenAI-compatible via
-      httpx), key from settings/env; keep public signatures; regression + provider tests. (D11)
-- [ ] FA.3 — `/api/v1/settings` router (get/update masked, brand-logo upload/get, test-llm) + tests.
-- [ ] FA.4 — Brand deck: `theme_from_settings` + logo on title slide; `template="brand"` generator;
-      test brand palette/logo flow into a generated deck. (D12)
-- [ ] FA.5 — Frontend Settings page (provider/key/models/local + brand palette + logo) + Deliverables
-      template selector + Settings tab.
-- [ ] FA.6 — Comprehensive gate (no regression), checkpoints, commit/push.
+- [x] FA.1 — `AppSetting` model + migration 006 + `settings_service` (DB + in-memory cache) + tests.
+- [x] FA.2 — Routed `claude_service.complete` by provider (anthropic | local via httpx); public
+      signatures preserved; regression + provider tests. (D11)
+- [x] FA.3 — `/api/v1/settings` router (get/update masked, brand-logo upload/get, test-llm) + tests.
+- [x] FA.4 — Brand deck: `theme_from_settings` + logo on title slide; `template="brand"` + tests. (D12)
+- [x] FA.5 — Frontend Settings page + Deliverables template selector + Settings tab.
+- [x] FA.6 — Startup cache hydration; comprehensive gate (90 tests, no regression); checkpoints; push.
+
+**Session 9 outcome:** all three capabilities delivered + verified live (key set via UI persists;
+provider switch to local routes to an OpenAI-compatible endpoint; brand logo/palette drive the deck).
+Gate GREEN: **90 backend tests + clean frontend build**, zero regressions. Ready for P7 on Eric's go.
 
 ### Session 9 — 2026-06-14 (pre-P7 Settings block)
 

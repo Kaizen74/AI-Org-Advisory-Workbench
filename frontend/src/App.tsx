@@ -7,6 +7,7 @@ import ScenarioStudio from "./pages/ScenarioStudio";
 import WorkflowMapper from "./pages/WorkflowMapper";
 import TransitionPlanner from "./pages/TransitionPlanner";
 import Deliverables from "./pages/Deliverables";
+import Settings from "./pages/Settings";
 
 type Tab =
   | "engagements"
@@ -16,7 +17,8 @@ type Tab =
   | "scenarios"
   | "workflows"
   | "transition"
-  | "deliverables";
+  | "deliverables"
+  | "settings";
 
 export default function App() {
   const [tab, setTab] = useState<Tab>("engagements");
@@ -40,6 +42,7 @@ export default function App() {
     { id: "workflows", label: "Workflow Mapper" },
     { id: "transition", label: "Transition Planner" },
     { id: "deliverables", label: "Deliverables" },
+    { id: "settings", label: "Settings" },
   ];
 
   return (
@@ -83,6 +86,7 @@ export default function App() {
         {tab === "deliverables" && (
           <Deliverables datasetId={datasetId} engagementId={engagementId} />
         )}
+        {tab === "settings" && <Settings />}
       </main>
     </div>
   );

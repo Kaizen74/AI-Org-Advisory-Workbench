@@ -35,7 +35,10 @@ it ships):**
 - _Deliverables_ — one-click branded PowerPoint/Word/Excel exports (diagnostic, scenario
   comparison, AI roadmap, TOM, metrics, transition register), each with an auto-generated provenance
   page; unreviewed AI content is automatically blocked. ✅ _(Phase 6 — modern-minimalist template)_
-- _(later phase: Security & deploy / Settings.)_
+- _Settings_ — enter your Anthropic API key in the app (no editing files), switch to a **local LLM**
+  on your computer for when online models are down, and set a **brand logo + colour palette** that
+  the deck template adopts. ✅ _(pre-P7)_
+- _(later phase: Security & deploy.)_
 
 ---
 
@@ -90,9 +93,13 @@ an engagement, upload an org CSV, then click **Diagnose →** to compute the met
 bash scripts/gate.sh
 ```
 
-Phase-1 screens (Engagements, Diagnostics) need **no API key**. The **Anthropic API key** (the
-password-like string that lets the app use Claude AI) is only needed from Phase 2 on; you'll create
-one at <https://console.anthropic.com> and paste it into the Settings screen when it ships.
+Phase-1 screens (Engagements, Diagnostics) need **no API key**. For the AI features, open the
+**Settings** tab in the app and paste your **Anthropic API key** (create one at
+<https://console.anthropic.com>) — it is stored on the server, never shown back in full, and you
+never edit any file. If online AI models are ever disrupted, switch the provider in Settings to
+**Local LLM** and point it at a local server on your computer (e.g. Ollama at
+`http://localhost:11434/v1`). Settings is also where you set a **brand logo + colour palette** for
+the generated decks (choose the “Brand” template on the Deliverables tab).
 
 ---
 

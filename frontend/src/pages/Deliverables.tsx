@@ -22,6 +22,7 @@ export default function Deliverables({
   const [scenarioId, setScenarioId] = useState<string>("");
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
+  const [template, setTemplate] = useState("minimal");
 
   async function refresh() {
     if (!engagementId) return;
@@ -43,7 +44,7 @@ export default function Deliverables({
     setBusy(type);
     setError("");
     try {
-      await api.generateDeliverable(engagementId, type, opts);
+      await api.generateDeliverable(engagementId, type, { ...opts, template });
       await refresh();
     } catch (e) {
       setError(String((e as Error).message ?? e));
@@ -65,6 +66,17 @@ export default function Deliverables({
           Deliverables are built from saved, reviewed data. Unreviewed AI-guessed content is
           automatically excluded and disclosed; every file carries a provenance page.
         </p>
+        <label className="mb-3 block text-sm">
+          <span className="text-slate-600">Template</span>
+          <select
+            value={template}
+            onChange={(e) => setTemplate(e.target.value)}
+            className="ml-2 rounded border border-slate-300 px-2 py-1"
+          >
+            <option value="minimal">Modern minimalist</option>
+            <option value="brand">Brand (from Settings)</option>
+          </select>
+        </label>
         <div className="flex flex-wrap gap-2">
           {DATASET_TYPES.map((d) => (
             <Button

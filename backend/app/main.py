@@ -35,6 +35,19 @@ app.add_middleware(
 )
 
 
+@app.on_event("startup")
+async def _load_settings_cache() -> None:
+    """Hydrate the settings cache from the DB so the LLM provider/key/brand are active at boot (D11)."""
+    from .models import async_session
+    from .services import settings_service
+
+    try:
+        async with async_session() as session:
+            await settings_service.load_from_db(session)
+    except Exception:  # noqa: BLE001 - a fresh/unmigrated DB must not block startup
+        pass
+
+
 @app.get("/health")
 def health() -> dict:
     """Liveness probe — proves the app boots. No API key required (Build Spec B2)."""

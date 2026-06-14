@@ -143,6 +143,25 @@ to gitignored `backend/output/`.
 > Additive-only from here: migration 005, the deliverable generators + provenance/export-block
 > contract, and the `/api/v1/deliverables` routes must not regress.
 
+## Pre-P7 Settings block (branding, UI-managed key, local-LLM) — COMPLETE
+
+**Passing tests — 90 backend total (74 from P6 + 16 new):**
+- `test_migration.py::test_migration_006_*` — migration 006 (`app_settings`) additive + reversible.
+- `test_settings_service.py::*` (4) — DB persistence + cache, secret masking, unknown-key ignore,
+  brand-palette JSON parse.
+- `test_llm_provider.py::*` (4) — anthropic vs local routing, provider-aware `has_api_key`, missing
+  key raises. (Local path uses `local_model` + `{base_url}/chat/completions`, httpx patched.)
+- `test_settings_api.py::*` (5) — get/update (masked secret), brand-logo upload/fetch + bad-type
+  reject, `test-llm` under current provider, 400 when unconfigured.
+- `test_brand_deck.py::*` (2) — `template="brand"` records brand name + embeds logo; `minimal` default
+  unchanged (regression).
+
+**Frontend:** Settings page (provider/key/models/local + brand palette/logo + Test connection),
+Deliverables template selector (minimal | brand), Settings tab. Builds zero TS errors.
+
+> Provider routing preserves the prior Anthropic path (regression-proven). Brand assets live in
+> gitignored `backend/uploads/brand/`. D11 supersedes A4 "Claude-only"; D12 extends D10.
+
 ## Reserved baseline targets (to be locked when their phase ships)
 
 > Recorded now so a future session never forgets the byte-exact numbers it must reproduce.
