@@ -162,3 +162,18 @@ repair when the extracted span contains a closing `}`; a string with no `}` shor
 ports must not silently "improve" behaviour (Part A additive-only / no-silent-change). Tests in
 `test_json_utils.py` lock this contract so a future phase cannot regress it. (A test I first wrote
 asserted the wrong expectation; the test was corrected, not the ported code.)
+
+## 2026-06-15 — D14: Salary column matched by header variant, not exact "Salary"
+
+**Source:** Eric's bug report — uploaded "Global Mkrting Co" CSV showed **TOTAL COST $0** despite a
+populated salary column.
+**Root cause:** `OrgCSVParser._clean_data` matched the salary column by the exact string `"Salary"`.
+The real export's header was **`"Salary ($)"`**, so no column matched and every `salary` defaulted
+to 0, propagating to `cost_analysis.total_cost = 0`.
+**Decision:** Resolve the salary column tolerantly via `_find_salary_column`: exact `"Salary"` wins;
+otherwise the first column whose normalized (lowercased, stripped) name **contains "salary"** (covers
+`Salary ($)`, `Salary (USD)`, `Annual Salary`, `Base Salary`, `SALARY`). Existing `$`/`,` cleaning and
+`NA→0` coercion are unchanged. **Additive/backward-compatible:** the PAX fixture uses exact `"Salary"`
+and its LOCKED baseline (total_cost 6,620,000) is unchanged. **Regression tests:**
+`test_csv_parser.py::test_salary_column_header_variants_are_recognized` and
+`::test_currency_formatted_salary_values_are_parsed`.

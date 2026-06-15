@@ -333,3 +333,25 @@ Gate GREEN: **90 backend tests + clean frontend build**, zero regressions. Ready
   `apply_moves` is a PURE function (deep-copies baseline, never mutates) so undo = recompute from
   baseline + remaining moves reproduces baseline metrics byte-identically. Deltas computed vs
   persisted `metric_values`, not re-parsed CSV.
+
+---
+
+## 2026-06-15 — Bugfix session (D14): cost metrics ignored salaries from real uploads
+
+**Reported:** Eric's "Global Mkrting Co" upload showed **TOTAL COST $0** though the CSV had a
+populated salary column.
+**Diagnosis:** `OrgCSVParser._clean_data` matched the salary column by the exact header `"Salary"`;
+the real export's header is `"Salary ($)"`, so no column matched → every `salary` = 0 →
+`cost_analysis.total_cost = 0`. PAX fixture uses exact `"Salary"`, so the LOCKED baseline never
+exposed it.
+**Fix (Rule 4, test-first):**
+1. Added failing tests `test_csv_parser.py::test_salary_column_header_variants_are_recognized` and
+   `::test_currency_formatted_salary_values_are_parsed`.
+2. Added `OrgCSVParser._find_salary_column`: exact `"Salary"` wins, else first header containing
+   "salary" (covers `Salary ($)`, `Salary (USD)`, `Annual Salary`, `Base Salary`, `SALARY`).
+   Existing `$`/`,` stripping and `NA→0` coercion unchanged.
+3. Full gate green.
+**Verification:** end-to-end parse→metrics on a `Salary ($)` CSV computes the real total; confirmed
+backend↔frontend alignment (`cost_analysis.total_cost` → diagnostics metric `total_cost` →
+`Diagnostics.tsx` TOTAL COST tile). PAX baseline unchanged (6,620,000).
+**Gate:** PASS — **114 backend tests + clean frontend build**, zero regressions.

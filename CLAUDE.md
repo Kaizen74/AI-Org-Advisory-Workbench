@@ -44,6 +44,14 @@ Settings → Access control; bootstrap from `ACCESS_USERS` env, tokens signed by
 deploy guide updated for private hosting. **Gate GREEN: 108 backend tests + clean frontend build;**
 live-verified (401 → login → token → 200). Deploy must set `AUTH_SECRET` + `ACCESS_USERS`.
 
+**Cost-metric bugfix (2026-06-15 — D14):** real uploads showed **TOTAL COST $0** because the CSV
+parser matched the salary column on the exact header `"Salary"` while the client export labels it
+`"Salary ($)"`. Fixed `OrgCSVParser._find_salary_column` to match any header containing "salary"
+(`Salary ($)`, `Salary (USD)`, `Annual Salary`, …); `$`/`,` cleaning and `NA→0` unchanged. PAX baseline
+(exact `Salary`) unchanged — still LOCKED 64 / 34 / 53.1% / 6,620,000 / 6. Added 2 regression tests;
+backend↔frontend alignment confirmed (`cost_analysis.total_cost` → metric `total_cost` → Diagnostics
+tile). **Gate GREEN: 114 backend tests + clean frontend build, zero regressions.**
+
 ---
 
 # PART A — OPERATING PROTOCOL FOR CLAUDE CODE (MANDATORY)

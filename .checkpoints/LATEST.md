@@ -1,8 +1,9 @@
 # LATEST CHECKPOINT
-**Updated:** 2026-06-14T10:30:00 (P7 code complete + private access control D13; live deploy pending Eric)
-**Phase:** P7 done + access-control block (D13). **All seven phases P0–P7 built; app is private.**
-**Last completed micro-task:** D13 — private email+passcode login gate on all routes; owner-managed
-allowlist; README private-deploy guide. Gate green (108 tests). Live-verified 401→login→200.
+**Updated:** 2026-06-15T00:00:00 (P7 + D13 + bugfix D14; live deploy still pending Eric)
+**Phase:** P7 done + access-control (D13) + cost-metric bugfix (D14). **All seven phases P0–P7 built; app is private.**
+**Last completed micro-task:** D14 — fixed TOTAL COST=$0 on real uploads: parser now matches the
+salary column by header variant (`Salary ($)`, etc.), not exact `"Salary"`. Added 2 regression tests.
+Gate GREEN (114 backend tests + clean frontend build); end-to-end + backend↔frontend field alignment verified.
 **In-flight micro-task:** none.
 **Next action (be exact):** Two things remain, both needing Eric (cannot be done from this sandbox):
   1. **Live deploy** — follow README §4 to deploy backend→Railway (root `backend`, add Postgres, set
@@ -14,7 +15,7 @@ allowlist; README private-deploy guide. Gate green (108 tests). Live-verified 40
      wording corrections (actual Vercel/Railway button names) back into README §4.
   Optional follow-ups (additive): branch merge to `main` (then delete `legacy v1 app.zip` from main);
   expand audit UI; refine activator/L0-L3 rubrics if Eric supplies definitions.
-**Test status:** PASS — gate GREEN, **100 backend tests + clean frontend build**, zero regressions.
+**Test status:** PASS — gate GREEN, **114 backend tests + clean frontend build**, zero regressions.
 **Recovery commands:** `bash scripts/gate.sh`
 **Open questions for Eric:**
   1. **Live cloud deploy** needs your Vercel + Railway accounts connected to the GitHub repo — say

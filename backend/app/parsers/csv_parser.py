@@ -98,9 +98,10 @@ class OrgCSVParser:
             if df[col].dtype == object:  # strip text columns (avoids select_dtypes deprecation)
                 df[col] = df[col].astype(str).str.strip()
 
-        if "Salary" in df.columns:
+        salary_col = self._find_salary_column(df)
+        if salary_col is not None:
             df["Salary"] = (
-                df["Salary"].astype(str).str.replace(",", "").str.replace("$", "").str.strip()
+                df[salary_col].astype(str).str.replace(",", "").str.replace("$", "").str.strip()
             )
             df["Salary"] = pd.to_numeric(df["Salary"], errors="coerce").fillna(0)
         else:
@@ -118,6 +119,22 @@ class OrgCSVParser:
             else:
                 df[col] = df[col].fillna(default)
         return df
+
+    @staticmethod
+    def _find_salary_column(df: pd.DataFrame) -> Optional[str]:
+        """Locate the salary column tolerant of real-world header labels.
+
+        Client exports rarely name it exactly "Salary" — e.g. "Salary ($)", "Salary (USD)",
+        "Annual Salary", "Base Salary". An exact "Salary" match always wins; otherwise the first
+        column whose normalized name contains "salary" is used. Returns None when absent (cost
+        metrics then legitimately read 0).
+        """
+        if "Salary" in df.columns:
+            return "Salary"
+        for col in df.columns:
+            if "salary" in str(col).strip().lower():
+                return col
+        return None
 
     # ── ID keying (the breaking fix) ─────────────────────────────────────────
     def _row_key(self, row, idx: int) -> str:

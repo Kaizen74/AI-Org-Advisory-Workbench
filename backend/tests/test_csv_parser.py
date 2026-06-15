@@ -92,6 +92,47 @@ def test_surrogate_keys_when_no_employee_id_column():
     assert ann["manager_key"] == boss["employee_key"]
 
 
+# ── Salary column header variants (fix: real client CSVs label it "Salary ($)") ──
+SALARY_HEADER_VARIANTS = [
+    "Salary ($)",      # the header in Eric's "Global Mkrting Co" upload
+    "Salary (USD)",
+    "Salary(SGD)",
+    "Annual Salary",
+    "Base Salary",
+    "SALARY",
+]
+
+
+def _csv_with_salary_header(header: str) -> str:
+    return (
+        f"Name,Job Title,Grade,Department,Level,Line Manager,{header},Employee ID\n"
+        "Boss,CEO,SVP,Exec,1,Top of Org,NA,E1\n"
+        "Ann,Analyst,AO,Finance,2,Boss,80000,E2\n"
+        "Ben,Analyst,AO,Ops,2,Boss,120000,E3\n"
+    )
+
+
+def test_salary_column_header_variants_are_recognized():
+    """A salary column under common header variants must feed the cost metrics (not default to 0)."""
+    for header in SALARY_HEADER_VARIANTS:
+        result = OrgCSVParser(io.StringIO(_csv_with_salary_header(header))).parse()
+        meta = result["metadata"]
+        assert meta["total_salary_cost"] == 200000.0, f"header {header!r} not recognized"
+        salaries = sorted(p["salary"] for p in result["positions"])
+        assert salaries == [0.0, 80000.0, 120000.0], f"header {header!r} parsed wrong: {salaries}"
+
+
+def test_currency_formatted_salary_values_are_parsed():
+    """Values like '$120,000' (commas/symbols) are cleaned, regardless of the header label."""
+    csv = (
+        "Name,Job Title,Grade,Department,Level,Line Manager,Salary ($),Employee ID\n"
+        "Boss,CEO,SVP,Exec,1,Top of Org,\"$300,000\",E1\n"
+        "Ann,Analyst,AO,Finance,2,Boss,\"$80,000\",E2\n"
+    )
+    result = OrgCSVParser(io.StringIO(csv)).parse()
+    assert result["metadata"]["total_salary_cost"] == 380000.0
+
+
 # ── Validation guard ────────────────────────────────────────────────────────
 def test_missing_required_columns_returns_error():
     result = OrgCSVParser(io.StringIO("Name,Title\nJohn,Manager")).parse()
