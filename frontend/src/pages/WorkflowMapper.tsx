@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../services/api";
 import type { OpportunityMatrix, ProcessInfo, StepInfo, TaskItem } from "../types";
-import { Button, Card, Empty, ErrorNote } from "../components/ui";
+import { Button, Card, Empty, ErrorNote, Spinner, StatCard } from "../components/ui";
 
 const LEVELS = ["L0", "L1", "L2", "L3"];
 
@@ -19,6 +19,7 @@ export default function WorkflowMapper({
   const [stepId, setStepId] = useState<string>("");
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
   const [matrix, setMatrix] = useState<OpportunityMatrix | null>(null);
+  const [running, setRunning] = useState(false);
   const [error, setError] = useState("");
   const [note, setNote] = useState("");
   const [newProc, setNewProc] = useState("");
@@ -89,10 +90,13 @@ export default function WorkflowMapper({
   async function runMatrix() {
     if (!activeProc) return;
     setError("");
+    setRunning(true);
     try {
       setMatrix(await api.opportunityMatrix(activeProc));
     } catch (e) {
       setError(String((e as Error).message ?? e));
+    } finally {
+      setRunning(false);
     }
   }
 
@@ -102,6 +106,13 @@ export default function WorkflowMapper({
 
   const activeStep = steps.find((s) => s.id === stepId);
   const totalLinked = steps.reduce((n, s) => n + s.linked_tasks, 0);
+
+  // Mapping coverage (no API key needed): which CSV-derived tasks are linked into this process,
+  // which are still unlinked ("what's left"), and which steps have no tasks ("what's missing").
+  const linkedIds = new Set(steps.flatMap((s) => s.linked_task_ids ?? []));
+  const unlinkedTasks = tasks.filter((t) => !linkedIds.has(t.id));
+  const emptySteps = steps.filter((s) => s.linked_tasks === 0);
+  const coveragePct = tasks.length ? Math.round((linkedIds.size / tasks.length) * 100) : 0;
 
   return (
     <div className="space-y-5">
@@ -113,6 +124,11 @@ export default function WorkflowMapper({
       )}
       <div className="grid gap-5 md:grid-cols-3">
         <Card title="Processes & steps">
+          <p className="mb-2 text-xs text-slate-500">
+            Processes and steps are <b>labels you author here</b> — the value-stream / workflow
+            structure isn't in the uploaded org CSV. You then <b>link existing tasks</b> (extracted
+            from the CSV in Task Intelligence) onto each step.
+          </p>
           {processes.length === 0 ? (
             <Empty message="No processes yet." />
           ) : (
@@ -213,12 +229,14 @@ export default function WorkflowMapper({
         <Card
           title="AI opportunity matrix"
           actions={
-            <Button onClick={runMatrix} disabled={!activeProc}>
-              Run
+            <Button onClick={runMatrix} disabled={!activeProc || running}>
+              {running ? "Running…" : "Run"}
             </Button>
           }
         >
-          {!matrix ? (
+          {running ? (
+            <Spinner label="Scoring AI opportunity for this process…" />
+          ) : !matrix ? (
             <Empty message="Run the matrix for the selected process (needs an API key)." />
           ) : (
             <div className="space-y-2 text-sm">
@@ -254,6 +272,80 @@ export default function WorkflowMapper({
           )}
         </Card>
       </div>
+
+      {activeProc && (
+        <Card title="Mapping coverage">
+          {tasks.length === 0 ? (
+            <Empty message="No extracted tasks yet — run Task Intelligence → Extract first." />
+          ) : (
+            <div className="space-y-4">
+              {/* Progress: how much of the work has been mapped onto this process. */}
+              <div>
+                <div className="mb-1 flex justify-between text-xs text-slate-500">
+                  <span>
+                    {linkedIds.size} of {tasks.length} extracted tasks linked into this process
+                  </span>
+                  <span>{coveragePct}%</span>
+                </div>
+                <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    className="h-full rounded-full bg-emerald-500 transition-all"
+                    style={{ width: `${coveragePct}%` }}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                <StatCard label="Steps" value={String(steps.length)} />
+                <StatCard label="Linked tasks" value={String(linkedIds.size)} />
+                <StatCard label="Unlinked (left)" value={String(unlinkedTasks.length)} />
+                <StatCard label="Empty steps (missing)" value={String(emptySteps.length)} />
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <div className="mb-1 text-xs font-medium uppercase text-slate-500">
+                    Unlinked tasks — what's left
+                  </div>
+                  {unlinkedTasks.length === 0 ? (
+                    <p className="rounded bg-emerald-50 px-2 py-1 text-xs text-emerald-700">
+                      Every extracted task is linked into this process. ✓
+                    </p>
+                  ) : (
+                    <ul className="max-h-48 space-y-0.5 overflow-auto text-sm text-slate-600">
+                      {unlinkedTasks.map((t) => (
+                        <li key={t.id} className="border-b border-slate-50 py-0.5">
+                          {t.task_text}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                <div>
+                  <div className="mb-1 text-xs font-medium uppercase text-slate-500">
+                    Steps with no tasks — what's missing
+                  </div>
+                  {emptySteps.length === 0 ? (
+                    <p className="rounded bg-emerald-50 px-2 py-1 text-xs text-emerald-700">
+                      {steps.length === 0
+                        ? "No steps yet — add steps to structure the process."
+                        : "Every step has at least one task linked. ✓"}
+                    </p>
+                  ) : (
+                    <ul className="max-h-48 space-y-0.5 overflow-auto text-sm text-amber-700">
+                      {emptySteps.map((s) => (
+                        <li key={s.id} className="border-b border-amber-50 py-0.5">
+                          {s.seq}. {s.name}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </Card>
+      )}
     </div>
   );
 }

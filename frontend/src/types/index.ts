@@ -188,6 +188,7 @@ export interface StepInfo {
   seq: number;
   name: string;
   linked_tasks: number;
+  linked_task_ids: string[];
 }
 
 export interface OpportunityMatrix {

@@ -108,6 +108,8 @@ async def test_steps_listed_with_counts_and_matrix_reflects_linked_count(
     listed = (await api_client.get(f"/api/v1/workflows/{pid}/steps")).json()["steps"]
     assert len(listed) == 1
     assert listed[0]["linked_tasks"] == len(subset)
+    # linked_task_ids drives the coverage view (what's linked vs left); ids match the count + set.
+    assert sorted(listed[0]["linked_task_ids"]) == sorted(subset)
 
     body = (await api_client.post(f"/api/v1/workflows/{pid}/opportunity-matrix")).json()
     assert sum(body["matrix"].values()) == len(subset)  # matrix reflects exactly the linked tasks

@@ -2,7 +2,8 @@
 **Updated:** 2026-06-16T12:50:00 (P7 + D13 + bugfixes D14–D16 + refocus D17; live deploy still pending Eric)
 **Phase:** P7 done + access-control (D13) + D14–D16 fixes + **D17 product refocus**. **All seven phases
 P0–P7 built; app is private and now centred on role→task→AI-potential (H0–H5).**
-**Last completed micro-task:** D17 — parked Scenario Studio + Transition Planner behind `SHOW_SIMULATION`
+**Last completed micro-task:** D18 — Workflow Mapper: matrix 'Run' progress (spinner + Running…), a new Mapping coverage card (progress bar + linked/unlinked/empty-step tiles + what's-left/what's-missing lists; `list_steps` now returns `linked_task_ids`), and a note that processes/steps are authored labels onto which CSV tasks are linked. Gate GREEN (118 tests + build).
+**Prior micro-task:** D17 — parked Scenario Studio + Transition Planner behind `SHOW_SIMULATION`
 (reversible nav flag; code+tests intact) and made the **WORKBank Human Agency Scale (H0–H5)** the headline
 AI-potential metric (`human_agency_band` + `HUMAN_AGENCY_SCALE` rubric; rollup `agency` breakdown; queue
 ai_score band; Task Intelligence headline chart+legend). L0–L3 kept internally. Gate GREEN (118 tests + build).

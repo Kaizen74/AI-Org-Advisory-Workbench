@@ -422,3 +422,19 @@ Diagnostics + Workflow Mapper as supporting.
 **Tests:** +1 unit (band mapping); extended rollup (agency sums, rubric keys) and queue (band, has_level).
 **Open for Eric:** confirm H0 def/direction; optional Workflow-matrix re-band to H0–H5; optional
 Deliverables slim. **Gate:** PASS — 118 backend tests + clean frontend build, zero regressions.
+
+---
+
+## 2026-06-16 — Workflow Mapper UX (D18)
+
+Eric's review raised: no run-progress on the matrix; no visible mapped-coverage output; and a question
+on process/step semantics.
+- Backend: `list_steps` now returns `linked_task_ids` per step (additive; count retained).
+- Frontend: matrix "Run" shows a "Running…" button + spinner; new full-width **Mapping coverage** card
+  (progress bar + linked/unlinked/empty-step tiles + "what's left"/"what's missing" lists), no API key
+  needed. Processes card now explains processes/steps are authored labels onto which CSV-derived tasks
+  are linked.
+- Clarification (recorded in DECISIONS D18): processes/steps are authored in-app; tasks come from the
+  CSV and are linked — hybrid by design.
+**Tests:** extended `test_steps_listed_with_counts_and_matrix_reflects_linked_count` to assert
+`linked_task_ids`. **Gate:** PASS — 118 backend tests + clean frontend build, zero regressions.

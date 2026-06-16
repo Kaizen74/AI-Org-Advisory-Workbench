@@ -255,3 +255,24 @@ use); (b) optionally re-band the Workflow Mapper "AI opportunity matrix" from L0
 consistency; (c) optionally slim the Deliverables to the diagnostic + AI-potential story (drop the
 scenario-comparison deck). **Verification:** +1 unit test (band mapping) + extended rollup/queue asserts;
 full gate green (118 backend tests + clean frontend build).
+
+## 2026-06-16 — D18: Workflow Mapper UX — run progress, mapping-coverage output, authored-vs-CSV clarity
+
+**Source:** Eric's review of the Workflow Mapper. (1) "Run" on the AI opportunity matrix gave no visible
+progress. (2) No visible output of what was mapped (linked / left / missing). (3) Asked whether
+processes/steps are new labels vs. linking what exists in the CSV.
+**Clarification recorded (3):** Processes and steps are **authored in the app** (the value-stream /
+workflow structure is NOT in the uploaded org CSV — a CSV carries roles→activities, not processes). The
+CSV-derived, extracted **tasks** are then **linked** onto those authored steps via `TaskLink`. So it is a
+hybrid by design (M4 "follow the work"): authored process/step skeleton + linked existing tasks. A short
+explanatory note now states this in the Processes card.
+**Changes (additive):**
+- `workflow_service.list_steps` now returns `linked_task_ids` per step (kept `linked_tasks` count) — drives
+  the coverage view. Additive to the dict; existing count test still passes.
+- Frontend `StepInfo` gains `linked_task_ids`; WorkflowMapper: (1) `running` state → "Running…" button +
+  spinner in the matrix card; (2) a full-width **Mapping coverage** card (no API key needed): progress bar
+  (linked / total extracted tasks), stat tiles (steps / linked / unlinked / empty steps), and lists of
+  "Unlinked tasks — what's left" and "Steps with no tasks — what's missing".
+**Verification:** extended `test_steps_listed...` to assert `linked_task_ids`; gate green (118 backend
+tests + clean frontend build, zero regressions). The L0–L3 matrix is unchanged (re-banding to H0–H5 per
+D17 remains an open follow-up).

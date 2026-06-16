@@ -50,23 +50,24 @@ async def add_step(session: AsyncSession, process_id: str, name: str) -> Optiona
 
 
 async def list_steps(session: AsyncSession, process_id: str) -> Optional[List[Dict]]:
-    """Steps for a process, each with its linked-task count (None if the process is missing)."""
+    """Steps for a process, each with its linked task ids + count (None if the process is missing)."""
     if await session.get(Process, process_id) is None:
         return None
     steps = list(await session.scalars(
         select(ProcessStep).where(ProcessStep.process_id == process_id).order_by(ProcessStep.seq)
     ))
-    counts: Dict[str, int] = {}
+    links_by_step: Dict[str, List[str]] = {}
     if steps:
-        from sqlalchemy import func
         rows = await session.execute(
-            select(TaskLink.process_step_id, func.count(TaskLink.id))
+            select(TaskLink.process_step_id, TaskLink.task_id)
             .where(TaskLink.process_step_id.in_([s.id for s in steps]))
-            .group_by(TaskLink.process_step_id)
         )
-        counts = {sid: n for sid, n in rows.all()}
+        for sid, tid in rows.all():
+            links_by_step.setdefault(sid, []).append(tid)
     return [
-        {"id": s.id, "seq": s.seq, "name": s.name, "linked_tasks": counts.get(s.id, 0)}
+        {"id": s.id, "seq": s.seq, "name": s.name,
+         "linked_tasks": len(links_by_step.get(s.id, [])),
+         "linked_task_ids": links_by_step.get(s.id, [])}
         for s in steps
     ]
 
