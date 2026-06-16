@@ -177,3 +177,23 @@ otherwise the first column whose normalized (lowercased, stripped) name **contai
 and its LOCKED baseline (total_cost 6,620,000) is unchanged. **Regression tests:**
 `test_csv_parser.py::test_salary_column_header_variants_are_recognized` and
 `::test_currency_formatted_salary_values_are_parsed`.
+
+## 2026-06-16 — D15: Authenticated file downloads via blob fetch, not browser-direct URLs
+
+**Source:** Eric's bug report — "Download instrument (.xlsx)" returned `{"detail":"Not authenticated"}`.
+**Root cause:** D13 gated every `/api/v1/*` feature router with `Depends(require_auth)`, which reads
+the `Authorization: Bearer` header. Four spots opened file endpoints by **browser-direct navigation**
+(`<a href>` / `<img src>`) — the desire-pulse instrument, the transition register, deliverable
+downloads, and the Settings brand-logo preview — and the browser cannot attach the token header to
+those, so every one returned 401.
+**Decision:** Keep the backend auth contract **header-only** (no token-in-URL query param, which would
+leak tokens into browser history / access logs / Referer — at odds with the app's privacy/audit
+posture). Fix on the frontend: added `authedBlob()` + `downloadBlob()` in `services/api.ts` that fetch
+the file **with the Bearer header**, then save via a temporary object URL. Replaced the four URL-builder
+methods (`pulseInstrumentUrl`/`transitionRegisterUrl`/`deliverableDownloadUrl`/`brandLogoUrl`) with
+`downloadPulseInstrument` / `downloadTransitionRegister` / `downloadDeliverable(id, filename)` /
+`brandLogoObjectUrl()`; call sites became buttons (logo renders from a fetched object URL, revoked on
+change). **Additive/backward-compatible:** no backend change, no route/signature/schema change.
+**Verification:** no frontend test runner exists, so proven via (a) clean `npm run build`, and (b) a
+TestClient check on the gated endpoint — 401 without the header, auth-passes with a valid token. Full
+gate green (114 backend tests + build).

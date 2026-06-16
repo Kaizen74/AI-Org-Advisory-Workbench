@@ -355,3 +355,24 @@ exposed it.
 backend↔frontend alignment (`cost_analysis.total_cost` → diagnostics metric `total_cost` →
 `Diagnostics.tsx` TOTAL COST tile). PAX baseline unchanged (6,620,000).
 **Gate:** PASS — **114 backend tests + clean frontend build**, zero regressions.
+
+---
+
+## 2026-06-16 — Bugfix session (D15): file downloads returned "Not authenticated"
+
+**Reported:** Eric clicked "Download instrument (.xlsx)" and got `{"detail":"Not authenticated"}`.
+**Diagnosis:** D13 gates every `/api/v1/*` feature router with `Depends(require_auth)` (Bearer header).
+Four UI spots opened files by browser-direct navigation, which can't attach the header → 401:
+desire-pulse instrument (`<a href>`), transition register (`<a href>`), deliverable download
+(`<a href>`), Settings brand-logo preview (`<img src>`).
+**Fix (frontend-only, additive):**
+- `services/api.ts`: added `authedBlob()` + `downloadBlob()` (fetch with `Authorization: Bearer` →
+  blob → object-URL save). Replaced `pulseInstrumentUrl`/`transitionRegisterUrl`/
+  `deliverableDownloadUrl`/`brandLogoUrl` with `downloadPulseInstrument`/`downloadTransitionRegister`/
+  `downloadDeliverable(id, filename)`/`brandLogoObjectUrl()`.
+- Call sites: ValidationQueue, TransitionPlanner, Deliverables now use buttons; Settings renders the
+  logo from a fetched object URL (revoked on change).
+- Backend untouched — auth stays header-only (no token-in-URL, per privacy posture).
+**Verification:** no frontend test runner, so proven via clean `npm run build` + a TestClient check on
+the gated endpoint (401 without header; auth passes with a valid token, then 404 for the demo dataset).
+**Gate:** PASS — **114 backend tests + clean frontend build**, zero regressions.

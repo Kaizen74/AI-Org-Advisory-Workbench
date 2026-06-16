@@ -170,12 +170,16 @@ export default function ValidationQueue({
           <Empty message="Open a dataset from Engagements first." />
         ) : (
           <div className="space-y-3 text-sm">
-            <a
-              href={api.pulseInstrumentUrl(datasetId)}
+            <button
+              onClick={() =>
+                api.downloadPulseInstrument(datasetId).catch((e) =>
+                  setError(String((e as Error).message ?? e)),
+                )
+              }
               className="inline-block rounded-md border border-slate-300 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-100"
             >
               Download instrument (.xlsx)
-            </a>
+            </button>
             <label className="block">
               <span className="text-slate-600">Import filled responses (CSV or xlsx)</span>
               <input

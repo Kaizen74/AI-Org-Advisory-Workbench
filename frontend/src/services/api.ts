@@ -77,6 +77,43 @@ function json(body: unknown): RequestInit {
   };
 }
 
+// Authenticated binary fetch. Browser-direct downloads (<a href>, <img src>) cannot send the
+// Authorization header, so file endpoints (gated since D13) must be fetched here with the Bearer
+// token and turned into a blob — otherwise the server replies 401 "Not authenticated".
+async function authedBlob(url: string): Promise<Blob> {
+  const headers = new Headers();
+  if (authToken) headers.set("Authorization", `Bearer ${authToken}`);
+  const resp = await fetch(url, { headers });
+  if (resp.status === 401) {
+    setAuthToken(null);
+    onUnauthorized();
+    throw new Error("Your session expired — please sign in again.");
+  }
+  if (!resp.ok) {
+    let detail = `${resp.status} ${resp.statusText}`;
+    try {
+      const body = await resp.json();
+      if (body?.detail) detail = body.detail;
+    } catch {
+      /* ignore non-JSON error bodies */
+    }
+    throw new Error(detail);
+  }
+  return resp.blob();
+}
+
+async function downloadBlob(url: string, filename: string): Promise<void> {
+  const blob = await authedBlob(url);
+  const objectUrl = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = objectUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(objectUrl);
+}
+
 export const api = {
   // Auth + access (D13)
   login: async (email: string, passcode: string) => {
@@ -173,8 +210,11 @@ export const api = {
     }),
 
   // Desire pulse
-  pulseInstrumentUrl: (datasetId: string) =>
-    `${API_ORIGIN}/api/v1/task-intel/pulse/instrument.xlsx?dataset_id=${encodeURIComponent(datasetId)}`,
+  downloadPulseInstrument: (datasetId: string) =>
+    downloadBlob(
+      `${BASE}/task-intel/pulse/instrument.xlsx?dataset_id=${encodeURIComponent(datasetId)}`,
+      `desire-pulse-instrument.xlsx`,
+    ),
   pulseImport: (engagementId: string, datasetId: string, file: File) => {
     const form = new FormData();
     form.append("file", file);
@@ -230,8 +270,11 @@ export const api = {
       `/transition/compute?scenario_id=${encodeURIComponent(scenarioId)}`,
       { method: "POST" },
     ),
-  transitionRegisterUrl: (scenarioId: string) =>
-    `${API_ORIGIN}/api/v1/transition/register.xlsx?scenario_id=${encodeURIComponent(scenarioId)}`,
+  downloadTransitionRegister: (scenarioId: string) =>
+    downloadBlob(
+      `${BASE}/transition/register.xlsx?scenario_id=${encodeURIComponent(scenarioId)}`,
+      `transition-register.xlsx`,
+    ),
 
   // Deliverables
   generateDeliverable: (
@@ -249,7 +292,8 @@ export const api = {
     request<{ deliverables: DeliverableInfo[] }>(
       `/deliverables/list?engagement_id=${encodeURIComponent(engagementId)}`,
     ),
-  deliverableDownloadUrl: (id: string) => `${API_ORIGIN}/api/v1/deliverables/${id}/download`,
+  downloadDeliverable: (id: string, filename: string) =>
+    downloadBlob(`${BASE}/deliverables/${id}/download`, filename),
 
   // Settings
   getSettings: () => request<AppSettings>("/settings"),
@@ -267,7 +311,9 @@ export const api = {
       body: form,
     });
   },
-  brandLogoUrl: () => `${API_ORIGIN}/api/v1/settings/brand-logo?t=${Date.now()}`,
+  // Returns an object URL for the brand logo (auth-gated; <img src> can't send the token).
+  // Caller is responsible for URL.revokeObjectURL when replacing/unmounting.
+  brandLogoObjectUrl: () => authedBlob(`${BASE}/settings/brand-logo?t=${Date.now()}`).then(URL.createObjectURL),
   testLlm: () =>
     request<{ ok: boolean; provider: string; sample: string }>("/settings/test-llm", {
       method: "POST",

@@ -52,6 +52,16 @@ parser matched the salary column on the exact header `"Salary"` while the client
 backend↔frontend alignment confirmed (`cost_analysis.total_cost` → metric `total_cost` → Diagnostics
 tile). **Gate GREEN: 114 backend tests + clean frontend build, zero regressions.**
 
+**Authed-download bugfix (2026-06-16 — D15):** file downloads returned `{"detail":"Not authenticated"}`
+because the D13 auth gate (`Depends(require_auth)` on every `/api/v1/*` router) needs a Bearer header
+that browser-direct `<a href>`/`<img src>` can't send. Fixed frontend-only: `services/api.ts` gained
+`authedBlob`/`downloadBlob` (fetch with token → blob → save); the four affected spots — desire-pulse
+instrument, transition register, deliverable download, Settings brand-logo preview — now go through it
+(URL-builder methods replaced by `downloadPulseInstrument`/`downloadTransitionRegister`/
+`downloadDeliverable`/`brandLogoObjectUrl`). Backend auth kept header-only (no token-in-URL, per privacy
+posture); no backend/route/schema change. Verified via clean build + TestClient gate check (401 without
+header, auth-passes with token). **Gate GREEN: 114 backend tests + clean frontend build, zero regressions.**
+
 ---
 
 # PART A — OPERATING PROTOCOL FOR CLAUDE CODE (MANDATORY)

@@ -1,9 +1,10 @@
 # LATEST CHECKPOINT
-**Updated:** 2026-06-15T00:00:00 (P7 + D13 + bugfix D14; live deploy still pending Eric)
-**Phase:** P7 done + access-control (D13) + cost-metric bugfix (D14). **All seven phases P0–P7 built; app is private.**
-**Last completed micro-task:** D14 — fixed TOTAL COST=$0 on real uploads: parser now matches the
-salary column by header variant (`Salary ($)`, etc.), not exact `"Salary"`. Added 2 regression tests.
-Gate GREEN (114 backend tests + clean frontend build); end-to-end + backend↔frontend field alignment verified.
+**Updated:** 2026-06-16T00:00:00 (P7 + D13 + bugfixes D14, D15; live deploy still pending Eric)
+**Phase:** P7 done + access-control (D13) + bugfixes D14 (cost metric) & D15 (authed downloads). **All seven phases P0–P7 built; app is private.**
+**Last completed micro-task:** D15 — fixed `{"detail":"Not authenticated"}` on file downloads: the
+D13 auth gate needs a Bearer header that browser-direct `<a href>`/`<img src>` can't send. Frontend now
+fetches files with the token → blob → save (pulse instrument, transition register, deliverable download,
+brand-logo preview). No backend change. Gate GREEN (114 backend tests + clean frontend build).
 **In-flight micro-task:** none.
 **Next action (be exact):** Two things remain, both needing Eric (cannot be done from this sandbox):
   1. **Live deploy** — follow README §4 to deploy backend→Railway (root `backend`, add Postgres, set

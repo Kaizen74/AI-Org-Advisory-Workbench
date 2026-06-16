@@ -44,6 +44,7 @@ export default function Settings({ owner = false }: { owner?: boolean }) {
   const [error, setError] = useState("");
   const [note, setNote] = useState("");
   const [logoBump, setLogoBump] = useState(0);
+  const [logoSrc, setLogoSrc] = useState<string | null>(null);
 
   // Access management (owner only)
   const [accessUsers, setAccessUsers] = useState<AccessUserRow[]>([]);
@@ -108,6 +109,27 @@ export default function Settings({ owner = false }: { owner?: boolean }) {
     loadAccess();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // The brand-logo route is auth-gated (D13), so <img src> can't load it directly — fetch it with
+  // the token and render via an object URL. Reloads when the logo changes (logoBump) and revokes
+  // the previous object URL to avoid leaks.
+  useEffect(() => {
+    if (!s?.brand_logo_path) {
+      setLogoSrc(null);
+      return;
+    }
+    let revoked: string | null = null;
+    api
+      .brandLogoObjectUrl()
+      .then((url) => {
+        revoked = url;
+        setLogoSrc(url);
+      })
+      .catch(() => setLogoSrc(null));
+    return () => {
+      if (revoked) URL.revokeObjectURL(revoked);
+    };
+  }, [s?.brand_logo_path, logoBump]);
 
   function set(k: string, v: string) {
     setForm({ ...form, [k]: v });
@@ -221,9 +243,9 @@ export default function Settings({ owner = false }: { owner?: boolean }) {
           ))}
         </div>
         <div className="mt-3 flex items-center gap-4">
-          {s.brand_logo_path && (
+          {s.brand_logo_path && logoSrc && (
             <img
-              src={api.brandLogoUrl() + `&b=${logoBump}`}
+              src={logoSrc}
               alt="brand logo"
               className="h-12 w-auto rounded border border-slate-200 bg-white p-1"
             />

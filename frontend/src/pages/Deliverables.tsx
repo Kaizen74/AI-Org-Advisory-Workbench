@@ -145,12 +145,19 @@ export default function Deliverables({
                     {d.provenance_summary?.excluded_unreviewed_model_inferred ?? 0}
                   </td>
                   <td>
-                    <a
-                      href={api.deliverableDownloadUrl(d.id)}
+                    <button
+                      onClick={() =>
+                        api
+                          .downloadDeliverable(
+                            d.id,
+                            d.file_path?.split(/[/\\]/).pop() || `${d.type}-${d.id}`,
+                          )
+                          .catch((e) => setError(String((e as Error).message ?? e)))
+                      }
                       className="rounded border border-slate-300 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
                     >
                       Download
-                    </a>
+                    </button>
                   </td>
                 </tr>
               ))}

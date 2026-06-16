@@ -81,12 +81,16 @@ export default function TransitionPlanner({
           <Card
             title="Transition register"
             actions={
-              <a
-                href={api.transitionRegisterUrl(result.scenario_id)}
+              <button
+                onClick={() =>
+                  api.downloadTransitionRegister(result.scenario_id).catch((e) =>
+                    setError(String((e as Error).message ?? e)),
+                  )
+                }
                 className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100"
               >
                 Export .xlsx
-              </a>
+              </button>
             }
           >
             <table className="w-full text-sm">
