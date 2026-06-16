@@ -117,6 +117,7 @@ export interface QueueItem {
   kind: "benchmark" | "ai_score" | "crosswalk";
   id: string;
   task_id?: string | null;
+  task_text?: string | null;
   label: string;
   source?: string | null;
   confidence?: number | null;
@@ -180,11 +181,19 @@ export interface ProcessInfo {
   value_stream?: string | null;
 }
 
+export interface StepInfo {
+  id: string;
+  seq: number;
+  name: string;
+  linked_tasks: number;
+}
+
 export interface OpportunityMatrix {
   process_id: string;
   name: string;
   matrix: Record<string, number>;
   steps: { step_id: string; name: string; seq: number; level_counts: Record<string, number> }[];
+  evidencing_tasks: Record<string, string[]>;
   assessment: { priority: string; complexity: string; rationale: string; review_state: string };
   caveats: string[];
 }

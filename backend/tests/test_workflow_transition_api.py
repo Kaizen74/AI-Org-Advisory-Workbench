@@ -80,6 +80,48 @@ async def test_workflow_mapping_and_opportunity_matrix(api_client, async_session
     assert any("occupation-level" in c for c in body["caveats"])
 
 
+async def test_steps_listed_with_counts_and_matrix_reflects_linked_count(
+    api_client, async_session, monkeypatch
+):
+    """GET steps must surface each step + its linked-task count, and the matrix must aggregate
+    exactly the linked tasks (the Workflow Mapper relies on this to show a connected result)."""
+    eng_id, ds_id = await _setup(api_client, async_session, monkeypatch)
+
+    proc = await api_client.post("/api/v1/workflows",
+                                 json={"engagement_id": eng_id, "name": "Cargo Acceptance"})
+    pid = proc.json()["id"]
+
+    # New process has no steps.
+    assert (await api_client.get(f"/api/v1/workflows/{pid}/steps")).json()["steps"] == []
+
+    step = await api_client.post(f"/api/v1/workflows/{pid}/steps", json={"name": "Documentation"})
+    step_id = step.json()["id"]
+    assert step.json()["linked_tasks"] == 0
+
+    task_ids = [t.id for t in await async_session.scalars(select(Task))]
+    assert len(task_ids) >= 2
+    # Link only a subset and confirm the count + matrix total track it exactly.
+    subset = task_ids[:2]
+    await api_client.post(f"/api/v1/workflows/steps/{step_id}/map-tasks",
+                          json={"task_ids": subset})
+
+    listed = (await api_client.get(f"/api/v1/workflows/{pid}/steps")).json()["steps"]
+    assert len(listed) == 1
+    assert listed[0]["linked_tasks"] == len(subset)
+
+    body = (await api_client.post(f"/api/v1/workflows/{pid}/opportunity-matrix")).json()
+    assert sum(body["matrix"].values()) == len(subset)  # matrix reflects exactly the linked tasks
+    # Evidencing tasks tie the counts back to real task text.
+    evidencing = [t for lvl in body["evidencing_tasks"].values() for t in lvl]
+    assert len(evidencing) == len(subset)
+
+
+async def test_steps_404_for_missing_process(api_client, monkeypatch):
+    monkeypatch.setattr(type(claude_service), "has_api_key", property(lambda self: True))
+    r = await api_client.get("/api/v1/workflows/nope/steps")
+    assert r.status_code == 404
+
+
 async def test_transition_compute_and_register(api_client, async_session, monkeypatch):
     eng_id, ds_id = await _setup(api_client, async_session, monkeypatch)
 

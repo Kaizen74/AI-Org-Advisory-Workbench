@@ -57,31 +57,51 @@ async def get_queue(
     bstmt = select(TaskBenchmark)
     if task_ids is not None:
         bstmt = bstmt.where(TaskBenchmark.task_id.in_(task_ids))
-    for b in await session.scalars(bstmt):
-        if (include_reviewed or b.review_state == "unreviewed") and _below(b.confidence, max_confidence):
-            items.append({
-                "kind": "benchmark", "id": b.id, "task_id": b.task_id,
-                "label": f"{b.status} → O*NET {b.onet_task_code or '—'}",
-                "source": b.source, "confidence": b.confidence, "review_state": b.review_state,
-            })
+    benchmarks = [
+        b for b in await session.scalars(bstmt)
+        if (include_reviewed or b.review_state == "unreviewed") and _below(b.confidence, max_confidence)
+    ]
 
     # AI scores
     sstmt = select(TaskAIScore)
     if task_ids is not None:
         sstmt = sstmt.where(TaskAIScore.task_id.in_(task_ids))
-    for s in await session.scalars(sstmt):
-        if (include_reviewed or s.review_state == "unreviewed") and _below(s.confidence, max_confidence):
-            items.append({
-                "kind": "ai_score", "id": s.id, "task_id": s.task_id,
-                "label": f"{s.ai_opportunity_level} · zone {s.zone or '—'}",
-                "source": s.source, "confidence": s.confidence, "review_state": s.review_state,
-            })
+    ai_scores = [
+        s for s in await session.scalars(sstmt)
+        if (include_reviewed or s.review_state == "unreviewed") and _below(s.confidence, max_confidence)
+    ]
+
+    # One lookup of task text so each row is identifiable in the UI (distinct tasks otherwise render
+    # as identical labels — e.g. many "EXTRA → …" / "L0 · zone …" rows look like duplicates).
+    needed_ids = {b.task_id for b in benchmarks} | {s.task_id for s in ai_scores}
+    text_by_task: Dict[str, str] = {}
+    if needed_ids:
+        for t in await session.scalars(select(Task).where(Task.id.in_(needed_ids))):
+            text_by_task[t.id] = t.task_text
+
+    for b in benchmarks:
+        # Show the ACTUAL benchmarked source (SFw primary / O*NET bridge), not a hardcoded one.
+        target = b.taxonomy_source_code or ("O*NET" if b.onet_task_code else "—")
+        items.append({
+            "kind": "benchmark", "id": b.id, "task_id": b.task_id,
+            "task_text": text_by_task.get(b.task_id),
+            "label": f"{b.status} → {target} {b.onet_task_code or '—'}",
+            "source": b.source, "confidence": b.confidence, "review_state": b.review_state,
+        })
+
+    for s in ai_scores:
+        items.append({
+            "kind": "ai_score", "id": s.id, "task_id": s.task_id,
+            "task_text": text_by_task.get(s.task_id),
+            "label": f"{s.ai_opportunity_level} · zone {s.zone or '—'}",
+            "source": s.source, "confidence": s.confidence, "review_state": s.review_state,
+        })
 
     # Reference crosswalks (global; the seed's 0.40 row lands here) — Build Spec B0.
     for c in await session.scalars(select(TaxonomyCrosswalk)):
         if (include_reviewed or c.review_state == "unreviewed") and _below(c.confidence, max_confidence):
             items.append({
-                "kind": "crosswalk", "id": c.id, "task_id": None,
+                "kind": "crosswalk", "id": c.id, "task_id": None, "task_text": None,
                 "label": f"crosswalk → {c.to_source_code} {c.to_task_code}",
                 "source": c.method, "confidence": c.confidence, "review_state": c.review_state,
             })

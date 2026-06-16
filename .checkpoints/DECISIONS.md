@@ -197,3 +197,33 @@ change). **Additive/backward-compatible:** no backend change, no route/signature
 **Verification:** no frontend test runner exists, so proven via (a) clean `npm run build`, and (b) a
 TestClient check on the gated endpoint — 401 without the header, auth-passes with a valid token. Full
 gate green (114 backend tests + build).
+
+## 2026-06-16 — D16: Validation-queue legibility + Workflow Mapper step UX/connection
+
+**Source:** Eric's report — (1) the validation queue "feels like a lot of duplicates" and "SkillsFuture
+(SFw) benchmark data seems missing"; (2) Workflow Mapper steps "don't register" on Add; (3) the AI
+opportunity matrix seems "disconnected from the selected tasks/step/process".
+**Findings:**
+1. Not real duplicates — distinct tasks rendered identical labels because the queue showed only a
+   generic label (`{status} → O*NET {code}` / `{level} · zone {zone}`) with no task text, AND the
+   benchmark label hardcoded "O*NET" even though SFw is the default seeded source (so SFw looked
+   absent). SFw IS seeded (`SFW_AIR_TRANSPORT`, default). For a marketing dataset nothing matches the
+   illustrative air-transport seed, so all benchmarks are `EXTRA` (conf 0) and all scores are L0
+   robotics levers — hence the wall of identical-looking rows.
+2. Backend step creation/linking is correct (proven by tests), but the frontend never listed steps:
+   it kept only the latest `stepId` in state with no visible list/counts, so adding a step gave no
+   feedback and you couldn't pick which step to map to.
+3. The matrix backend correctly aggregates linked tasks, but the UI showed only bare L0–L3 counts with
+   no tie to tasks; with the broken step UX, fewer tasks linked than intended, so counts looked wrong.
+**Decisions (additive):**
+- Backend: `validation_service.get_queue` now attaches `task_text` to benchmark/ai_score items and
+  builds the benchmark label from the ACTUAL `taxonomy_source_code` (SFw/O*NET), not a constant.
+  New `GET /api/v1/workflows/{process_id}/steps` (+ `workflow_service.list_steps`) returns each step
+  with its `linked_tasks` count; `POST .../steps` now also returns `linked_tasks: 0`.
+- Frontend: ValidationQueue shows task text as the primary ITEM line (label demoted to subtext).
+  WorkflowMapper renders the steps list (selectable, with counts), gives add/link confirmations, and
+  the matrix card now shows per-level **evidencing task text** + a warning when nothing is linked.
+**Verification:** 3 new backend tests (queue task_text+source; steps list/counts; matrix sum == linked
+count) + an e2e reproducing the marketing scenario. Full gate green (117 backend tests + clean build).
+No existing route/signature changed destructively; the benchmark-label test still passes (onet code
+retained in the label when matched).

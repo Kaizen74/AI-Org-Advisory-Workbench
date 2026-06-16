@@ -19,6 +19,7 @@ import type {
   DeliverableInfo,
   OpportunityMatrix,
   ProcessInfo,
+  StepInfo,
   RollupResult,
   Scenario,
   ScenarioDelta,
@@ -257,8 +258,10 @@ export const api = {
     request<ProcessInfo[]>(`/workflows?engagement_id=${encodeURIComponent(engagementId)}`),
   createProcess: (engagementId: string, name: string, valueStream?: string) =>
     request<ProcessInfo>("/workflows", json({ engagement_id: engagementId, name, value_stream: valueStream })),
+  listSteps: (processId: string) =>
+    request<{ steps: StepInfo[] }>(`/workflows/${processId}/steps`),
   addStep: (processId: string, name: string) =>
-    request<{ id: string; seq: number; name: string }>(`/workflows/${processId}/steps`, json({ name })),
+    request<StepInfo>(`/workflows/${processId}/steps`, json({ name })),
   mapTasks: (stepId: string, taskIds: string[]) =>
     request<{ linked: number }>(`/workflows/steps/${stepId}/map-tasks`, json({ task_ids: taskIds })),
   opportunityMatrix: (processId: string) =>

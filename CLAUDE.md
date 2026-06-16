@@ -62,6 +62,18 @@ instrument, transition register, deliverable download, Settings brand-logo previ
 posture); no backend/route/schema change. Verified via clean build + TestClient gate check (401 without
 header, auth-passes with token). **Gate GREEN: 114 backend tests + clean frontend build, zero regressions.**
 
+**Queue legibility + Workflow Mapper UX (2026-06-16 — D16):** three reported issues fixed. (1) The
+validation queue looked full of duplicates and SFw seemed missing — distinct tasks shared a generic
+label and the benchmark label hardcoded "O*NET". `validation_service.get_queue` now attaches `task_text`
+and builds the label from the real `taxonomy_source_code` (SFw is the seeded default; nothing matches
+the illustrative air-transport seed for a marketing dataset → all `EXTRA`/L0-robotics). (2) Workflow
+Mapper steps "didn't register": the UI never listed steps. New `GET /api/v1/workflows/{id}/steps`
+(+ `workflow_service.list_steps`) returns steps with `linked_tasks` counts; the page now lists/selects
+steps and confirms add/link. (3) The matrix looked disconnected: the card now shows per-level
+**evidencing task text** and a no-tasks-linked warning (backend aggregation was already correct).
+Additive-only; benchmark-label test still passes. **Gate GREEN: 117 backend tests + clean frontend
+build, zero regressions.**
+
 ---
 
 # PART A — OPERATING PROTOCOL FOR CLAUDE CODE (MANDATORY)

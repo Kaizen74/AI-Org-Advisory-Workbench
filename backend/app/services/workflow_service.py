@@ -49,6 +49,28 @@ async def add_step(session: AsyncSession, process_id: str, name: str) -> Optiona
     return step
 
 
+async def list_steps(session: AsyncSession, process_id: str) -> Optional[List[Dict]]:
+    """Steps for a process, each with its linked-task count (None if the process is missing)."""
+    if await session.get(Process, process_id) is None:
+        return None
+    steps = list(await session.scalars(
+        select(ProcessStep).where(ProcessStep.process_id == process_id).order_by(ProcessStep.seq)
+    ))
+    counts: Dict[str, int] = {}
+    if steps:
+        from sqlalchemy import func
+        rows = await session.execute(
+            select(TaskLink.process_step_id, func.count(TaskLink.id))
+            .where(TaskLink.process_step_id.in_([s.id for s in steps]))
+            .group_by(TaskLink.process_step_id)
+        )
+        counts = {sid: n for sid, n in rows.all()}
+    return [
+        {"id": s.id, "seq": s.seq, "name": s.name, "linked_tasks": counts.get(s.id, 0)}
+        for s in steps
+    ]
+
+
 async def map_tasks(session: AsyncSession, step_id: str, task_ids: List[str]) -> Dict:
     """Link tasks to a process step (idempotent — existing links are skipped)."""
     if await session.get(ProcessStep, step_id) is None:

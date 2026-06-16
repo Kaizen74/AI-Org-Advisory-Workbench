@@ -73,6 +73,25 @@ async def test_validation_queue_and_review_api(api_client, async_session, monkey
     assert "benchmark" in stats.json()
 
 
+async def test_queue_items_carry_task_text_and_real_source(api_client, async_session, monkeypatch):
+    """Each row must be identifiable (task_text) and show the ACTUAL benchmarked source (SFw),
+    not a hardcoded 'O*NET' — otherwise distinct tasks look like duplicates and SFw seems missing."""
+    _, ds_id = await _run_pipeline(api_client, async_session, monkeypatch)
+
+    items = (await api_client.get("/api/v1/validation/queue",
+             params={"dataset_id": ds_id, "include_reviewed": True})).json()["items"]
+    bench = [i for i in items if i["kind"] == "benchmark"]
+    ai = [i for i in items if i["kind"] == "ai_score"]
+    assert bench and ai
+    # Distinguisher present and non-empty for task-bound rows.
+    assert all(i["task_text"] for i in bench)
+    assert all(i["task_text"] for i in ai)
+    # The benchmark label reflects the real matched source (SFw), proving SFw is wired in.
+    assert any("SFW_AIR_TRANSPORT" in i["label"] for i in bench)
+    # Crosswalk rows remain (task_text None is acceptable there).
+    assert any(i["kind"] == "crosswalk" for i in items)
+
+
 async def test_pulse_export_import_sets_local_not_us(api_client, async_session, monkeypatch):
     eng_id, ds_id = await _run_pipeline(api_client, async_session, monkeypatch)
 

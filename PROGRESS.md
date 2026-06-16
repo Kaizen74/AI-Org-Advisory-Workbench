@@ -376,3 +376,28 @@ desire-pulse instrument (`<a href>`), transition register (`<a href>`), delivera
 **Verification:** no frontend test runner, so proven via clean `npm run build` + a TestClient check on
 the gated endpoint (401 without header; auth passes with a valid token, then 404 for the demo dataset).
 **Gate:** PASS — **114 backend tests + clean frontend build**, zero regressions.
+
+---
+
+## 2026-06-16 — Fix session (D16): queue legibility + Workflow Mapper steps/matrix
+
+**Reported (3):** (1) validation queue feels full of duplicates; SkillsFuture (SFw) data seems missing.
+(2) Workflow Mapper steps don't register on "Add step". (3) AI opportunity matrix disconnected from the
+selected tasks/step/process.
+**Diagnosis:** (1) Not real dups — distinct tasks rendered identical labels (no task text shown) and
+the benchmark label hardcoded "O*NET" though SFw is the seeded default; a marketing dataset matches
+nothing in the illustrative air-transport seed, so all benchmarks are EXTRA (conf 0) / scores L0
+robotics levers. (2) Backend step CRUD/linking is correct (covered by tests) but the frontend never
+listed steps — it held only the latest stepId with no visible list or counts. (3) Matrix backend
+aggregates correctly, but the UI showed bare L0–L3 with no task tie-back; with the broken step UX
+fewer tasks linked than intended.
+**Fix (additive):**
+- Backend: `validation_service.get_queue` adds `task_text` and a real-source benchmark label; new
+  `GET /workflows/{process_id}/steps` + `workflow_service.list_steps` (steps with `linked_tasks`).
+- Frontend: ValidationQueue shows task text as the primary ITEM line; WorkflowMapper lists/selects
+  steps with counts, confirms add/link, and the matrix shows per-level evidencing task text + a
+  no-links warning.
+**Tests:** +3 backend (queue task_text+source; steps list/counts; matrix sum == linked) and an e2e
+reproducing the marketing scenario (6 identical labels → 6 distinct task_text; steps count=2;
+matrix sum=2 with evidencing). Backend↔frontend routes verified aligned.
+**Gate:** PASS — **117 backend tests + clean frontend build**, zero regressions.

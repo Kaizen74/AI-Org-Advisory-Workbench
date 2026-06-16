@@ -151,7 +151,12 @@ export default function ValidationQueue({
                       />
                     </td>
                     <td className="text-slate-500">{i.kind}</td>
-                    <td className="font-medium">{i.label}</td>
+                    <td>
+                      <div className="font-medium">{i.task_text ?? i.label}</div>
+                      {i.task_text && (
+                        <div className="text-xs text-slate-400">{i.label}</div>
+                      )}
+                    </td>
                     <td>
                       <SourceBadge source={i.source} />
                     </td>

@@ -42,7 +42,15 @@ async def add_step(process_id: str, body: StepCreate, session: AsyncSession = De
     step = await svc.add_step(session, process_id, body.name)
     if step is None:
         raise HTTPException(status_code=404, detail="Process not found")
-    return {"id": step.id, "seq": step.seq, "name": step.name}
+    return {"id": step.id, "seq": step.seq, "name": step.name, "linked_tasks": 0}
+
+
+@router.get("/{process_id}/steps")
+async def list_steps(process_id: str, session: AsyncSession = Depends(get_session)):
+    steps = await svc.list_steps(session, process_id)
+    if steps is None:
+        raise HTTPException(status_code=404, detail="Process not found")
+    return {"steps": steps}
 
 
 @router.post("/steps/{step_id}/map-tasks")
