@@ -438,3 +438,13 @@ on process/step semantics.
   CSV and are linked — hybrid by design.
 **Tests:** extended `test_steps_listed_with_counts_and_matrix_reflects_linked_count` to assert
 `linked_task_ids`. **Gate:** PASS — 118 backend tests + clean frontend build, zero regressions.
+
+---
+
+## 2026-06-16 — Workflow Mapper matrix re-banded to H0–H5 (D19)
+
+For consistency with the D17 headline, the AI-opportunity matrix now presents the WORKBank Human Agency
+Scale (H0–H5) instead of L0–L3. Backend adds `agency_matrix` / per-step `agency_counts` /
+`agency_evidencing` / `human_agency_scale` (L0–L3 retained internally); frontend headlines H0–H5 with a
+rubric tooltip. Extended the matrix test; live smoke confirmed (L3 tasks → H2, sum == linked).
+**Gate:** PASS — 118 backend tests + clean frontend build, zero regressions; tsc clean; keys aligned.

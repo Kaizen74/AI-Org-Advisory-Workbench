@@ -276,3 +276,21 @@ explanatory note now states this in the Processes card.
 **Verification:** extended `test_steps_listed...` to assert `linked_task_ids`; gate green (118 backend
 tests + clean frontend build, zero regressions). The L0–L3 matrix is unchanged (re-banding to H0–H5 per
 D17 remains an open follow-up).
+
+## 2026-06-16 — D19: Re-band the Workflow Mapper AI-opportunity matrix from L0–L3 to H0–H5
+
+**Source:** Eric — after D17 made the WORKBank Human Agency Scale the headline AI-potential metric, the
+Workflow Mapper matrix still showed L0–L3; he asked to re-band it to H0–H5 for consistency.
+**Changes (additive):**
+- `workflow_service._process_level_counts` now also computes an H0–H5 banding from each linked task's
+  `has_level` (`human_agency_band`): per-step `agency_counts`, process-wide `agency_matrix`, and
+  `agency_evidencing` (task text per band). L0–L3 (`matrix`, `level_counts`, `evidencing_tasks`) is
+  **retained internally** (additive-only). The matrix payload also ships the `human_agency_scale` rubric.
+- `_ai_priority` prompt now includes the HAS distribution (mock returns canned JSON regardless).
+- Frontend `OpportunityMatrix` type + WorkflowMapper switched the headline grid/evidencing to H0–H5
+  (6-tile grid, rubric tooltip, "lower H = more AI-amenable; H0 = robotics/GSE lever" caption).
+**Verification:** extended `test_workflow_mapping_and_opportunity_matrix` (agency_matrix band-set, sum ==
+linked count, rubric keys, step agency_counts). Live smoke: 2×L3 tasks band as H2; agency sum == linked.
+The H0≥1 assertion was dropped as fixture-specific (this fixture scores every task) — H0 semantics stay
+covered by the Task Intelligence rollup test. Gate green (118 backend tests + clean frontend build,
+zero regressions); backend↔frontend keys aligned, tsc clean.

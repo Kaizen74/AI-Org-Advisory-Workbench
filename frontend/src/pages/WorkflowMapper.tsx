@@ -3,7 +3,7 @@ import { api } from "../services/api";
 import type { OpportunityMatrix, ProcessInfo, StepInfo, TaskItem } from "../types";
 import { Button, Card, Empty, ErrorNote, Spinner, StatCard } from "../components/ui";
 
-const LEVELS = ["L0", "L1", "L2", "L3"];
+const AGENCY_BANDS = ["H0", "H1", "H2", "H3", "H4", "H5"];
 
 export default function WorkflowMapper({
   datasetId,
@@ -245,11 +245,15 @@ export default function WorkflowMapper({
                   No tasks linked to this process yet — link tasks to a step for a meaningful matrix.
                 </p>
               )}
-              <div className="grid grid-cols-4 gap-2">
-                {LEVELS.map((l) => (
-                  <div key={l} className="rounded border border-slate-200 p-2 text-center">
-                    <div className="text-xs text-slate-500">{l}</div>
-                    <div className="text-lg font-semibold">{matrix.matrix[l] ?? 0}</div>
+              <p className="text-xs text-slate-500">
+                AI potential by Human Agency Scale — lower H = more AI-amenable; H0 = no
+                software-agent overlay (robotics/GSE lever).
+              </p>
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+                {AGENCY_BANDS.map((h) => (
+                  <div key={h} className="rounded border border-slate-200 p-2 text-center">
+                    <div className="text-xs text-slate-500">{h}</div>
+                    <div className="text-lg font-semibold">{matrix.agency_matrix?.[h] ?? 0}</div>
                   </div>
                 ))}
               </div>
@@ -259,14 +263,16 @@ export default function WorkflowMapper({
                 <p className="mt-1 text-xs text-slate-500">{matrix.assessment.rationale}</p>
               </div>
               {/* Tie the numbers to actual linked tasks so the matrix is clearly connected. */}
-              {LEVELS.filter((l) => (matrix.evidencing_tasks?.[l] ?? []).length > 0).map((l) => (
-                <div key={l} className="text-xs">
-                  <span className="font-medium text-slate-600">{l} tasks:</span>{" "}
-                  <span className="text-slate-500">
-                    {matrix.evidencing_tasks[l].join("; ")}
-                  </span>
-                </div>
-              ))}
+              {AGENCY_BANDS.filter((h) => (matrix.agency_evidencing?.[h] ?? []).length > 0).map(
+                (h) => (
+                  <div key={h} className="text-xs">
+                    <span className="font-medium text-slate-600" title={matrix.human_agency_scale?.[h]}>
+                      {h} tasks:
+                    </span>{" "}
+                    <span className="text-slate-500">{matrix.agency_evidencing[h].join("; ")}</span>
+                  </div>
+                ),
+              )}
               <p className="text-xs italic text-amber-600">{matrix.caveats[0]}</p>
             </div>
           )}

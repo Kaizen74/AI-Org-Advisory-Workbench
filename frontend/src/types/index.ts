@@ -195,8 +195,17 @@ export interface OpportunityMatrix {
   process_id: string;
   name: string;
   matrix: Record<string, number>;
-  steps: { step_id: string; name: string; seq: number; level_counts: Record<string, number> }[];
+  agency_matrix: Record<string, number>;
+  steps: {
+    step_id: string;
+    name: string;
+    seq: number;
+    level_counts: Record<string, number>;
+    agency_counts: Record<string, number>;
+  }[];
   evidencing_tasks: Record<string, string[]>;
+  agency_evidencing: Record<string, string[]>;
+  human_agency_scale: Record<string, string>;
   assessment: { priority: string; complexity: string; rationale: string; review_state: string };
   caveats: string[];
 }

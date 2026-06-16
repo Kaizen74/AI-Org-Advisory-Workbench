@@ -78,6 +78,13 @@ async def test_workflow_mapping_and_opportunity_matrix(api_client, async_session
     assert body["assessment"]["priority"] == "High"
     assert body["assessment"]["review_state"] == "unreviewed"
     assert any("occupation-level" in c for c in body["caveats"])
+    # Headline re-banded to the Human Agency Scale (D19): H0–H5 aggregate over the same linked tasks,
+    # H0 counts the no-overlay (robotics) tasks, and the rubric + evidencing ship for the UI.
+    assert set(body["agency_matrix"]) == {"H0", "H1", "H2", "H3", "H4", "H5"}
+    assert sum(body["agency_matrix"].values()) == len(task_ids)  # bands cover every linked task
+    assert set(body["human_agency_scale"]) == {"H0", "H1", "H2", "H3", "H4", "H5"}
+    assert sum(len(v) for v in body["agency_evidencing"].values()) >= 1
+    assert all("agency_counts" in s for s in body["steps"])
 
 
 async def test_steps_listed_with_counts_and_matrix_reflects_linked_count(

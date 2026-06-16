@@ -16,9 +16,10 @@ from ..config import settings
 from ..models import Process, ProcessStep, Task, TaskAIScore, TaskLink
 from ._json_utils import parse_ai_json
 from .claude_service import claude_service
-from .task_intelligence_service import STANDARD_CAVEATS
+from .task_intelligence_service import HUMAN_AGENCY_SCALE, STANDARD_CAVEATS, human_agency_band
 
 LEVELS = ["L0", "L1", "L2", "L3"]
+AGENCY_BANDS = ["H0", "H1", "H2", "H3", "H4", "H5"]  # WORKBank Human Agency Scale (D17/D19 headline)
 
 
 # ── CRUD ─────────────────────────────────────────────────────────────────────
@@ -115,28 +116,39 @@ async def _process_level_counts(session: AsyncSession, process_id: str):
     step_payload = []
     overall = {lvl: 0 for lvl in LEVELS}
     evidencing: Dict[str, List[str]] = {lvl: [] for lvl in LEVELS}
+    # Headline AI-potential banding (H0–H5) computed from each linked task's HAS level (D19).
+    agency_overall = {b: 0 for b in AGENCY_BANDS}
+    agency_evidencing: Dict[str, List[str]] = {b: [] for b in AGENCY_BANDS}
     for step in steps:
         counts = {lvl: 0 for lvl in LEVELS}
+        agency_counts = {b: 0 for b in AGENCY_BANDS}
         for tl in links:
             if tl.process_step_id != step.id:
                 continue
             score = scores.get(tl.task_id)
             lvl = (score.ai_opportunity_level if score else "L0") or "L0"
+            band = human_agency_band(score.has_level if score else None)
             counts[lvl] = counts.get(lvl, 0) + 1
             overall[lvl] = overall.get(lvl, 0) + 1
+            agency_counts[band] = agency_counts.get(band, 0) + 1
+            agency_overall[band] = agency_overall.get(band, 0) + 1
             task = tasks.get(tl.task_id)
             if task and len(evidencing[lvl]) < 5:
                 evidencing[lvl].append(task.task_text)
+            if task and len(agency_evidencing[band]) < 5:
+                agency_evidencing[band].append(task.task_text)
         step_payload.append({"step_id": step.id, "name": step.name, "seq": step.seq,
-                             "level_counts": counts})
-    return steps, step_payload, overall, evidencing
+                             "level_counts": counts, "agency_counts": agency_counts})
+    return steps, step_payload, overall, evidencing, agency_overall, agency_evidencing
 
 
-def _ai_priority(process_name: str, overall: Dict[str, int]) -> Dict:
+def _ai_priority(process_name: str, overall: Dict[str, int],
+                 agency_overall: Optional[Dict[str, int]] = None) -> Dict:
     """Mocked-in-tests Claude call for a priority/complexity narrative."""
     prompt = (
-        f"Assess the AI-transformation priority for process '{process_name}' given its L0-L3 task "
-        f"distribution {overall}. Return STRICT JSON "
+        f"Assess the AI-transformation priority for process '{process_name}' given its Human Agency "
+        f"Scale distribution {agency_overall or {}} (H0=no software-agent overlay; lower H = more "
+        f"AI-amenable) and L0-L3 task distribution {overall}. Return STRICT JSON "
         '{"priority": "High|Medium|Low", "complexity": "High|Medium|Low", "rationale": "..."}.'
     )
     raw = claude_service.complete(
@@ -156,15 +168,19 @@ async def opportunity_matrix(session: AsyncSession, process_id: str) -> Optional
     proc = await session.get(Process, process_id)
     if proc is None:
         return None
-    steps, step_payload, overall, evidencing = await _process_level_counts(session, process_id)
-    assessment = _ai_priority(proc.name, overall)
+    steps, step_payload, overall, evidencing, agency_overall, agency_evidencing = \
+        await _process_level_counts(session, process_id)
+    assessment = _ai_priority(proc.name, overall, agency_overall)
     return {
         "process_id": process_id,
         "name": proc.name,
         "value_stream": proc.value_stream,
         "matrix": overall,
+        "agency_matrix": agency_overall,
         "steps": step_payload,
         "evidencing_tasks": evidencing,
+        "agency_evidencing": agency_evidencing,
+        "human_agency_scale": HUMAN_AGENCY_SCALE,
         "assessment": assessment,
         "caveats": STANDARD_CAVEATS,
     }
