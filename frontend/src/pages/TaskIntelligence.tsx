@@ -13,6 +13,7 @@ import type { QuickStats, RollupResult } from "../types";
 import { Button, Card, Empty, ErrorNote, Spinner, StatCard } from "../components/ui";
 
 const LEVELS = ["L0", "L1", "L2", "L3"];
+const AGENCY_BANDS = ["H0", "H1", "H2", "H3", "H4", "H5"];
 
 export default function TaskIntelligence({
   datasetId,
@@ -69,7 +70,7 @@ export default function TaskIntelligence({
 
   const overall = rollup?.overall;
   const levelData = LEVELS.map((l) => ({ name: l, value: overall?.levels[l] ?? 0 }));
-  const hasData = Object.entries(overall?.has ?? {}).map(([k, v]) => ({ name: `H${k}`, value: v }));
+  const agencyData = AGENCY_BANDS.map((h) => ({ name: h, value: overall?.agency?.[h] ?? 0 }));
 
   return (
     <div className="space-y-5">
@@ -102,34 +103,42 @@ export default function TaskIntelligence({
 
       {overall && overall.tasks > 0 ? (
         <>
-          <div className="grid gap-5 md:grid-cols-2">
-            <Card title="AI-opportunity levels (L0–L3)">
-              <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={levelData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" />
-                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
-                  <Tooltip />
-                  <Bar dataKey="value" fill="#475569" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </Card>
-            <Card title="Human-Agency (HAS) distribution">
-              {hasData.length === 0 ? (
-                <Empty message="No HAS data (tasks without a WORKBank overlay)." />
-              ) : (
-                <ResponsiveContainer width="100%" height={220}>
-                  <BarChart data={hasData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" />
-                    <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                    <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
-                    <Tooltip />
-                    <Bar dataKey="value" fill="#0f766e" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </Card>
-          </div>
+          <Card title="AI potential — Human Agency Scale (H0–H5)">
+            <p className="mb-2 text-xs text-slate-500">
+              The headline measure of AI potential per task. Lower H = more AI-amenable (AI does more
+              of the task); higher H = more human agency required. H0 = no software-agent overlay
+              (assess as a robotics/GSE lever).
+            </p>
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={agencyData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" />
+                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                <Tooltip />
+                <Bar dataKey="value" fill="#0f766e" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+            <dl className="mt-3 grid gap-x-4 gap-y-1 text-xs text-slate-500 md:grid-cols-2">
+              {AGENCY_BANDS.map((h) => (
+                <div key={h} className="flex gap-2">
+                  <dt className="font-semibold text-slate-600">{h}</dt>
+                  <dd>{rollup!.human_agency_scale?.[h] ?? ""}</dd>
+                </div>
+              ))}
+            </dl>
+          </Card>
+
+          <Card title="AI-opportunity levels (L0–L3) — supporting view">
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={levelData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" />
+                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                <Tooltip />
+                <Bar dataKey="value" fill="#475569" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </Card>
 
           <Card title="By department">
             <table className="w-full text-sm">

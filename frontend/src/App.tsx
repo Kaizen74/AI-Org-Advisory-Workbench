@@ -22,6 +22,11 @@ type Tab =
   | "deliverables"
   | "settings";
 
+// Focus flag (D17): the app centres on role → task → AI-potential analysis. The Scenario Studio
+// and Transition Planner (org-redesign simulation) are parked behind this flag — code and tests are
+// retained so re-enabling is a one-line change.
+const SHOW_SIMULATION = false;
+
 export default function App() {
   const [authed, setAuthed] = useState(false);
   const [checking, setChecking] = useState(true);
@@ -82,9 +87,15 @@ export default function App() {
     { id: "diagnostics", label: "Diagnostics" },
     { id: "task-intel", label: "Task Intelligence" },
     { id: "validation", label: "Validation Queue" },
-    { id: "scenarios", label: "Scenario Studio" },
+    // Scenario simulation is parked (D17) to focus the app on role → task → AI-potential.
+    // Flip SHOW_SIMULATION to true to restore the Scenario Studio + Transition Planner tabs.
+    ...(SHOW_SIMULATION
+      ? [{ id: "scenarios" as Tab, label: "Scenario Studio" }]
+      : []),
     { id: "workflows", label: "Workflow Mapper" },
-    { id: "transition", label: "Transition Planner" },
+    ...(SHOW_SIMULATION
+      ? [{ id: "transition" as Tab, label: "Transition Planner" }]
+      : []),
     { id: "deliverables", label: "Deliverables" },
     { id: "settings", label: "Settings" },
   ];

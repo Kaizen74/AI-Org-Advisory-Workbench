@@ -1,12 +1,14 @@
 # LATEST CHECKPOINT
-**Updated:** 2026-06-16T03:30:00 (P7 + D13 + bugfixes D14–D16; live deploy still pending Eric)
-**Phase:** P7 done + access-control (D13) + bugfixes D14 (cost metric), D15 (authed downloads), D16
-(queue legibility + Workflow Mapper UX). **All seven phases P0–P7 built; app is private.**
-**Last completed micro-task:** D16 — validation queue now shows task_text + real source (SFw/O*NET) so
-distinct rows aren't mistaken for duplicates; Workflow Mapper lists steps with link counts (new
-`GET /workflows/{id}/steps`), gives add/link feedback, and the matrix shows per-level evidencing tasks.
-Gate GREEN (117 backend tests + clean frontend build); e2e reproduced the marketing scenario.
+**Updated:** 2026-06-16T12:50:00 (P7 + D13 + bugfixes D14–D16 + refocus D17; live deploy still pending Eric)
+**Phase:** P7 done + access-control (D13) + D14–D16 fixes + **D17 product refocus**. **All seven phases
+P0–P7 built; app is private and now centred on role→task→AI-potential (H0–H5).**
+**Last completed micro-task:** D17 — parked Scenario Studio + Transition Planner behind `SHOW_SIMULATION`
+(reversible nav flag; code+tests intact) and made the **WORKBank Human Agency Scale (H0–H5)** the headline
+AI-potential metric (`human_agency_band` + `HUMAN_AGENCY_SCALE` rubric; rollup `agency` breakdown; queue
+ai_score band; Task Intelligence headline chart+legend). L0–L3 kept internally. Gate GREEN (118 tests + build).
 **In-flight micro-task:** none.
+**Refocus follow-ups (optional, await Eric):** confirm H0 def + H1→H5 direction; re-band Workflow Mapper
+matrix to H0–H5; slim Deliverables to diagnostic + AI-potential (drop scenario deck).
 **Next action (be exact):** Two things remain, both needing Eric (cannot be done from this sandbox):
   1. **Live deploy** — follow README §4 to deploy backend→Railway (root `backend`, add Postgres, set
      `DATABASE_URL` with `+asyncpg`, `ANON_SALT`, **`AUTH_SECRET`, `ACCESS_USERS=you@email:passcode`**,
@@ -17,7 +19,7 @@ Gate GREEN (117 backend tests + clean frontend build); e2e reproduced the market
      wording corrections (actual Vercel/Railway button names) back into README §4.
   Optional follow-ups (additive): branch merge to `main` (then delete `legacy v1 app.zip` from main);
   expand audit UI; refine activator/L0-L3 rubrics if Eric supplies definitions.
-**Test status:** PASS — gate GREEN, **117 backend tests + clean frontend build**, zero regressions.
+**Test status:** PASS — gate GREEN, **118 backend tests + clean frontend build**, zero regressions.
 **Recovery commands:** `bash scripts/gate.sh`
 **Open questions for Eric:**
   1. **Live cloud deploy** needs your Vercel + Railway accounts connected to the GitHub repo — say

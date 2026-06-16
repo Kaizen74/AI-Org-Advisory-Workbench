@@ -24,6 +24,7 @@ from ..models import (
     TaxonomyCrosswalk,
     TaxonomyTask,
 )
+from .task_intelligence_service import human_agency_band
 
 _ACTION_TO_STATE = {"approve": "approved", "edit": "edited", "reject": "rejected"}
 
@@ -90,10 +91,11 @@ async def get_queue(
         })
 
     for s in ai_scores:
+        band = human_agency_band(s.has_level)  # headline AI-potential band (D17)
         items.append({
             "kind": "ai_score", "id": s.id, "task_id": s.task_id,
-            "task_text": text_by_task.get(s.task_id),
-            "label": f"{s.ai_opportunity_level} · zone {s.zone or '—'}",
+            "task_text": text_by_task.get(s.task_id), "has_level": s.has_level,
+            "label": f"{band} · {s.ai_opportunity_level} · zone {s.zone or '—'}",
             "source": s.source, "confidence": s.confidence, "review_state": s.review_state,
         })
 

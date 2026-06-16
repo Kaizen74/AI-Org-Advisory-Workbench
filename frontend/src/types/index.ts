@@ -101,6 +101,7 @@ export interface RollupBucket {
   levels: Record<string, number>;
   zones: Record<string, number>;
   has: Record<string, number>;
+  agency: Record<string, number>;
   with_overlay: number;
   robotics_levers: number;
 }
@@ -110,6 +111,7 @@ export interface RollupResult {
   overall: RollupBucket;
   by_department: Record<string, RollupBucket>;
   by_layer: Record<string, RollupBucket>;
+  human_agency_scale: Record<string, string>;
   caveats: string[];
 }
 

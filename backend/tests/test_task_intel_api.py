@@ -61,6 +61,15 @@ async def _make_dataset(api_client):
     return ds.json()["id"]
 
 
+def test_human_agency_band_maps_has_to_h0_h5():
+    """Pure mapping (D17): None/<1 → H0, 1..5 → H1..H5, clamped above 5."""
+    from app.services.task_intelligence_service import human_agency_band
+    assert human_agency_band(None) == "H0"
+    assert human_agency_band(0) == "H0"
+    assert [human_agency_band(n) for n in (1, 2, 3, 4, 5)] == ["H1", "H2", "H3", "H4", "H5"]
+    assert human_agency_band(7) == "H5"  # clamp
+
+
 async def test_quick_works_without_api_key(api_client):
     dataset_id = await _make_dataset(api_client)
     r = await api_client.get("/api/v1/task-intel/quick", params={"dataset_id": dataset_id})
@@ -103,6 +112,13 @@ async def test_full_pipeline_via_api(api_client, async_session, monkeypatch):
     assert body["overall"]["tasks"] == 4
     assert "Cargo" in body["by_department"]
     assert any("occupation-level" in c for c in body["caveats"])
+
+    # Headline AI-potential band (D17): every task lands in an H0–H5 band; H0 counts the no-overlay
+    # (robotics) tasks, and the HAS rubric is shipped for the UI legend.
+    agency = body["overall"]["agency"]
+    assert sum(agency.values()) == 4  # all tasks banded
+    assert agency.get("H0", 0) >= 1  # robotics lever(s) with no overlay → H0
+    assert set(body["human_agency_scale"]) == {"H0", "H1", "H2", "H3", "H4", "H5"}
 
     # 404 guard for a missing dataset.
     miss = await api_client.get("/api/v1/task-intel/rollup", params={"dataset_id": "ghost"})

@@ -401,3 +401,24 @@ fewer tasks linked than intended.
 reproducing the marketing scenario (6 identical labels → 6 distinct task_text; steps count=2;
 matrix sum=2 with evidencing). Backend↔frontend routes verified aligned.
 **Gate:** PASS — **117 backend tests + clean frontend build**, zero regressions.
+
+---
+
+## 2026-06-16 — Product refocus (D17): park scenario simulator; HAS (H0–H5) as headline
+
+**Trigger:** Eric reflected that the app does too much by squeezing in the scenario planner; he wants
+focus on role→task breakdown and AI-potential (H0–H5) with benchmark insights. Chosen via
+AskUserQuestion: surface the WORKBank Human Agency Scale; hide Scenario+Transition behind a flag; keep
+Diagnostics + Workflow Mapper as supporting.
+**Changes (additive / reversible):**
+- `App.tsx`: `SHOW_SIMULATION=false` removes Scenario Studio + Transition Planner from the nav; pages,
+  routes, services, tables and tests all retained (re-enable = one line).
+- `task_intelligence_service`: `human_agency_band()` + `HUMAN_AGENCY_SCALE` rubric; rollup buckets gain
+  an `agency` H0–H5 breakdown (H0 = no overlay); rollup payload ships the rubric.
+- `validation_service`: ai_score rows lead with the H band + carry `has_level`.
+- Frontend: Task Intelligence headlines the H0–H5 chart + rubric legend (L0–L3 demoted to supporting);
+  RollupBucket/RollupResult types extended.
+- Direction (from seed): lower H = more AI-amenable (GREEN=H2, RED=H4). L0–L3 retained internally.
+**Tests:** +1 unit (band mapping); extended rollup (agency sums, rubric keys) and queue (band, has_level).
+**Open for Eric:** confirm H0 def/direction; optional Workflow-matrix re-band to H0–H5; optional
+Deliverables slim. **Gate:** PASS — 118 backend tests + clean frontend build, zero regressions.

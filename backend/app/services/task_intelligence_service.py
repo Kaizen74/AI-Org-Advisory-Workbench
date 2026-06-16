@@ -240,6 +240,30 @@ async def benchmark_tasks(
             "matched": matched, "missing": missing, "caveats": STANDARD_CAVEATS}
 
 
+# ── Human Agency Scale (WORKBank) — the headline AI-potential band (D17) ─────
+# WORKBank HAS, surfaced as H0–H5. Lower H = more AI-amenable (AI does more of the task); higher H =
+# more human agency required. H0 is our extension: no software-agent overlay (assess as robotics/GSE).
+# Values are ILLUSTRATIVE per the WORKBank guardrail — verify against the source before client use.
+HUMAN_AGENCY_SCALE: Dict[str, str] = {
+    "H0": "No software-agent overlay (e.g. physical/handling task) — assess as a robotics/GSE lever, not an AI-agent opportunity.",
+    "H1": "AI agent can perform the task with minimal or no human involvement.",
+    "H2": "AI performs most of the task; light human review.",
+    "H3": "Human–AI equal partnership.",
+    "H4": "Human leads the task; AI assists.",
+    "H5": "Human performs the task; AI adds little.",
+}
+
+
+def human_agency_band(has_level: Optional[int]) -> str:
+    """Map a WORKBank HAS level to its H0–H5 band. None (no overlay) → H0; clamped to H1–H5."""
+    if has_level is None:
+        return "H0"
+    lvl = int(has_level)
+    if lvl < 1:
+        return "H0"
+    return f"H{min(lvl, 5)}"
+
+
 # ── AI opportunity (HAS/zone/desire/capability/L0-L3 via logical O*NET overlay join) ──
 def derive_ai_level(capability: Optional[float], has_level: Optional[int]) -> str:
     """Deterministic L0-L3 from capability + human-agency (heuristic; caveated). Higher capability
@@ -337,7 +361,8 @@ async def score_ai_opportunity(session: AsyncSession, dataset_id: str) -> Dict:
 
 # ── Rollup (aggregate AI scores up the org graph) ────────────────────────────
 def _blank_bucket() -> Dict:
-    return {"tasks": 0, "levels": {}, "zones": {}, "has": {}, "with_overlay": 0, "robotics_levers": 0}
+    return {"tasks": 0, "levels": {}, "zones": {}, "has": {}, "agency": {},
+            "with_overlay": 0, "robotics_levers": 0}
 
 
 def _accumulate(bucket: Dict, score: TaskAIScore) -> None:
@@ -349,6 +374,9 @@ def _accumulate(bucket: Dict, score: TaskAIScore) -> None:
     if score.has_level is not None:
         key = str(score.has_level)
         bucket["has"][key] = bucket["has"].get(key, 0) + 1
+    # Headline AI-potential band (H0–H5), counting H0 for no-overlay tasks (D17).
+    band = human_agency_band(score.has_level)
+    bucket["agency"][band] = bucket["agency"].get(band, 0) + 1
     if score.source == "WORKBank":
         bucket["with_overlay"] += 1
     if score.zone == "ROBOTICS_GSE_LEVER":
@@ -389,6 +417,7 @@ async def rollup(session: AsyncSession, dataset_id: str) -> Dict:
         "overall": overall,
         "by_department": by_department,
         "by_layer": by_layer,
+        "human_agency_scale": HUMAN_AGENCY_SCALE,
         "caveats": STANDARD_CAVEATS,
     }
 

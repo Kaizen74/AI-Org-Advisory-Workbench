@@ -88,6 +88,9 @@ async def test_queue_items_carry_task_text_and_real_source(api_client, async_ses
     assert all(i["task_text"] for i in ai)
     # The benchmark label reflects the real matched source (SFw), proving SFw is wired in.
     assert any("SFW_AIR_TRANSPORT" in i["label"] for i in bench)
+    # ai_score rows lead with the headline H0–H5 agency band (D17).
+    assert all(i["label"].startswith("H") for i in ai)
+    assert all("has_level" in i for i in ai)
     # Crosswalk rows remain (task_text None is acceptable there).
     assert any(i["kind"] == "crosswalk" for i in items)
 

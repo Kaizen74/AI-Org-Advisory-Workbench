@@ -227,3 +227,31 @@ opportunity matrix seems "disconnected from the selected tasks/step/process".
 count) + an e2e reproducing the marketing scenario. Full gate green (117 backend tests + clean build).
 No existing route/signature changed destructively; the benchmark-label test still passes (onet code
 retained in the label when matched).
+
+## 2026-06-16 — D17: Refocus — park the scenario simulator; make Human Agency Scale (H0–H5) the headline
+
+**Source:** Eric's product reflection — the app was "trying to do too much by squeezing in the scenario
+planner (role simulation + scenario comparison)". He wants the focus on **breaking roles into tasks and
+identifying AI potential (H0–H5) with benchmark insights.** Decisions chosen via AskUserQuestion:
+(1) headline scale = **surface the WORKBank Human Agency Scale**; (2) Scenario Studio + Transition
+Planner = **hide behind a flag (reversible)**; (3) Diagnostics + Workflow Mapper = **keep as supporting**.
+**Decisions:**
+- **Focus (reversible):** frontend `App.tsx` gains `SHOW_SIMULATION = false`; the Scenario Studio and
+  Transition Planner tabs are removed from the nav while their pages, routes, services, tables and all
+  tests are retained untouched — re-enabling is a one-line flip. No backend/route/schema change, so the
+  scenario/transition suites stay green (additive-only honoured).
+- **Headline = HAS (H0–H5):** added `human_agency_band(has_level)` and the `HUMAN_AGENCY_SCALE` rubric
+  to `task_intelligence_service`. H0 = no software-agent overlay (physical/robotics lever); H1–H5 = the
+  WORKBank HAS. **Direction (from the seed): lower H = more AI-amenable** (GREEN_LIGHT/automatable seeds
+  are H2; RED_LIGHT is H4). The rollup bucket now carries an `agency` H0–H5 breakdown and the payload
+  ships the rubric; the validation queue's ai_score rows lead with the H band; the Task Intelligence
+  page makes the H0–H5 chart + rubric the headline, demoting L0–L3 to a supporting view.
+- **L0–L3 retained internally** (rollup `levels`, workflow matrix, scenario code) — additive, no
+  destructive change; the HAS band is derived from the already-stored, independent `has_level`
+  (capability/has_level still never collapsed, per the WORKBank guardrail).
+**Open / deferred (need Eric):** (a) confirm the H0 definition and the H1→H5 direction above match his
+intent (the HAS level *descriptions* remain ILLUSTRATIVE — verify vs the WORKBank source before client
+use); (b) optionally re-band the Workflow Mapper "AI opportunity matrix" from L0–L3 to H0–H5 for
+consistency; (c) optionally slim the Deliverables to the diagnostic + AI-potential story (drop the
+scenario-comparison deck). **Verification:** +1 unit test (band mapping) + extended rollup/queue asserts;
+full gate green (118 backend tests + clean frontend build).
