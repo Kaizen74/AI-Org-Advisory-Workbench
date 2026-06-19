@@ -340,3 +340,20 @@ Workflow Mapper, and Task Intelligence with external benchmarking + editing feat
   Metrics pack — aligned to the focused surface (Diagnostics + Workflow Mapper + Task Intelligence
   benchmarking/editing).
 **Verification:** tsc clean; gate green (121 backend tests + clean frontend build, zero regressions).
+
+## 2026-06-16 — D22: 'Finalized workflow' deliverable (PPTX_WORKFLOW)
+
+**Source:** Eric — be able to print out the finalized workflow as a deliverable type.
+**Decision (additive):** new `PPTX_WORKFLOW` deliverable. `_gen_pptx_workflow(engagement_id, dataset_id)`
+iterates the engagement's processes and, per process, uses `workflow_service.board(process, dataset)`
+to emit a section slide of the **finalized mapping** — each step with its mapped tasks shown as
+`text [role · H-band]`, the per-step Human-Agency (H0–H5) mix, and a `Mapped m/n · u unmapped` line —
+then a provenance/caveats slide (export-block + disclosure unchanged). Mapped tasks only (unmapped count
+disclosed). Registered in `_EXT` + `_GENERATORS`; surfaced in the frontend Deliverables page as
+"Finalized workflow (.pptx)" (uses the active dataset; engagement_id always passed).
+**Alignment:** backend `DELIVERABLE_TYPES` now includes PPTX_WORKFLOW and `/deliverables/types` returns
+it; frontend button added. No schema/route change.
+**Verification:** updated `test_generate_all_types_and_provenance` (now 7 types) + new
+`test_workflow_deliverable_reflects_mapping` (maps a task → valid PK file → type offered). Live content
+smoke confirmed the deck shows the process/step/H-band/mapped line + provenance. Gate green — **122
+backend tests + clean frontend build**, tsc clean, zero regressions.

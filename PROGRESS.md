@@ -476,3 +476,14 @@ App.tsx + Deliverables.tsx). The scenario-comparison deck (`PPTX_SCENARIOS`) and
 (`XLSX_TRANSITION`) — plus the scenario selector and the `listScenarios` fetch — are now gated behind it.
 Deliverables now offers only Diagnostic deck, AI roadmap, TOM, Metrics pack. Backend generators/routes
 left intact (reversible). **Gate:** PASS — 121 backend tests + clean frontend build; tsc clean.
+
+---
+
+## 2026-06-16 — Finalized workflow deliverable (D22)
+
+Added `PPTX_WORKFLOW` ("Finalized workflow (.pptx)"): per engagement process, builds a slide from the
+real `workflow_service.board` data — steps with their mapped tasks (`text [role · H-band]`), the
+per-step H0–H5 mix, and a mapped/unmapped line — plus the standard provenance/caveats slides. Registered
+backend (`_EXT`/`_GENERATORS`, `DELIVERABLE_TYPES`) and surfaced as a frontend button.
+**Tests:** all-types now 7; new test_workflow_deliverable_reflects_mapping; live deck-content smoke.
+**Gate:** PASS — 122 backend tests + clean frontend build; tsc clean; backend↔frontend aligned.

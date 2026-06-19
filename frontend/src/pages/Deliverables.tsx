@@ -7,6 +7,7 @@ import { SHOW_SIMULATION } from "../config";
 const DATASET_TYPES: { type: string; label: string }[] = [
   { type: "PPTX_DIAGNOSTIC", label: "Diagnostic deck (.pptx)" },
   { type: "PPTX_AI_ROADMAP", label: "AI roadmap (.pptx)" },
+  { type: "PPTX_WORKFLOW", label: "Finalized workflow (.pptx)" },
   { type: "DOCX_TOM", label: "TOM narrative (.docx)" },
   { type: "XLSX_METRICS", label: "Metrics pack (.xlsx)" },
 ];

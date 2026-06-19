@@ -28,7 +28,7 @@ from ..models import (
     Task,
     TaskAIScore,
 )
-from . import scenario_service, transition_service
+from . import scenario_service, transition_service, workflow_service
 from . import validation_service as vs
 from .deliverable_builders import (
     doc_section,
@@ -49,6 +49,7 @@ OUTPUT_DIR = Path(__file__).resolve().parents[2] / "output"
 
 _EXT = {
     "PPTX_DIAGNOSTIC": "pptx", "PPTX_SCENARIOS": "pptx", "PPTX_AI_ROADMAP": "pptx",
+    "PPTX_WORKFLOW": "pptx",
     "DOCX_TOM": "docx", "XLSX_METRICS": "xlsx", "XLSX_TRANSITION": "xlsx",
 }
 
@@ -150,6 +151,49 @@ async def _gen_pptx_ai_roadmap(session, theme, dataset_id, **_) -> bytes:
     return save_pptx(prs)
 
 
+async def _gen_pptx_workflow(session, theme, engagement_id, dataset_id=None, **_) -> bytes:
+    """The 'finalized' workflow map: each process's steps with their mapped tasks and Human Agency
+    (H0–H5) mix — built from the real board data (mapped tasks only; unmapped count disclosed)."""
+    prs = new_presentation()
+    title_slide(prs, theme, "Finalized Workflow Map",
+                "Mapped processes, steps & tasks (Human Agency Scale H0–H5)")
+    processes = await workflow_service.list_processes(session, engagement_id)
+    any_process = False
+    for proc in processes:
+        if not dataset_id:
+            break
+        b = await workflow_service.board(session, proc.id, dataset_id)
+        if b is None:
+            continue
+        any_process = True
+        bullets: list[str] = []
+        if proc.value_stream:
+            bullets.append(f"Value stream: {proc.value_stream}")
+        for step in b["steps"]:
+            tasks = step["tasks"]
+            if not tasks:
+                bullets.append(f"Step {step['seq']} — {step['name']}: (no tasks linked)")
+                continue
+            mix: Dict[str, int] = {}
+            for t in tasks:
+                mix[t["human_agency_level"]] = mix.get(t["human_agency_level"], 0) + 1
+            mixstr = ", ".join(f"{k}×{v}" for k, v in sorted(mix.items()))
+            shown = "; ".join(
+                f"{t['text']} [{t['role']} · {t['human_agency_level']}]" for t in tasks[:6]
+            )
+            more = f" (+{len(tasks) - 6} more)" if len(tasks) > 6 else ""
+            bullets.append(f"Step {step['seq']} — {step['name']} ({mixstr}): {shown}{more}")
+        bullets.append(
+            f"Mapped {b['mapped_count']} / {b['task_count']} tasks · {len(b['unmapped'])} unmapped"
+        )
+        section_slide(prs, theme, proc.name, bullets or ["No steps yet."])
+    if not any_process:
+        section_slide(prs, theme, "Workflows",
+                      ["No workflows mapped yet — build them in the Workflow Mapper."])
+    provenance_slide(prs, theme, await provenance_summary(session, dataset_id))
+    return save_pptx(prs)
+
+
 async def _gen_docx_tom(session, theme, dataset_id, **_) -> bytes:
     metrics = await _metric_map(session, dataset_id)
     prov = await provenance_summary(session, dataset_id)
@@ -212,6 +256,7 @@ _GENERATORS = {
     "PPTX_DIAGNOSTIC": _gen_pptx_diagnostic,
     "PPTX_SCENARIOS": _gen_pptx_scenarios,
     "PPTX_AI_ROADMAP": _gen_pptx_ai_roadmap,
+    "PPTX_WORKFLOW": _gen_pptx_workflow,
     "DOCX_TOM": _gen_docx_tom,
     "XLSX_METRICS": _gen_xlsx_metrics,
     "XLSX_TRANSITION": _gen_xlsx_transition,

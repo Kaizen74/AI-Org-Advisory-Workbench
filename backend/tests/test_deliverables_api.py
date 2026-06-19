@@ -69,6 +69,7 @@ async def test_generate_all_types_and_provenance(api_client, async_session, monk
     specs = [
         ("PPTX_DIAGNOSTIC", {"dataset_id": ds_id}),
         ("PPTX_AI_ROADMAP", {"dataset_id": ds_id}),
+        ("PPTX_WORKFLOW", {"dataset_id": ds_id}),
         ("DOCX_TOM", {"dataset_id": ds_id}),
         ("XLSX_METRICS", {"dataset_id": ds_id}),
         ("PPTX_SCENARIOS", {}),
@@ -86,7 +87,7 @@ async def test_generate_all_types_and_provenance(api_client, async_session, monk
 
     # List + download a generated file (valid Office/zip file → 'PK').
     listed = await api_client.get("/api/v1/deliverables/list", params={"engagement_id": eng_id})
-    assert len(listed.json()["deliverables"]) == 6
+    assert len(listed.json()["deliverables"]) == 7
     dl = await api_client.get(f"/api/v1/deliverables/{ids[0]}/download")
     assert dl.status_code == 200
     assert dl.content[:2] == b"PK"
@@ -104,6 +105,37 @@ async def test_export_block_excludes_unreviewed_model_inferred(api_client, async
     assert prov["total"] >= 2
     # Disclosure carries the binding caveats.
     assert any("occupation-level" in c for c in prov["caveats"])
+
+
+async def test_workflow_deliverable_reflects_mapping(api_client, async_session, monkeypatch):
+    """The 'finalized workflow' deck builds from the real board: a mapped task produces a valid file."""
+    from sqlalchemy import select
+
+    from app.models import Task
+
+    eng_id, ds_id = await _setup(api_client, async_session, monkeypatch)
+    proc = await api_client.post("/api/v1/workflows",
+                                 json={"engagement_id": eng_id, "name": "Cargo Acceptance"})
+    pid = proc.json()["id"]
+    step = await api_client.post(f"/api/v1/workflows/{pid}/steps", json={"name": "Documentation"})
+    sid = step.json()["id"]
+    tid = (await async_session.scalars(select(Task))).first().id
+    await api_client.post(f"/api/v1/workflows/steps/{sid}/map-tasks", json={"task_ids": [tid]})
+
+    r = await api_client.post("/api/v1/deliverables/generate",
+                              params={"engagement_id": eng_id, "type": "PPTX_WORKFLOW",
+                                      "dataset_id": ds_id})
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["type"] == "PPTX_WORKFLOW"
+    assert body["bytes"] > 0
+    dl = await api_client.get(f"/api/v1/deliverables/{body['id']}/download")
+    assert dl.status_code == 200
+    assert dl.content[:2] == b"PK"  # valid Office/zip file
+
+    # The new type is offered by the /types endpoint (backend↔frontend alignment).
+    types = (await api_client.get("/api/v1/deliverables/types")).json()["types"]
+    assert "PPTX_WORKFLOW" in types
 
 
 async def test_unknown_type_rejected(api_client, async_session, monkeypatch):
