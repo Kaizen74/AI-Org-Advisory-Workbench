@@ -105,7 +105,13 @@ async def test_ai_opportunity_overlay_join_and_robotics_lever(async_session, mon
 
     baggage = scores["Load and unload baggage onto aircraft"]
     assert baggage.source == "model-inferred"
-    assert baggage.zone == "ROBOTICS_GSE_LEVER"
+    assert baggage.zone == "ROBOTICS_GSE_LEVER"  # matched O*NET but no overlay -> physical lever
+
+    # A task with NO benchmark match is unclassified — NOT mislabeled as a robotics/GSE lever (D23).
+    assert result["unclassified"] >= 1
+    meetings = scores["Attend weekly team meetings"]
+    assert meetings.zone == "NO_BENCHMARK_MATCH"
+    assert meetings.source == "model-inferred"
 
 
 async def test_provenance_present_on_every_ai_row(async_session, monkeypatch):

@@ -82,11 +82,16 @@ async def get_queue(
 
     for b in benchmarks:
         # Show the ACTUAL benchmarked source (SFw primary / O*NET bridge), not a hardcoded one.
-        target = b.taxonomy_source_code or ("O*NET" if b.onet_task_code else "—")
+        # When nothing matched, say so plainly instead of an opaque "EXTRA → — —".
+        if b.onet_task_code:
+            target = b.taxonomy_source_code or "O*NET"
+            label = f"{b.status} → {target} {b.onet_task_code}"
+        else:
+            label = f"{b.status} → no benchmark match (load a relevant taxonomy)"
         items.append({
             "kind": "benchmark", "id": b.id, "task_id": b.task_id,
             "task_text": text_by_task.get(b.task_id),
-            "label": f"{b.status} → {target} {b.onet_task_code or '—'}",
+            "label": label,
             "source": b.source, "confidence": b.confidence, "review_state": b.review_state,
         })
 

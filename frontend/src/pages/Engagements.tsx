@@ -78,6 +78,41 @@ export default function Engagements({
     }
   }
 
+  async function delClient(id: string, name: string) {
+    if (!window.confirm(`Delete client "${name}" and ALL its engagements, datasets and analysis? This cannot be undone.`)) return;
+    try {
+      await api.deleteClient(id);
+      if (selectedClient === id) {
+        setSelectedClient("");
+        setSelectedEngagement("");
+      }
+      await refreshClients();
+    } catch (e) {
+      setError(String((e as Error).message ?? e));
+    }
+  }
+
+  async function delEngagement(id: string, name: string) {
+    if (!window.confirm(`Delete engagement "${name}" and all its datasets/analysis? This cannot be undone.`)) return;
+    try {
+      await api.deleteEngagement(id);
+      if (selectedEngagement === id) setSelectedEngagement("");
+      if (selectedClient) setEngagements(await api.listEngagements(selectedClient));
+    } catch (e) {
+      setError(String((e as Error).message ?? e));
+    }
+  }
+
+  async function delDataset(id: string) {
+    if (!window.confirm("Delete this CSV upload and everything derived from it (tasks, scores, mappings)? This cannot be undone.")) return;
+    try {
+      await api.deleteDataset(id);
+      if (selectedEngagement) setDatasets(await api.listDatasets(selectedEngagement));
+    } catch (e) {
+      setError(String((e as Error).message ?? e));
+    }
+  }
+
   if (loading) return <Spinner label="Loading engagements…" />;
 
   const engagementName =
@@ -97,14 +132,21 @@ export default function Engagements({
         ) : (
           <ul className="space-y-1">
             {clients.map((c) => (
-              <li key={c.id}>
+              <li key={c.id} className="flex items-center gap-1">
                 <button
                   onClick={() => setSelectedClient(c.id)}
-                  className={`w-full rounded px-2 py-1 text-left text-sm ${
+                  className={`flex-1 rounded px-2 py-1 text-left text-sm ${
                     selectedClient === c.id ? "bg-slate-800 text-white" : "hover:bg-slate-100"
                   }`}
                 >
                   {c.name}
+                </button>
+                <button
+                  onClick={() => delClient(c.id, c.name)}
+                  title="Delete client"
+                  className="rounded px-1.5 py-1 text-xs text-slate-400 hover:bg-red-50 hover:text-red-600"
+                >
+                  ✕
                 </button>
               </li>
             ))}
@@ -129,14 +171,21 @@ export default function Engagements({
         ) : (
           <ul className="space-y-1">
             {engagements.map((e) => (
-              <li key={e.id}>
+              <li key={e.id} className="flex items-center gap-1">
                 <button
                   onClick={() => setSelectedEngagement(e.id)}
-                  className={`w-full rounded px-2 py-1 text-left text-sm ${
+                  className={`flex-1 rounded px-2 py-1 text-left text-sm ${
                     selectedEngagement === e.id ? "bg-slate-800 text-white" : "hover:bg-slate-100"
                   }`}
                 >
                   {e.name}
+                </button>
+                <button
+                  onClick={() => delEngagement(e.id, e.name)}
+                  title="Delete engagement"
+                  className="rounded px-1.5 py-1 text-xs text-slate-400 hover:bg-red-50 hover:text-red-600"
+                >
+                  ✕
                 </button>
               </li>
             ))}
@@ -179,12 +228,21 @@ export default function Engagements({
                       <span>
                         v{d.version} · {d.row_count} positions
                       </span>
-                      <Button
-                        variant="ghost"
-                        onClick={() => onOpenDiagnostics(d.id, selectedEngagement, engagementName)}
-                      >
-                        Diagnose →
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          onClick={() => onOpenDiagnostics(d.id, selectedEngagement, engagementName)}
+                        >
+                          Diagnose →
+                        </Button>
+                        <button
+                          onClick={() => delDataset(d.id)}
+                          title="Delete this CSV upload"
+                          className="rounded px-1.5 py-1 text-xs text-slate-400 hover:bg-red-50 hover:text-red-600"
+                        >
+                          ✕
+                        </button>
+                      </div>
                     </div>
                     {d.validation_warnings && d.validation_warnings.length > 0 && (
                       <div className="mt-1 text-xs text-amber-600">

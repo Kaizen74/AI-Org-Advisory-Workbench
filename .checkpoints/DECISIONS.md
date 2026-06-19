@@ -357,3 +357,30 @@ it; frontend button added. No schema/route change.
 `test_workflow_deliverable_reflects_mapping` (maps a task → valid PK file → type offered). Live content
 smoke confirmed the deck shows the process/step/H-band/mapped line + provenance. Gate green — **122
 backend tests + clean frontend build**, tsc clean, zero regressions.
+
+## 2026-06-16 — D23: Workflow reset, engagement deletes, and honest benchmark/zone classification
+
+**Source:** Eric's review — (1) Undo/Reset board looked inactive; (2) no delete for client/engagement/CSV;
+(3) the validation queue mislabeled Global-Marketing knowledge work as "ROBOTICS_GSE_LEVER".
+**Fixes:**
+1. **Reset board (active + meaningful):** new `workflow_service.reset_board` + `POST /workflows/{id}/
+   reset-board` (unmap ALL tasks for a process → 404 if missing, idempotent). Frontend "Reset board" now
+   clears the board (confirm dialog) and is enabled whenever `mapped_count>0` OR there are session moves;
+   Undo stays the session-scoped per-move revert (tooltip clarified). Resolves the "inactive" perception.
+2. **Deletes:** `engagement_service` gained `delete_dataset`, `delete_client`, and a shared
+   `_delete_dataset_chain` / `_purge_engagement_data` doing thorough ordered child→parent deletes
+   (TaskLink/TaskAIScore/TaskBenchmark/Task → MetricValue/Position → Process/Step → Scenario children →
+   DesirePulse/Deliverable/AuditEvent → Dataset). `purge_engagement` now reuses it (no longer leaves
+   orphan tasks). Routes: `DELETE /engagements/clients/{id}`, `DELETE /engagements/{id}`,
+   `DELETE /engagements/datasets/{id}`. Frontend Engagements page: ✕ delete buttons (client/engagement/
+   dataset) with confirms + state cleanup.
+3. **Honest classification (the core relevance fix):** `score_ai_opportunity` split the no-overlay branch
+   — benchmark-MATCHED-but-no-overlay → `ROBOTICS_GSE_LEVER` (physical lever, unchanged); NO benchmark
+   match at all → new `NO_BENCHMARK_MATCH` zone (source model-inferred, conf 0.0, rationale "load a
+   relevant benchmark — not a robotics/GSE lever"). Added `unclassified` to the result. So a marketing
+   dataset against the air-transport seed now shows 0 robotics levers + N unclassified (was all robotics).
+   H0 rubric broadened to cover "physical OR not-yet-benchmarked". Validation queue benchmark rows with no
+   match now read "MISSING → no benchmark match (load a relevant taxonomy)" instead of "EXTRA → — —".
+**Verification:** +5 tests (reset-board, dataset/engagement/client delete, full-pipeline cascade,
+no-match→NO_BENCHMARK_MATCH); live marketing smoke (robotics 0, zone NO_BENCHMARK_MATCH). Gate green —
+**125 backend tests + clean frontend build**, tsc clean, backend↔frontend aligned, zero regressions.

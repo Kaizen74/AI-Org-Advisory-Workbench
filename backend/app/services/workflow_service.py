@@ -326,3 +326,18 @@ async def unmap_task(session: AsyncSession, process_id: str, task_id: str) -> Di
         await session.delete(tl)
     await session.flush()
     return {"task_id": task_id, "unmapped": len(existing)}
+
+
+async def reset_board(session: AsyncSession, process_id: str) -> Optional[Dict]:
+    """Unmap every task from this process — clear the board back to the unmapped tray. Returns the
+    number of links removed, or None if the process does not exist."""
+    if await session.get(Process, process_id) is None:
+        return None
+    step_ids = await _process_step_ids(session, process_id)
+    links = list(await session.scalars(
+        select(TaskLink).where(TaskLink.process_step_id.in_(step_ids))
+    )) if step_ids else []
+    for tl in links:
+        await session.delete(tl)
+    await session.flush()
+    return {"process_id": process_id, "unmapped": len(links)}

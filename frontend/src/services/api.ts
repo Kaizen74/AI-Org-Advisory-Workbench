@@ -160,6 +160,12 @@ export const api = {
   },
   purgeEngagement: (engagementId: string) =>
     request<{ purged: string }>(`/engagements/${engagementId}/purge`, { method: "DELETE" }),
+  deleteClient: (clientId: string) =>
+    request<{ deleted: string }>(`/engagements/clients/${clientId}`, { method: "DELETE" }),
+  deleteEngagement: (engagementId: string) =>
+    request<{ deleted: string }>(`/engagements/${engagementId}`, { method: "DELETE" }),
+  deleteDataset: (datasetId: string) =>
+    request<{ deleted: string }>(`/engagements/datasets/${datasetId}`, { method: "DELETE" }),
 
   // Diagnostics
   compute: (datasetId: string) =>
@@ -282,6 +288,11 @@ export const api = {
     request<{ task_id: string; unmapped: number }>(
       `/workflows/${processId}/unmap-task`,
       json({ task_id: taskId }),
+    ),
+  resetBoard: (processId: string) =>
+    request<{ process_id: string; unmapped: number }>(
+      `/workflows/${processId}/reset-board`,
+      { method: "POST" },
     ),
 
   // Transition

@@ -106,3 +106,12 @@ async def unmap_task(process_id: str, body: UnmapTaskBody,
                      session: AsyncSession = Depends(get_session)):
     """Remove a task from this process (returns it to the unmapped tray)."""
     return await svc.unmap_task(session, process_id, body.task_id)
+
+
+@router.post("/{process_id}/reset-board")
+async def reset_board(process_id: str, session: AsyncSession = Depends(get_session)):
+    """Clear the board: unmap every task from this process."""
+    result = await svc.reset_board(session, process_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Process not found")
+    return result

@@ -205,19 +205,19 @@ export default function WorkflowMapper({
     sync(op.taskId, op.fromStepId);
   }
 
-  function resetBoard() {
-    if (!board || !history.length) return;
-    const ops = [...history].reverse();
-    let b = board;
-    for (const op of ops) b = applyMoveLocal(b, op.taskId, op.fromStepId);
-    setBoard(b);
-    setHistory([]);
-    (async () => {
-      for (const op of ops) {
-        // eslint-disable-next-line no-await-in-loop
-        await sync(op.taskId, op.fromStepId);
-      }
-    })();
+  async function resetBoard() {
+    if (!board || !activeProc) return;
+    const mapped = board.mapped_count;
+    if (mapped === 0 && !history.length) return;
+    if (mapped > 0 && !window.confirm(
+      `Unmap all ${mapped} task(s) from "${proc?.name ?? "this process"}"? They return to the unmapped tray.`,
+    )) return;
+    try {
+      await api.resetBoard(activeProc);
+      await loadBoard(activeProc); // reload the cleared board (also clears undo history)
+    } catch (e) {
+      setError(String((e as Error).message ?? e));
+    }
   }
 
   async function addProcess() {
@@ -304,8 +304,8 @@ export default function WorkflowMapper({
           </div>
           <div className="flex items-center gap-3">
             <div className="flex gap-1.5">
-              <Tool onClick={undo} disabled={!history.length} title="Undo last change (⌘Z)">↺ Undo{history.length ? ` (${history.length})` : ""}</Tool>
-              <Tool onClick={resetBoard} disabled={!history.length} title="Restore the mapping from when you opened this process">Reset board</Tool>
+              <Tool onClick={undo} disabled={!history.length} title="Undo your last move this session (⌘Z)">↺ Undo{history.length ? ` (${history.length})` : ""}</Tool>
+              <Tool onClick={resetBoard} disabled={!board || (board.mapped_count === 0 && !history.length)} title="Unmap all tasks from this process (clear the board)">Reset board</Tool>
             </div>
             <div className="flex gap-0.5 rounded-lg bg-slate-100 p-0.5">
               {([["flow", "Flow"], ["landscape", "Landscape"], ["rollup", "Roll-up"]] as [View, string][]).map(([id, label]) => (

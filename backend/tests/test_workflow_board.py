@@ -111,6 +111,30 @@ async def test_board_lists_unmapped_then_mapped(api_client, async_session, monke
     assert board["mapped_count"] == 0
 
 
+async def test_reset_board_clears_all_mappings(api_client, async_session, monkeypatch):
+    eng_id, ds_id = await _setup(api_client, async_session, monkeypatch)
+    proc = await api_client.post("/api/v1/workflows",
+                                 json={"engagement_id": eng_id, "name": "Cargo Acceptance"})
+    pid = proc.json()["id"]
+    s1 = (await api_client.post(f"/api/v1/workflows/{pid}/steps", json={"name": "Acceptance"})).json()
+    board = (await api_client.get(f"/api/v1/workflows/{pid}/board",
+                                  params={"dataset_id": ds_id})).json()
+    tids = [t["id"] for t in board["unmapped"][:2]]
+    await api_client.post(f"/api/v1/workflows/steps/{s1['id']}/map-tasks", json={"task_ids": tids})
+
+    reset = await api_client.post(f"/api/v1/workflows/{pid}/reset-board")
+    assert reset.status_code == 200
+    assert reset.json()["unmapped"] == len(tids)
+    board = (await api_client.get(f"/api/v1/workflows/{pid}/board",
+                                  params={"dataset_id": ds_id})).json()
+    assert board["mapped_count"] == 0
+    assert all(len(s["tasks"]) == 0 for s in board["steps"])
+
+    # Idempotent + 404 guard.
+    assert (await api_client.post(f"/api/v1/workflows/{pid}/reset-board")).json()["unmapped"] == 0
+    assert (await api_client.post("/api/v1/workflows/nope/reset-board")).status_code == 404
+
+
 async def test_board_404_for_unknown_process(api_client, async_session, monkeypatch):
     _eng, ds_id = await _setup(api_client, async_session, monkeypatch)
     r = await api_client.get("/api/v1/workflows/does-not-exist/board",

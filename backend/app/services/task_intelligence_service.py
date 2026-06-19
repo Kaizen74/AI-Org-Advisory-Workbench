@@ -245,7 +245,7 @@ async def benchmark_tasks(
 # more human agency required. H0 is our extension: no software-agent overlay (assess as robotics/GSE).
 # Values are ILLUSTRATIVE per the WORKBank guardrail — verify against the source before client use.
 HUMAN_AGENCY_SCALE: Dict[str, str] = {
-    "H0": "No software-agent overlay (e.g. physical/handling task) — assess as a robotics/GSE lever, not an AI-agent opportunity.",
+    "H0": "No software-agent overlay — either a physical/handling task (robotics/GSE lever) or not yet matched to a relevant benchmark. Not an AI-agent opportunity as-is.",
     "H1": "AI agent can perform the task with minimal or no human involvement.",
     "H2": "AI performs most of the task; light human review.",
     "H3": "Human–AI equal partnership.",
@@ -303,7 +303,7 @@ async def score_ai_opportunity(session: AsyncSession, dataset_id: str) -> Dict:
     }
     overlays = {o.onet_task_code: o for o in await session.scalars(select(TaskAIOverlay))}
 
-    with_overlay = robotics = 0
+    with_overlay = robotics = unclassified = 0
     level_breakdown: Dict[str, int] = {}
     for task in tasks:
         bench = benchmarks.get(task.id)
@@ -329,7 +329,9 @@ async def score_ai_opportunity(session: AsyncSession, dataset_id: str) -> Dict:
                 confidence=bench.confidence if bench else None,
                 review_state="unreviewed",
             )
-        else:
+        elif onet is not None:
+            # Benchmark-matched to an O*NET code that has NO software-agent overlay → likely a
+            # physical/handling task: surface as a robotics/GSE lever (A4).
             robotics += 1
             level = "L0"
             score = TaskAIScore(
@@ -338,11 +340,30 @@ async def score_ai_opportunity(session: AsyncSession, dataset_id: str) -> Dict:
                 zone="ROBOTICS_GSE_LEVER",
                 ai_opportunity_level=level,
                 rationale=(
-                    "No software-agent overlay (likely physical/handling task). Surface as a "
-                    "robotics/GSE automation lever, not a software-agent opportunity."
+                    f"Matched O*NET {onet} but no software-agent overlay (likely physical/handling "
+                    "task). Surface as a robotics/GSE automation lever, not a software-agent opportunity."
                 ),
                 source="model-inferred",
                 confidence=0.3,
+                review_state="unreviewed",
+            )
+        else:
+            # No benchmark match at all (e.g. the loaded taxonomy covers a different sector than this
+            # client). This is NOT a robotics lever — it is simply unclassified until a relevant
+            # benchmark is loaded/curated. Mislabeling knowledge work as robotics is misleading.
+            unclassified += 1
+            level = "L0"
+            score = TaskAIScore(
+                task_id=task.id,
+                has_level=None,
+                zone="NO_BENCHMARK_MATCH",
+                ai_opportunity_level=level,
+                rationale=(
+                    "No matching benchmark in the loaded taxonomy (it may cover a different sector). "
+                    "Load or curate a relevant benchmark to score this task — not a robotics/GSE lever."
+                ),
+                source="model-inferred",
+                confidence=0.0,
                 review_state="unreviewed",
             )
         level_breakdown[level] = level_breakdown.get(level, 0) + 1
@@ -354,6 +375,7 @@ async def score_ai_opportunity(session: AsyncSession, dataset_id: str) -> Dict:
         "scored": len(tasks),
         "with_overlay": with_overlay,
         "robotics_levers": robotics,
+        "unclassified": unclassified,
         "level_breakdown": level_breakdown,
         "caveats": STANDARD_CAVEATS,
     }

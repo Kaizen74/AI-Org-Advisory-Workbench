@@ -12,7 +12,25 @@ from typing import List, Optional
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..models import Client, Dataset, Engagement, MetricValue, Position
+from ..models import (
+    AuditEvent,
+    Client,
+    Dataset,
+    Deliverable,
+    DesignMove,
+    DesirePulseResponse,
+    Engagement,
+    MetricValue,
+    Position,
+    Process,
+    ProcessStep,
+    Scenario,
+    ScenarioMetric,
+    Task,
+    TaskAIScore,
+    TaskBenchmark,
+    TaskLink,
+)
 from ..parsers.csv_parser import OrgCSVParser
 from .anonymization import pseudonym_for
 
@@ -141,20 +159,82 @@ async def purge_real_names(session: AsyncSession, engagement_id: str) -> Optiona
     return count
 
 
-async def purge_engagement(session: AsyncSession, engagement_id: str) -> bool:
-    """Delete an engagement and everything under it. Returns False if not found.
+async def _delete_dataset_chain(session: AsyncSession, dataset_id_filter) -> None:
+    """Delete the full task/score/benchmark/link + metric/position chain for one or more datasets.
 
-    Explicit ordered deletes (child -> parent) so purge is reliable on async SQLite/Postgres without
-    depending on DB-level ON DELETE cascade or ORM lazy-load during cascade.
+    `dataset_id_filter` is a SQL expression usable in `.in_()` / `==` (a scalar id or a subquery).
+    Explicit ordered deletes (child -> parent) so it is reliable on async SQLite/Postgres without
+    depending on DB-level cascade.
     """
+    task_ids = (
+        select(Task.id).join(Position, Task.position_id == Position.id)
+        .where(Position.dataset_id.in_(dataset_id_filter))
+    )
+    await session.execute(delete(TaskLink).where(TaskLink.task_id.in_(task_ids)))
+    await session.execute(delete(TaskAIScore).where(TaskAIScore.task_id.in_(task_ids)))
+    await session.execute(delete(TaskBenchmark).where(TaskBenchmark.task_id.in_(task_ids)))
+    await session.execute(delete(Task).where(Task.id.in_(task_ids)))
+    await session.execute(delete(MetricValue).where(MetricValue.dataset_id.in_(dataset_id_filter)))
+    await session.execute(delete(Position).where(Position.dataset_id.in_(dataset_id_filter)))
+
+
+async def _purge_engagement_data(session: AsyncSession, engagement_id: str) -> None:
+    """Delete everything under an engagement EXCEPT the engagement row itself."""
+    dataset_ids = select(Dataset.id).where(Dataset.engagement_id == engagement_id)
+    await _delete_dataset_chain(session, dataset_ids)
+    # Workflow processes/steps (and any residual links by step).
+    process_ids = select(Process.id).where(Process.engagement_id == engagement_id)
+    step_ids = select(ProcessStep.id).where(ProcessStep.process_id.in_(process_ids))
+    await session.execute(delete(TaskLink).where(TaskLink.process_step_id.in_(step_ids)))
+    await session.execute(delete(ProcessStep).where(ProcessStep.process_id.in_(process_ids)))
+    await session.execute(delete(Process).where(Process.engagement_id == engagement_id))
+    # Scenarios (parked feature, but data may exist).
+    scenario_ids = select(Scenario.id).where(Scenario.engagement_id == engagement_id)
+    await session.execute(delete(ScenarioMetric).where(ScenarioMetric.scenario_id.in_(scenario_ids)))
+    await session.execute(delete(DesignMove).where(DesignMove.scenario_id.in_(scenario_ids)))
+    await session.execute(delete(Scenario).where(Scenario.engagement_id == engagement_id))
+    # Other engagement-scoped rows.
+    await session.execute(
+        delete(DesirePulseResponse).where(DesirePulseResponse.engagement_id == engagement_id)
+    )
+    await session.execute(delete(Deliverable).where(Deliverable.engagement_id == engagement_id))
+    await session.execute(delete(AuditEvent).where(AuditEvent.engagement_id == engagement_id))
+    await session.execute(delete(Dataset).where(Dataset.engagement_id == engagement_id))
+
+
+async def purge_engagement(session: AsyncSession, engagement_id: str) -> bool:
+    """Delete an engagement and everything under it. Returns False if not found."""
     engagement = await session.get(Engagement, engagement_id)
     if engagement is None:
         return False
-
-    dataset_ids = select(Dataset.id).where(Dataset.engagement_id == engagement_id)
-    await session.execute(delete(MetricValue).where(MetricValue.dataset_id.in_(dataset_ids)))
-    await session.execute(delete(Position).where(Position.dataset_id.in_(dataset_ids)))
-    await session.execute(delete(Dataset).where(Dataset.engagement_id == engagement_id))
+    await _purge_engagement_data(session, engagement_id)
     await session.execute(delete(Engagement).where(Engagement.id == engagement_id))
+    await session.flush()
+    return True
+
+
+async def delete_dataset(session: AsyncSession, dataset_id: str) -> bool:
+    """Delete a single dataset (CSV upload) and all data derived from it. Returns False if missing."""
+    ds = await session.get(Dataset, dataset_id)
+    if ds is None:
+        return False
+    await _delete_dataset_chain(session, select(Dataset.id).where(Dataset.id == dataset_id))
+    await session.execute(delete(Dataset).where(Dataset.id == dataset_id))
+    await session.flush()
+    return True
+
+
+async def delete_client(session: AsyncSession, client_id: str) -> bool:
+    """Delete a client and every engagement (and all data) under it. Returns False if missing."""
+    client = await session.get(Client, client_id)
+    if client is None:
+        return False
+    engagement_ids = list(
+        await session.scalars(select(Engagement.id).where(Engagement.client_id == client_id))
+    )
+    for eng_id in engagement_ids:
+        await _purge_engagement_data(session, eng_id)
+    await session.execute(delete(Engagement).where(Engagement.client_id == client_id))
+    await session.execute(delete(Client).where(Client.id == client_id))
     await session.flush()
     return True

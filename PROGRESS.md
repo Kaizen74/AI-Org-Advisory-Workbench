@@ -487,3 +487,15 @@ per-step H0–H5 mix, and a mapped/unmapped line — plus the standard provenanc
 backend (`_EXT`/`_GENERATORS`, `DELIVERABLE_TYPES`) and surfaced as a frontend button.
 **Tests:** all-types now 7; new test_workflow_deliverable_reflects_mapping; live deck-content smoke.
 **Gate:** PASS — 122 backend tests + clean frontend build; tsc clean; backend↔frontend aligned.
+
+---
+
+## 2026-06-16 — Reset board, engagement deletes, honest classification (D23)
+
+Three review fixes. (1) Reset board now clears all mappings via POST /workflows/{id}/reset-board (active
+when mapped_count>0); Undo stays session-scoped. (2) delete_dataset/delete_client + thorough engagement
+purge with DELETE routes for client/engagement/dataset and ✕ buttons in the Engagements UI. (3) Scoring
+splits no-overlay into ROBOTICS_GSE_LEVER (matched-but-no-overlay physical) vs NO_BENCHMARK_MATCH (no
+match at all) so marketing knowledge work is no longer mislabeled as robotics; queue label + H0 rubric
+clarified; AIOpportunityResult gains `unclassified`.
+**Tests:** +5; live marketing smoke (robotics 0). **Gate:** PASS — 125 backend tests + clean build; tsc clean.

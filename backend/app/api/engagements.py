@@ -101,3 +101,31 @@ async def purge(engagement_id: str, session: AsyncSession = Depends(get_session)
     if not ok:
         raise HTTPException(status_code=404, detail="Engagement not found")
     return {"purged": engagement_id}
+
+
+# ── Delete (client / engagement / dataset) ───────────────────────────────────
+@router.delete("/datasets/{dataset_id}", status_code=200)
+async def delete_dataset(dataset_id: str, session: AsyncSession = Depends(get_session)):
+    """Delete a single CSV upload (dataset) and everything derived from it."""
+    ok = await svc.delete_dataset(session, dataset_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+    return {"deleted": dataset_id}
+
+
+@router.delete("/{engagement_id}", status_code=200)
+async def delete_engagement(engagement_id: str, session: AsyncSession = Depends(get_session)):
+    """Delete an engagement and all of its datasets/derived data."""
+    ok = await svc.purge_engagement(session, engagement_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Engagement not found")
+    return {"deleted": engagement_id}
+
+
+@router.delete("/clients/{client_id}", status_code=200)
+async def delete_client(client_id: str, session: AsyncSession = Depends(get_session)):
+    """Delete a client and every engagement (and all data) under it."""
+    ok = await svc.delete_client(session, client_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Client not found")
+    return {"deleted": client_id}
