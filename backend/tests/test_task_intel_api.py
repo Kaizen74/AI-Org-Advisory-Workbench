@@ -70,6 +70,69 @@ def test_human_agency_band_maps_has_to_h0_h5():
     assert human_agency_band(7) == "H5"  # clamp
 
 
+def _infer_ai(*, model, max_tokens=2048, messages):  # noqa: ARG001
+    """Mock: extract + benchmark-everything-MISSING + HAS-rubric inference for unmatched tasks."""
+    c = messages[0]["content"]
+    if "HUMAN AGENCY SCALE BENCHMARK" in c:  # the rubric inference call
+        payload = json.loads(c.split("TASKS:\n```json\n")[1].split("\n```")[0])
+        return json.dumps({"scores": [
+            {"task_id": t["task_id"], "has_level": 2, "capability_score": 0.8,
+             "zone": "GREEN_LIGHT", "confidence": 0.6, "rationale": "Routine knowledge task."}
+            for t in payload]})
+    if "GROUNDING:" in c:  # marketing tasks match nothing in the air-transport seed
+        tasks = json.loads(c.split("TASKS:\n```json\n")[1].split("\n```")[0])
+        return json.dumps({"benchmarks": [
+            {"task_id": t["task_id"], "status": "MISSING", "matched_task_ref": None,
+             "onet_task_code": None, "taxonomy_source_code": None,
+             "source": "model-inferred", "confidence": 0.3} for t in tasks]})
+    items = json.loads(c.split("INPUT:\n```json\n")[1].split("\n```")[0])
+    return json.dumps({"extractions": [
+        {"employee_key": it["employee_key"],
+         "tasks": [s.strip() for s in it["work_activities"].split(";") if s.strip()]}
+        for it in items]})
+
+
+async def test_infer_unmatched_potential_via_rubric(api_client, async_session, monkeypatch):
+    """Robust benchmarking: tasks with no curated match are scored via the WORKBank HAS rubric,
+    tagged model-inferred + unreviewed (export-blocked). Idempotent + needs a key."""
+    monkeypatch.setattr(type(claude_service), "has_api_key", property(lambda self: True))
+    monkeypatch.setattr(claude_service, "complete", _infer_ai)
+    await load_taxonomies(async_session)
+    c = await api_client.post("/api/v1/engagements/clients", json={"name": "GM"})
+    e = await api_client.post("/api/v1/engagements",
+                              json={"client_id": c.json()["id"], "name": "AI"})
+    eng = e.json()["id"]
+    csv = (
+        "Name,Job Title,Grade,Department,Level,Line Manager,Salary,Employee ID,Work Activities\n"
+        "Ann,Head of Content,H5,Marketing,1,Top,300000,E1,Develop content strategy; Oversee press releases\n"
+    )
+    ds = (await api_client.post(f"/api/v1/engagements/{eng}/datasets",
+          files={"file": ("o.csv", csv.encode(), "text/csv")})).json()["id"]
+    await api_client.post("/api/v1/task-intel/extract", params={"dataset_id": ds})
+    await api_client.post("/api/v1/task-intel/benchmark", params={"dataset_id": ds})
+
+    aiopp = (await api_client.post("/api/v1/task-intel/ai-opportunity",
+                                   params={"dataset_id": ds})).json()
+    assert aiopp["robotics_levers"] == 0 and aiopp["unclassified"] >= 1  # all unmatched
+
+    infer = (await api_client.post("/api/v1/task-intel/infer-potential",
+                                   params={"dataset_id": ds})).json()
+    assert infer["candidates"] >= 1 and infer["updated"] == infer["candidates"]
+
+    # The queue now shows real HAS bands (H2) instead of H0 / NO_BENCHMARK_MATCH...
+    q = (await api_client.get("/api/v1/validation/queue", params={"dataset_id": ds})).json()
+    ai = [i for i in q["items"] if i["kind"] == "ai_score"]
+    assert all(i["label"].startswith("H2") for i in ai)
+    assert all("GREEN_LIGHT" in i["label"] for i in ai)
+    # ...but they stay model-inferred + unreviewed → export-blocked until approved.
+    assert all(i["source"] == "model-inferred" and i["review_state"] == "unreviewed" for i in ai)
+
+    # Idempotent re-run: nothing left unmatched → 0 candidates.
+    again = (await api_client.post("/api/v1/task-intel/infer-potential",
+                                   params={"dataset_id": ds})).json()
+    assert again["candidates"] == 0 and again["updated"] == 0
+
+
 async def test_quick_works_without_api_key(api_client):
     dataset_id = await _make_dataset(api_client)
     r = await api_client.get("/api/v1/task-intel/quick", params={"dataset_id": dataset_id})

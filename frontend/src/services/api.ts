@@ -2,6 +2,7 @@
 // In dev, Vite proxies /api -> http://127.0.0.1:8000 (see vite.config.ts).
 import type {
   ActivatorScreen,
+  AIInferResult,
   AIOpportunityResult,
   AppSettings,
   ArchetypeSummary,
@@ -197,6 +198,11 @@ export const api = {
   aiOpportunity: (datasetId: string) =>
     request<AIOpportunityResult>(
       `/task-intel/ai-opportunity?dataset_id=${encodeURIComponent(datasetId)}`,
+      { method: "POST" },
+    ),
+  inferPotential: (datasetId: string) =>
+    request<AIInferResult>(
+      `/task-intel/infer-potential?dataset_id=${encodeURIComponent(datasetId)}`,
       { method: "POST" },
     ),
   rollup: (datasetId: string) =>

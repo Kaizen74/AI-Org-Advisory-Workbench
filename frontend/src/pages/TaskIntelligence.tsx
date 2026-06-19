@@ -53,8 +53,10 @@ export default function TaskIntelligence({
       await api.extract(datasetId);
       setBusy("Benchmarking…");
       await api.benchmark(datasetId);
-      setBusy("Scoring AI opportunity…");
+      setBusy("Scoring AI opportunity (curated benchmarks)…");
       await api.aiOpportunity(datasetId);
+      setBusy("Benchmarking unmatched tasks (WORKBank HAS rubric)…");
+      await api.inferPotential(datasetId);
       setBusy("Loading rollup…");
       setRollup(await api.rollup(datasetId));
     } catch (e) {

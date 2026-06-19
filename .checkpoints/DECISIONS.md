@@ -384,3 +384,31 @@ backend tests + clean frontend build**, tsc clean, zero regressions.
 **Verification:** +5 tests (reset-board, dataset/engagement/client delete, full-pipeline cascade,
 no-match→NO_BENCHMARK_MATCH); live marketing smoke (robotics 0, zone NO_BENCHMARK_MATCH). Gate green —
 **125 backend tests + clean frontend build**, tsc clean, backend↔frontend aligned, zero regressions.
+
+## 2026-06-16 — D24: Robust AI benchmarking via Claude grounded in the WORKBank HAS rubric
+
+**Source:** Eric — should benchmarking connect to live external taxonomies (WORKBank / O*NET / ESCO)
+rather than the illustrative seed?
+**Determination:** No live external API wiring.
+- **WORKBank** ("Future of Work with AI Agents", Stanford) is a *static research dataset* (HF/GitHub),
+  not a live API. **O*NET / ESCO** have APIs but add API keys, latency, licensing, and offline-test
+  breakage; committing their full datasets violates guardrail A4 (~200MB budget; full O*NET/SFw/ESCO
+  banned). (No recognised "WolfTech" taxonomy exists — likely O*NET/ESCO/SFw/Lightcast.)
+- **Chosen approach:** use **Claude — the app's sanctioned inference engine — grounded in the WORKBank
+  Human Agency Scale rubric** (and its O*NET/ESCO/SFw knowledge) to benchmark tasks the curated
+  seed/overlay can't match. The curated overlay stays authoritative; inferred scores are tagged
+  `model-inferred` + `unreviewed`, so the export-block (M6) keeps them out of client deliverables until
+  a consultant approves them. Honors Claude-API-only, no-heavy-deps, no-huge-datasets, and provenance.
+**Implementation (additive — existing deterministic scoring unchanged):**
+- `task_intelligence_service.infer_unmatched_potential(dataset_id)`: finds `NO_BENCHMARK_MATCH`
+  ai_scores, sends their text to Claude with a HAS-rubric prompt (marker `HUMAN AGENCY SCALE
+  BENCHMARK`), parses per-task {has_level, capability_score, zone, confidence, rationale}, updates the
+  rows (L0-L3 via `derive_ai_level`; source model-inferred; review_state unreviewed; rationale
+  annotated "AI-inferred — verify before client use"). Idempotent; no-op if no candidates.
+- Endpoint `POST /task-intel/infer-potential` (key required, audited).
+- Frontend: `api.inferPotential` + `AIInferResult` type; the Task Intelligence "Run pipeline" now runs
+  extract → benchmark → ai-opportunity (curated) → **infer-potential (HAS rubric)** → rollup.
+  `AIOpportunityResult` gained `unclassified` (D23) for alignment.
+**Verification:** new `test_infer_unmatched_potential_via_rubric` (marketing dataset → all unmatched →
+inferred H2/GREEN_LIGHT, still model-inferred/unreviewed, idempotent). Gate green — **126 backend tests
++ clean frontend build**, tsc clean, backend↔frontend aligned, zero regressions.

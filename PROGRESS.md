@@ -499,3 +499,17 @@ splits no-overlay into ROBOTICS_GSE_LEVER (matched-but-no-overlay physical) vs N
 match at all) so marketing knowledge work is no longer mislabeled as robotics; queue label + H0 rubric
 clarified; AIOpportunityResult gains `unclassified`.
 **Tests:** +5; live marketing smoke (robotics 0). **Gate:** PASS — 125 backend tests + clean build; tsc clean.
+
+---
+
+## 2026-06-16 — Robust AI benchmarking via Claude + WORKBank HAS rubric (D24)
+
+Determined that live external taxonomy APIs are the wrong fit (WORKBank is static; O*NET/ESCO add
+keys/latency/licensing; full datasets break the 200MB guardrail). Instead, benchmark unmatched tasks
+with Claude grounded in the WORKBank Human Agency Scale rubric — additive, provenance-gated.
+- Backend: infer_unmatched_potential + POST /task-intel/infer-potential (scores NO_BENCHMARK_MATCH rows
+  via the HAS rubric; model-inferred/unreviewed → export-blocked; idempotent).
+- Frontend: api.inferPotential + AIInferResult; pipeline now extract→benchmark→ai-opportunity→
+  infer-potential→rollup; AIOpportunityResult gains `unclassified`.
+**Tests:** new rubric-inference test (marketing → H2/GREEN_LIGHT, unreviewed, idempotent).
+**Gate:** PASS — 126 backend tests + clean frontend build; tsc clean; aligned; no regressions.

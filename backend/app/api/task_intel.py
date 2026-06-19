@@ -71,6 +71,17 @@ async def ai_opportunity(dataset_id: str, session: AsyncSession = Depends(get_se
     return result
 
 
+@router.post("/infer-potential")
+async def infer_potential(dataset_id: str, session: AsyncSession = Depends(get_session)):
+    """Robust benchmarking: score tasks with no curated benchmark match by applying the WORKBank
+    Human Agency Scale rubric via Claude (model-inferred → unreviewed → export-blocked until approved)."""
+    _require_api_key()
+    await _positions(session, dataset_id)
+    result = await tis.infer_unmatched_potential(session, dataset_id)
+    await _audit(session, dataset_id, "infer_potential", result)
+    return result
+
+
 @router.get("/rollup")
 async def get_rollup(dataset_id: str, session: AsyncSession = Depends(get_session)):
     return await tis.rollup(session, dataset_id)

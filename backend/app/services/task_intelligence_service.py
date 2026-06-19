@@ -382,6 +382,89 @@ async def score_ai_opportunity(session: AsyncSession, dataset_id: str) -> Dict:
 
 
 # ── Rollup (aggregate AI scores up the org graph) ────────────────────────────
+# ── Robust AI benchmarking for unmatched tasks (Claude grounded in the WORKBank HAS rubric) ──
+# When the curated seed/overlay has no match (e.g. a different sector than the illustrative seed), we
+# do NOT leave the task unscored. We use Claude — the app's sanctioned inference engine — grounded in
+# the WORKBank Human Agency Scale rubric (and its knowledge of O*NET/ESCO/SFw) to infer the task's
+# AI potential. The curated overlay always takes precedence; these inferred scores are tagged
+# `model-inferred` + `unreviewed`, so they are export-blocked until a consultant approves them (M6).
+_HAS_INFERENCE_MARKER = "HUMAN AGENCY SCALE BENCHMARK"
+
+
+def _build_inference_prompt(payload: List[Dict]) -> str:
+    return (
+        "You are benchmarking work TASKS for AI-automation potential using the WORKBank "
+        "Human Agency Scale (HAS) and your knowledge of O*NET / ESCO / SkillsFuture task taxonomies.\n"
+        f"{_HAS_INFERENCE_MARKER}\n"
+        "For EACH task assign:\n"
+        "- has_level: integer 1-5 — H1 = AI can perform with minimal/no human; H2 = AI does most, "
+        "light human review; H3 = equal human-AI partnership; H4 = human leads, AI assists; "
+        "H5 = human-led, AI adds little. Use null ONLY for a physical/handling task with no "
+        "software-agent overlay.\n"
+        "- capability_score: 0.0-1.0 (current AI capability to perform the task).\n"
+        "- zone: GREEN_LIGHT (strong agentic fit), RED_LIGHT (keep human-led), or "
+        "ROBOTICS_GSE_LEVER (physical → robotics, not a software agent).\n"
+        "- confidence: 0.0-1.0.\n- rationale: one short sentence.\n"
+        "Return STRICT JSON: {\"scores\":[{\"task_id\":\"..\",\"has_level\":2,"
+        "\"capability_score\":0.7,\"zone\":\"GREEN_LIGHT\",\"confidence\":0.6,\"rationale\":\"..\"}]}."
+        "\n\nTASKS:\n```json\n" + json.dumps(payload) + "\n```"
+    )
+
+
+async def infer_unmatched_potential(session: AsyncSession, dataset_id: str) -> Dict:
+    """Score tasks that the curated benchmark could not match (zone NO_BENCHMARK_MATCH) by asking
+    Claude to apply the WORKBank HAS rubric. Updates those TaskAIScore rows in place. Idempotent:
+    re-running re-infers the still-unmatched set. Does nothing if there are no candidates."""
+    tasks = await _load_dataset_tasks(session, dataset_id)
+    by_task = {t.id: t for t in tasks}
+    if not tasks:
+        return {"dataset_id": dataset_id, "candidates": 0, "updated": 0, "caveats": STANDARD_CAVEATS}
+
+    scores = {
+        s.task_id: s
+        for s in await session.scalars(
+            select(TaskAIScore).where(
+                TaskAIScore.task_id.in_(list(by_task)),
+                TaskAIScore.zone == "NO_BENCHMARK_MATCH",
+            )
+        )
+    }
+    if not scores:
+        return {"dataset_id": dataset_id, "candidates": 0, "updated": 0, "caveats": STANDARD_CAVEATS}
+
+    payload = [{"task_id": tid, "task_text": by_task[tid].task_text} for tid in scores]
+    raw = claude_service.complete(
+        model=settings.MODEL_SYNTH, messages=[{"role": "user", "content": _build_inference_prompt(payload)}]
+    )
+    results = parse_ai_json(raw).get("scores", [])
+
+    updated = 0
+    for item in results:
+        s = scores.get(item.get("task_id"))
+        if s is None:
+            continue
+        has_level = item.get("has_level")
+        cap = item.get("capability_score")
+        zone = item.get("zone") or "RED_LIGHT"
+        if zone not in ("GREEN_LIGHT", "RED_LIGHT", "ROBOTICS_GSE_LEVER"):
+            zone = "RED_LIGHT"
+        s.has_level = has_level
+        s.capability_score = cap
+        s.zone = zone
+        s.ai_opportunity_level = derive_ai_level(cap, has_level)
+        s.confidence = item.get("confidence")
+        s.rationale = (
+            (item.get("rationale") or "AI-inferred via the WORKBank Human Agency Scale rubric.")
+            + " [AI-inferred — no curated benchmark match; verify before client use.]"
+        )
+        s.source = "model-inferred"
+        s.review_state = "unreviewed"  # export-blocked until consultant approval (M6)
+        updated += 1
+    await session.flush()
+    return {"dataset_id": dataset_id, "candidates": len(scores), "updated": updated,
+            "caveats": STANDARD_CAVEATS}
+
+
 def _blank_bucket() -> Dict:
     return {"tasks": 0, "levels": {}, "zones": {}, "has": {}, "agency": {},
             "with_overlay": 0, "robotics_levers": 0}

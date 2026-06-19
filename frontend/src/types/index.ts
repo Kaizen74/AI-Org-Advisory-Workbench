@@ -92,7 +92,15 @@ export interface AIOpportunityResult {
   scored: number;
   with_overlay: number;
   robotics_levers: number;
+  unclassified: number;
   level_breakdown: Record<string, number>;
+  caveats: string[];
+}
+
+export interface AIInferResult {
+  dataset_id: string;
+  candidates: number;
+  updated: number;
   caveats: string[];
 }
 
