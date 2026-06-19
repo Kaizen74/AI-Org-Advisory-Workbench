@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../services/api";
 import type { DeliverableInfo, Scenario } from "../types";
 import { Button, Card, Empty, ErrorNote, Spinner } from "../components/ui";
+import { SHOW_SIMULATION } from "../config";
 
 const DATASET_TYPES: { type: string; label: string }[] = [
   { type: "PPTX_DIAGNOSTIC", label: "Diagnostic deck (.pptx)" },
@@ -28,7 +29,7 @@ export default function Deliverables({
     if (!engagementId) return;
     try {
       setItems((await api.listDeliverables(engagementId)).deliverables);
-      setScenarios(await api.listScenarios(engagementId));
+      if (SHOW_SIMULATION) setScenarios(await api.listScenarios(engagementId));
     } catch (e) {
       setError(String(e));
     }
@@ -87,32 +88,36 @@ export default function Deliverables({
               {busy === d.type ? "Generating…" : d.label}
             </Button>
           ))}
-          <Button onClick={() => gen("PPTX_SCENARIOS", {})} disabled={!!busy}>
-            {busy === "PPTX_SCENARIOS" ? "Generating…" : "Scenario comparison (.pptx)"}
-          </Button>
+          {SHOW_SIMULATION && (
+            <Button onClick={() => gen("PPTX_SCENARIOS", {})} disabled={!!busy}>
+              {busy === "PPTX_SCENARIOS" ? "Generating…" : "Scenario comparison (.pptx)"}
+            </Button>
+          )}
         </div>
 
-        <div className="mt-4 flex items-center gap-2">
-          <select
-            value={scenarioId}
-            onChange={(e) => setScenarioId(e.target.value)}
-            className="rounded border border-slate-300 px-2 py-1 text-sm"
-          >
-            <option value="">Select scenario…</option>
-            {scenarios.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-          <Button
-            variant="ghost"
-            onClick={() => gen("XLSX_TRANSITION", { scenarioId })}
-            disabled={!scenarioId || !!busy}
-          >
-            Transition register (.xlsx)
-          </Button>
-        </div>
+        {SHOW_SIMULATION && (
+          <div className="mt-4 flex items-center gap-2">
+            <select
+              value={scenarioId}
+              onChange={(e) => setScenarioId(e.target.value)}
+              className="rounded border border-slate-300 px-2 py-1 text-sm"
+            >
+              <option value="">Select scenario…</option>
+              {scenarios.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+            <Button
+              variant="ghost"
+              onClick={() => gen("XLSX_TRANSITION", { scenarioId })}
+              disabled={!scenarioId || !!busy}
+            >
+              Transition register (.xlsx)
+            </Button>
+          </div>
+        )}
       </Card>
 
       {busy && <Spinner label="Generating deliverable…" />}

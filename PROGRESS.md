@@ -466,3 +466,13 @@ D17–D19 — with L0–L3 kept as a secondary chip.
   drag persists via move/unmap.
 **Tests:** test_workflow_board.py (3, asserting H0–H5 + rubric). **Gate:** PASS — 121 backend tests +
 clean frontend build; tsc clean; backend↔frontend aligned; zero regressions.
+
+---
+
+## 2026-06-16 — Drop scenario deck; focus Deliverables (D21)
+
+Frontend-only, consistent with D17. Centralized `SHOW_SIMULATION` into `src/config.ts` (imported by
+App.tsx + Deliverables.tsx). The scenario-comparison deck (`PPTX_SCENARIOS`) and transition register
+(`XLSX_TRANSITION`) — plus the scenario selector and the `listScenarios` fetch — are now gated behind it.
+Deliverables now offers only Diagnostic deck, AI roadmap, TOM, Metrics pack. Backend generators/routes
+left intact (reversible). **Gate:** PASS — 121 backend tests + clean frontend build; tsc clean.

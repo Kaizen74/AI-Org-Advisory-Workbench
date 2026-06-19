@@ -321,3 +321,22 @@ secondary detail.
 **Verification:** new `test_workflow_board.py` (3 tests, refined to assert `human_agency_level` +
 rubric); live board smoke (role=job_title, H2/L3, drag persists). Gate green — **121 backend tests +
 clean frontend build**, tsc clean, backend↔frontend keys aligned, zero regressions.
+
+## 2026-06-16 — D21: Drop the scenario deck; focus Deliverables; centralize SHOW_SIMULATION
+
+**Source:** Eric — "drop the scenario deck and keep this app clean towards basic org-metric compute,
+Workflow Mapper, and Task Intelligence with external benchmarking + editing features."
+**Decision (consistent with D17 — park, don't delete):**
+- The two simulation deliverables — `PPTX_SCENARIOS` (scenario comparison deck) and `XLSX_TRANSITION`
+  (transition register) — are now gated behind `SHOW_SIMULATION` in the frontend `Deliverables` page
+  (the buttons + scenario selector + the `listScenarios` fetch). With the flag off they are not offered.
+- The flag was **centralized** into `frontend/src/config.ts` (`export const SHOW_SIMULATION = false`) and
+  imported by both `App.tsx` (nav tabs) and `Deliverables.tsx` — one switch restores all simulation
+  surfaces (Scenario Studio, Transition Planner, scenario/transition decks) at once.
+- **Backend left intact (reversible):** the `_gen_pptx_scenarios` / `_gen_xlsx_transition` generators,
+  `DELIVERABLE_TYPES`, and the `/deliverables` routes are unchanged — capability retained, just not
+  surfaced. No backend test churn.
+- Kept Deliverables: Diagnostic deck (org metrics), AI roadmap (task-level AI potential), TOM narrative,
+  Metrics pack — aligned to the focused surface (Diagnostics + Workflow Mapper + Task Intelligence
+  benchmarking/editing).
+**Verification:** tsc clean; gate green (121 backend tests + clean frontend build, zero regressions).

@@ -3,6 +3,7 @@
 **Phase:** P7 done + access-control (D13) + D14–D16 fixes + **D17 product refocus**. **All seven phases
 P0–P7 built; app is private and now centred on role→task→AI-potential (H0–H5).**
 **Last completed micro-task:** D20 — integrated the visual Workflow & Task-analysis Mapper (drag-to-remap board: Flow/Landscape/Roll-up, hover role-trace, undo, inspector). Backend (additive, no migration): board/move_task/unmap_task + GET /board, POST /move-task, /unmap-task; board rows carry real fields + headline human_agency_level (H0–H5) + has_level + HAS rubric. Frontend: BoardTask/Step/WorkflowBoard types, api.workflowBoard/moveTask/unmapTask, WorkflowMapper replaced and refined to H0–H5 (L0–L3 secondary). Gate GREEN (121 tests + build).
+**Prior micro-task:** D21 — dropped the scenario deck: centralized `SHOW_SIMULATION` into `src/config.ts` (App.tsx + Deliverables.tsx) and gated the scenario-comparison + transition-register deliverables behind it; Deliverables now offers only Diagnostic/AI-roadmap/TOM/Metrics. Backend intact (reversible). Gate GREEN (121 tests + build).
 **Prior micro-task:** D19 — re-banded the Workflow Mapper AI-opportunity matrix to H0–H5 (agency_matrix / per-step agency_counts / agency_evidencing / rubric; L0–L3 kept internally; UI grid + evidencing now H0–H5). Gate GREEN (118 tests + build).
 **Prior micro-task:** D18 — Workflow Mapper: matrix 'Run' progress (spinner + Running…), a new Mapping coverage card (progress bar + linked/unlinked/empty-step tiles + what's-left/what's-missing lists; `list_steps` now returns `linked_task_ids`), and a note that processes/steps are authored labels onto which CSV tasks are linked. Gate GREEN (118 tests + build).
 **Prior micro-task:** D17 — parked Scenario Studio + Transition Planner behind `SHOW_SIMULATION`
@@ -10,7 +11,7 @@ P0–P7 built; app is private and now centred on role→task→AI-potential (H0�
 AI-potential metric (`human_agency_band` + `HUMAN_AGENCY_SCALE` rubric; rollup `agency` breakdown; queue
 ai_score band; Task Intelligence headline chart+legend). L0–L3 kept internally. Gate GREEN (118 tests + build).
 **In-flight micro-task:** none.
-**Refocus follow-ups (optional, await Eric):** confirm H0 def + H1→H5 direction; slim Deliverables to diagnostic + AI-potential (drop scenario deck).
+**Refocus follow-ups (optional, await Eric):** confirm H0 def + H1→H5 direction. (Deliverables slimmed — D21 done.)
 **Next action (be exact):** Two things remain, both needing Eric (cannot be done from this sandbox):
   1. **Live deploy** — follow README §4 to deploy backend→Railway (root `backend`, add Postgres, set
      `DATABASE_URL` with `+asyncpg`, `ANON_SALT`, **`AUTH_SECRET`, `ACCESS_USERS=you@email:passcode`**,

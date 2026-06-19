@@ -10,6 +10,7 @@ import TransitionPlanner from "./pages/TransitionPlanner";
 import Deliverables from "./pages/Deliverables";
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
+import { SHOW_SIMULATION } from "./config";
 
 type Tab =
   | "engagements"
@@ -21,11 +22,6 @@ type Tab =
   | "transition"
   | "deliverables"
   | "settings";
-
-// Focus flag (D17): the app centres on role → task → AI-potential analysis. The Scenario Studio
-// and Transition Planner (org-redesign simulation) are parked behind this flag — code and tests are
-// retained so re-enabling is a one-line change.
-const SHOW_SIMULATION = false;
 
 export default function App() {
   const [authed, setAuthed] = useState(false);
