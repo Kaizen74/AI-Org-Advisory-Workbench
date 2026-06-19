@@ -25,6 +25,7 @@ import type {
   ScenarioDelta,
   TaskItem,
   TransitionResult,
+  WorkflowBoard,
 } from "../types";
 
 // In dev, Vite proxies "/api" to the backend. In production (frontend on Vercel, backend on
@@ -266,6 +267,22 @@ export const api = {
     request<{ linked: number }>(`/workflows/steps/${stepId}/map-tasks`, json({ task_ids: taskIds })),
   opportunityMatrix: (processId: string) =>
     request<OpportunityMatrix>(`/workflows/${processId}/opportunity-matrix`, { method: "POST" }),
+
+  // Workflow Mapper board (no AI key required)
+  workflowBoard: (processId: string, datasetId: string) =>
+    request<WorkflowBoard>(
+      `/workflows/${processId}/board?dataset_id=${encodeURIComponent(datasetId)}`,
+    ),
+  moveTask: (processId: string, taskId: string, toStepId: string) =>
+    request<{ task_id: string; step_id: string }>(
+      `/workflows/${processId}/move-task`,
+      json({ task_id: taskId, to_step_id: toStepId }),
+    ),
+  unmapTask: (processId: string, taskId: string) =>
+    request<{ task_id: string; unmapped: number }>(
+      `/workflows/${processId}/unmap-task`,
+      json({ task_id: taskId }),
+    ),
 
   // Transition
   transitionCompute: (scenarioId: string) =>

@@ -294,3 +294,30 @@ linked count, rubric keys, step agency_counts). Live smoke: 2×L3 tasks band as 
 The H0≥1 assertion was dropped as fixture-specific (this fixture scores every task) — H0 semantics stay
 covered by the Task Intelligence rollup test. Gate green (118 backend tests + clean frontend build,
 zero regressions); backend↔frontend keys aligned, tsc clean.
+
+## 2026-06-16 — D20: Visual Workflow & Task-analysis Mapper (board) integrated, refined to H0–H5
+
+**Source:** Eric supplied an integration package (drag-to-remap board: Flow / Landscape / Roll-up,
+hover role-trace, undo, inspector) and asked to replicate + refine it. Via AskUserQuestion he chose to
+**refine the headline to the Human Agency Scale (H0–H5)** (consistent with D17–D19), keeping L0–L3 as a
+secondary detail.
+**Changes (additive — no migration; reuses Process/ProcessStep/Task/TaskAIScore/TaskLink/Position):**
+- Backend `workflow_service`: `Position` import; new `_board_task_payload`, `board`, `_process_step_ids`,
+  `move_task`, `unmap_task`. The board payload exposes real persisted fields per task (role=job_title,
+  department, zone, capability/desire, confidence, review_state, rationale, ai_level) **plus the headline
+  `human_agency_level` (H0–H5) + raw `has_level`**, and ships the `human_agency_scale` rubric.
+- Backend `workflows.py`: `MoveTaskBody`/`UnmapTaskBody` + `GET /{id}/board` (no key), `POST /{id}/move-task`,
+  `POST /{id}/unmap-task` (move validates the target step belongs to the process → 404 otherwise). All
+  inherit the D13 auth gate (router included with `require_auth`).
+- Frontend: `BoardTask`/`BoardStep`/`WorkflowBoard` types (+`AgencyBand`); `api.workflowBoard/moveTask/
+  unmapTask`; WorkflowMapper.tsx replaced with the visual board, **refined so cards/filters/legend/
+  Landscape dots/Roll-up mix are encoded by H0–H5** (lower H = more AI-amenable; H0 = robotics/GSE off
+  the agent scale). The AI opportunity index is a HAS-weighted potential; "AI-amenable" = H1–H2; L0–L3
+  shown as a secondary chip in the task inspector. The board's unmapped tray + per-step counts subsume
+  the D18 "mapping coverage" card (D18's `linked_task_ids` on `list_steps` is retained + still tested).
+- Mapping now happens via drag → `move-task` (mapping from the unmapped tray adds a link; moving removes
+  the prior in-process link first). The legacy `map-tasks` endpoint/`api.mapTasks` remain (tested, unused
+  by the page).
+**Verification:** new `test_workflow_board.py` (3 tests, refined to assert `human_agency_level` +
+rubric); live board smoke (role=job_title, H2/L3, drag persists). Gate green — **121 backend tests +
+clean frontend build**, tsc clean, backend↔frontend keys aligned, zero regressions.

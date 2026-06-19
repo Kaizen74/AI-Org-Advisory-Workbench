@@ -272,3 +272,46 @@ export interface ArchetypeSummary {
   example_companies: string[];
   digital_first_only: boolean;
 }
+
+// ── Workflow Mapper board (drag-to-remap) ────────────────────────────────────
+export type AgencyBand = "H0" | "H1" | "H2" | "H3" | "H4" | "H5";
+export type AiLevel = "L0" | "L1" | "L2" | "L3";
+
+/** One task as shown on the Workflow Mapper board. All fields are real persisted data:
+ *  role/department from the source Position; human_agency_level/ai_level/zone/scores from TaskAIScore. */
+export interface BoardTask {
+  id: string;
+  text: string;
+  role: string;                 // Position.job_title (or "Unassigned")
+  department?: string | null;
+  employee_key?: string | null;
+  human_agency_level: AgencyBand; // WORKBank HAS band — headline AI-potential (defaults "H0")
+  has_level?: number | null;      // raw 1..5 (null => no overlay)
+  ai_level: AiLevel;              // TaskAIScore.ai_opportunity_level — secondary detail (defaults "L0")
+  zone?: string | null;          // WORKBank zone, when scored
+  capability_score?: number | null;
+  desire_score?: number | null;  // local desire pulse if present, else US score
+  confidence?: number | null;
+  review_state: string;          // "approved" | "unreviewed" | ...
+  rationale?: string | null;
+  step_id?: string | null;       // null => unmapped
+}
+
+export interface BoardStep {
+  id: string;
+  name: string;
+  seq: number;
+  tasks: BoardTask[];
+}
+
+export interface WorkflowBoard {
+  process_id: string;
+  name: string;
+  value_stream?: string | null;
+  steps: BoardStep[];
+  unmapped: BoardTask[];
+  task_count: number;
+  mapped_count: number;
+  human_agency_scale: Record<string, string>;
+  caveats: string[];
+}

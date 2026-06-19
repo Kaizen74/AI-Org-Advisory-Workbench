@@ -24,6 +24,15 @@ class StepCreate(BaseModel):
     name: str
 
 
+class MoveTaskBody(BaseModel):
+    task_id: str
+    to_step_id: str
+
+
+class UnmapTaskBody(BaseModel):
+    task_id: str
+
+
 @router.post("", status_code=201)
 async def create_process(body: ProcessCreate, session: AsyncSession = Depends(get_session)):
     proc = await svc.create_process(session, engagement_id=body.engagement_id, name=body.name,
@@ -70,3 +79,30 @@ async def opportunity_matrix(process_id: str, session: AsyncSession = Depends(ge
     if result is None:
         raise HTTPException(status_code=404, detail="Process not found")
     return result
+
+
+@router.get("/{process_id}/board")
+async def board(process_id: str, dataset_id: str, session: AsyncSession = Depends(get_session)):
+    """Full board for the Workflow Mapper: steps + their mapped tasks + the dataset's
+    still-unmapped tasks (no Anthropic key required — reads persisted data only)."""
+    result = await svc.board(session, process_id, dataset_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Process not found")
+    return result
+
+
+@router.post("/{process_id}/move-task")
+async def move_task(process_id: str, body: MoveTaskBody,
+                    session: AsyncSession = Depends(get_session)):
+    """Move a task to a different step within this process (drag-to-remap)."""
+    result = await svc.move_task(session, process_id, body.task_id, body.to_step_id)
+    if result.get("error"):
+        raise HTTPException(status_code=404, detail=result["error"])
+    return result
+
+
+@router.post("/{process_id}/unmap-task")
+async def unmap_task(process_id: str, body: UnmapTaskBody,
+                     session: AsyncSession = Depends(get_session)):
+    """Remove a task from this process (returns it to the unmapped tray)."""
+    return await svc.unmap_task(session, process_id, body.task_id)

@@ -448,3 +448,21 @@ Scale (H0–H5) instead of L0–L3. Backend adds `agency_matrix` / per-step `age
 `agency_evidencing` / `human_agency_scale` (L0–L3 retained internally); frontend headlines H0–H5 with a
 rubric tooltip. Extended the matrix test; live smoke confirmed (L3 tasks → H2, sum == linked).
 **Gate:** PASS — 118 backend tests + clean frontend build, zero regressions; tsc clean; keys aligned.
+
+---
+
+## 2026-06-16 — Visual Workflow & Task-analysis Mapper integrated (D20)
+
+Integrated Eric's drag-to-remap board package (Flow / Landscape / Roll-up, hover role-trace, undo,
+inspector), refined so the per-task headline is the Human Agency Scale (H0–H5) — consistent with
+D17–D19 — with L0–L3 kept as a secondary chip.
+- Backend (additive, no migration): `board` / `move_task` / `unmap_task` in workflow_service (+`Position`
+  import); `GET /{id}/board`, `POST /{id}/move-task`, `POST /{id}/unmap-task` routes. Board rows expose
+  real persisted fields + `human_agency_level`/`has_level` + the HAS rubric.
+- Frontend: BoardTask/BoardStep/WorkflowBoard types; api.workflowBoard/moveTask/unmapTask; WorkflowMapper
+  replaced with the visual board encoded by H0–H5 (cards/filters/legend/landscape/roll-up); HAS-weighted
+  AI opportunity index; L0–L3 as secondary detail in the inspector.
+- Tasks flow in from the org CSV via Task Intelligence (board reads persisted data, no API key needed);
+  drag persists via move/unmap.
+**Tests:** test_workflow_board.py (3, asserting H0–H5 + rubric). **Gate:** PASS — 121 backend tests +
+clean frontend build; tsc clean; backend↔frontend aligned; zero regressions.

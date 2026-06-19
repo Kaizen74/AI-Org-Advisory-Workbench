@@ -74,6 +74,19 @@ steps and confirms add/link. (3) The matrix looked disconnected: the card now sh
 Additive-only; benchmark-label test still passes. **Gate GREEN: 117 backend tests + clean frontend
 build, zero regressions.**
 
+**Product refocus + Workflow Mapper overhaul (2026-06-16 — D17–D20):** (D17) Scenario Studio +
+Transition Planner parked behind `SHOW_SIMULATION` (reversible nav flag; code+tests intact); the
+**WORKBank Human Agency Scale (H0–H5)** is now the headline AI-potential metric app-wide
+(`human_agency_band` + `HUMAN_AGENCY_SCALE`; lower H = more AI-amenable, H0 = no software-agent overlay;
+L0–L3 retained internally). (D18) Workflow Mapper matrix run-progress + a mapping-coverage view
+(`list_steps` gained `linked_task_ids`). (D19) the AI-opportunity matrix re-banded to H0–H5
+(`agency_matrix`/`agency_counts`/`agency_evidencing`/rubric). (D20) integrated the **visual Workflow &
+Task-analysis Mapper** — a drag-to-remap board (Flow / Landscape / Roll-up, hover role-trace, undo,
+inspector) over new additive endpoints `GET /workflows/{id}/board`, `POST .../move-task`,
+`.../unmap-task` (no migration; reuses Position/Task/TaskAIScore/TaskLink); board rows carry real
+persisted fields + headline `human_agency_level` (H0–H5, L0–L3 secondary) + the HAS rubric. **Gate
+GREEN: 121 backend tests + clean frontend build, zero regressions.**
+
 ---
 
 # PART A — OPERATING PROTOCOL FOR CLAUDE CODE (MANDATORY)

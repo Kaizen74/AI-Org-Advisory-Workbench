@@ -13,7 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import settings
-from ..models import Process, ProcessStep, Task, TaskAIScore, TaskLink
+from ..models import Position, Process, ProcessStep, Task, TaskAIScore, TaskLink
 from ._json_utils import parse_ai_json
 from .claude_service import claude_service
 from .task_intelligence_service import HUMAN_AGENCY_SCALE, STANDARD_CAVEATS, human_agency_band
@@ -184,3 +184,145 @@ async def opportunity_matrix(session: AsyncSession, process_id: str) -> Optional
         "assessment": assessment,
         "caveats": STANDARD_CAVEATS,
     }
+
+
+# ── Visual board (drag-to-remap) — additive, no migration; reuses existing tables ──
+def _board_task_payload(task: Task, pos: Optional[Position], score: Optional[TaskAIScore],
+                        step_id: Optional[str]) -> Dict:
+    """Flatten a task + its source position + its AI score into one board row.
+
+    Every field is REAL persisted data:
+      - role / department        <- Position.job_title / Position.department (never the real name)
+      - human_agency_level (H0-H5) <- WORKBank HAS band (headline AI-potential, D17/D19)
+      - ai_level (L0..L3)         <- TaskAIScore.ai_opportunity_level (secondary detail)
+      - zone / scores / etc.      <- TaskAIScore.*
+    Missing AI scores degrade gracefully (H0 / 'L0' / 'unreviewed').
+    """
+    desire = None
+    if score is not None:
+        # Prefer the locally-captured desire pulse when present; never overwrite the US score.
+        desire = score.desire_score_local if score.desire_score_local is not None else score.desire_score_us
+    has_level = score.has_level if score else None
+    return {
+        "id": task.id,
+        "text": task.task_text,
+        "role": (pos.job_title if pos else None) or "Unassigned",
+        "department": pos.department if pos else None,
+        "employee_key": pos.employee_key if pos else None,
+        "human_agency_level": human_agency_band(has_level),  # H0-H5 headline
+        "has_level": has_level,
+        "ai_level": (score.ai_opportunity_level if score else None) or "L0",
+        "zone": score.zone if score else None,
+        "capability_score": score.capability_score if score else None,
+        "desire_score": desire,
+        "confidence": score.confidence if score else None,
+        "review_state": (score.review_state if score else "unreviewed") or "unreviewed",
+        "rationale": score.rationale if score else None,
+        "step_id": step_id,
+    }
+
+
+async def board(session: AsyncSession, process_id: str, dataset_id: str) -> Optional[Dict]:
+    """The full Workflow-Mapper board for one process over one dataset's tasks.
+
+    Returns the process, its ordered steps each with their mapped tasks, and the dataset's
+    still-unmapped tasks (extracted from the CSV upload via Task Intelligence) so the UI can
+    drag them onto steps. Returns None if the process does not exist.
+    """
+    proc = await session.get(Process, process_id)
+    if proc is None:
+        return None
+
+    steps = list(await session.scalars(
+        select(ProcessStep).where(ProcessStep.process_id == process_id).order_by(ProcessStep.seq)
+    ))
+    step_ids = [s.id for s in steps]
+
+    links = list(await session.scalars(
+        select(TaskLink).where(TaskLink.process_step_id.in_(step_ids))
+    )) if step_ids else []
+    step_by_task: Dict[str, str] = {tl.task_id: tl.process_step_id for tl in links}
+
+    tasks = list(await session.scalars(
+        select(Task).join(Position, Task.position_id == Position.id)
+        .where(Position.dataset_id == dataset_id).order_by(Task.id)
+    ))
+    positions = {
+        p.id: p
+        for p in await session.scalars(select(Position).where(Position.dataset_id == dataset_id))
+    }
+    task_ids = [t.id for t in tasks]
+    scores = {
+        s.task_id: s
+        for s in await session.scalars(select(TaskAIScore).where(TaskAIScore.task_id.in_(task_ids)))
+    } if task_ids else {}
+
+    payloads = [
+        _board_task_payload(t, positions.get(t.position_id), scores.get(t.id), step_by_task.get(t.id))
+        for t in tasks
+    ]
+    mapped = [p for p in payloads if p["step_id"]]
+    unmapped = [p for p in payloads if not p["step_id"]]
+    steps_payload = [
+        {"id": s.id, "name": s.name, "seq": s.seq,
+         "tasks": [p for p in mapped if p["step_id"] == s.id]}
+        for s in steps
+    ]
+    return {
+        "process_id": proc.id,
+        "name": proc.name,
+        "value_stream": proc.value_stream,
+        "steps": steps_payload,
+        "unmapped": unmapped,
+        "task_count": len(payloads),
+        "mapped_count": len(mapped),
+        "human_agency_scale": HUMAN_AGENCY_SCALE,
+        "caveats": STANDARD_CAVEATS,
+    }
+
+
+async def _process_step_ids(session: AsyncSession, process_id: str) -> List[str]:
+    return [
+        s.id
+        for s in await session.scalars(
+            select(ProcessStep).where(ProcessStep.process_id == process_id)
+        )
+    ]
+
+
+async def move_task(session: AsyncSession, process_id: str, task_id: str,
+                    to_step_id: str) -> Dict:
+    """Move a task to a step WITHIN this process (removes its prior link(s) in the same
+    process, then links it to the target step). Idempotent."""
+    if await session.get(Task, task_id) is None:
+        return {"error": "task not found"}
+    target = await session.get(ProcessStep, to_step_id)
+    if target is None or target.process_id != process_id:
+        return {"error": "step not found in process"}
+
+    step_ids = await _process_step_ids(session, process_id)
+    existing = list(await session.scalars(
+        select(TaskLink).where(TaskLink.task_id == task_id,
+                               TaskLink.process_step_id.in_(step_ids))
+    )) if step_ids else []
+    already = any(tl.process_step_id == to_step_id for tl in existing)
+    for tl in existing:
+        if tl.process_step_id != to_step_id:
+            await session.delete(tl)
+    if not already:
+        session.add(TaskLink(process_step_id=to_step_id, task_id=task_id))
+    await session.flush()
+    return {"task_id": task_id, "step_id": to_step_id}
+
+
+async def unmap_task(session: AsyncSession, process_id: str, task_id: str) -> Dict:
+    """Remove a task from every step of this process (back to the 'unmapped' tray)."""
+    step_ids = await _process_step_ids(session, process_id)
+    existing = list(await session.scalars(
+        select(TaskLink).where(TaskLink.task_id == task_id,
+                               TaskLink.process_step_id.in_(step_ids))
+    )) if step_ids else []
+    for tl in existing:
+        await session.delete(tl)
+    await session.flush()
+    return {"task_id": task_id, "unmapped": len(existing)}
