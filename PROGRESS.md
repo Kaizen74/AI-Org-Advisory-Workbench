@@ -568,3 +568,15 @@ worker_data); the D28 overlay (104 occupations) is complete. Verified determinis
 to committed) and git-ignored raw data. Added test_workbank_integration.py: one mixed-dataset end-to-end
 test proving overlay + inference + robotics + source_mix + workflow deliverable all work together.
 **Gate:** PASS — 133 backend tests + clean build; tsc clean; aligned; no regressions.
+
+---
+
+## 2026-06-16 — Process/step delete + local-desirability manual scoring (D30)
+
+(1) Delete process/step in the Workflow Mapper: workflow_service.delete_process/delete_step + DELETE
+routes; × buttons on process chips and step columns (deleted step's tasks return to the tray).
+(2) Local desirability for no-benchmark tasks: export_desirability_template (task-id keyed CSV) +
+apply_local_desirability (consultant-approved AI opportunity from desire_rating; protects external
+benchmarks; US desire untouched); GET/POST endpoints + a Task Intelligence card. The CSV aligns to the
+extracted tasks (via the template), not the raw org structure CSV.
+**Tests:** +2. **Gate:** PASS — 135 backend tests + clean build; tsc clean; aligned.

@@ -243,6 +243,32 @@ export default function WorkflowMapper({
     }
   }
 
+  async function deleteProcess(id: string, name: string) {
+    if (!window.confirm(`Delete process "${name}" and all its steps/mappings? (Tasks return to the pool.)`)) return;
+    try {
+      await api.deleteProcess(id);
+      const ps = await api.listProcesses(engagementId!);
+      setProcesses(ps);
+      if (activeProc === id) {
+        setActiveProc(ps[0]?.id ?? "");
+        if (!ps.length) setBoard(null);
+      }
+    } catch (e) {
+      setError(String((e as Error).message ?? e));
+    }
+  }
+
+  async function deleteStep(id: string, name: string) {
+    if (!window.confirm(`Delete step "${name}"? Its tasks return to the unmapped tray.`)) return;
+    try {
+      await api.deleteStep(id);
+      if (selKind === "step" && selId === id) { setSelKind(null); setSelId(null); }
+      await loadBoard(activeProc);
+    } catch (e) {
+      setError(String((e as Error).message ?? e));
+    }
+  }
+
   async function runAssessment() {
     if (!activeProc) return;
     setAssessing(true);
@@ -323,11 +349,17 @@ export default function WorkflowMapper({
         <div className="mt-3.5 flex flex-wrap items-center justify-between gap-4 pb-3">
           <div className="flex flex-wrap items-center gap-2">
             {processes.map((p) => (
-              <button
+              <span
                 key={p.id}
-                onClick={() => { setActiveProc(p.id); setSelKind(null); setSelId(null); }}
-                className={`rounded-full border px-3 py-1.5 text-xs font-medium ${p.id === activeProc ? "border-slate-800 bg-slate-800 text-white" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}
-              >{p.name}</button>
+                className={`group inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-medium ${p.id === activeProc ? "border-slate-800 bg-slate-800 text-white" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}
+              >
+                <button onClick={() => { setActiveProc(p.id); setSelKind(null); setSelId(null); }}>{p.name}</button>
+                <button
+                  onClick={() => deleteProcess(p.id, p.name)}
+                  title="Delete process"
+                  className={`ml-0.5 rounded-full px-1 leading-none ${p.id === activeProc ? "text-white/70 hover:text-white" : "text-slate-300 hover:text-red-600"}`}
+                >×</button>
+              </span>
             ))}
             <div className="flex items-center gap-1.5">
               <input
@@ -383,6 +415,7 @@ export default function WorkflowMapper({
               onDrop={(stepId) => { if (dragId) doMove(dragId, stepId); setDragId(null); setDragOver(null); }}
               onSelectTask={(id) => { setSelKind("task"); setSelId(id); }}
               onSelectStep={(id) => { setSelKind("step"); setSelId(id); }}
+              onDeleteStep={deleteStep}
               onHoverRole={setHoverRole}
               newStep={newStep}
               setNewStep={setNewStep}
@@ -465,11 +498,11 @@ function TaskCard({ t, dim, roleLit, draggable, onDragStart, onClick, onHoverRol
   );
 }
 
-function Column({ id, title, seq, tasks, dimOf, roleLitOf, isOver, setDragOver, onDrop, onSelectTask, onSelectStep, onHoverRole, onDragStart, tone }: {
+function Column({ id, title, seq, tasks, dimOf, roleLitOf, isOver, setDragOver, onDrop, onSelectTask, onSelectStep, onDeleteStep, onHoverRole, onDragStart, tone }: {
   id: string; title: string; seq?: number; tasks: BoardTask[]; dimOf: (t: BoardTask) => number; roleLitOf: (t: BoardTask) => boolean;
   isOver: boolean; setDragOver: (v: string | null) => void; onDrop: () => void;
-  onSelectTask: (id: string) => void; onSelectStep?: (id: string) => void; onHoverRole: (r: string | null) => void;
-  onDragStart: (id: string) => void; tone: "step" | "unmapped";
+  onSelectTask: (id: string) => void; onSelectStep?: (id: string) => void; onDeleteStep?: (id: string, title: string) => void;
+  onHoverRole: (r: string | null) => void; onDragStart: (id: string) => void; tone: "step" | "unmapped";
 }) {
   return (
     <div
@@ -478,15 +511,19 @@ function Column({ id, title, seq, tasks, dimOf, roleLitOf, isOver, setDragOver, 
       onDrop={(e) => { e.preventDefault(); onDrop(); }}
       className={`flex w-[236px] flex-none flex-col rounded-xl border ${tone === "unmapped" ? "border-dashed border-slate-300 bg-slate-50" : "border-slate-200 bg-[#fbfcfd]"} ${isOver ? "!border-[#8fc9bc] !bg-[#eef6f3]" : ""}`}
     >
-      <button onClick={() => onSelectStep?.(id)} className="border-b border-slate-200 px-3.5 py-3 text-left">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            {seq != null && <span className="flex h-5 w-5 flex-none items-center justify-center rounded-md bg-slate-800 text-[11px] font-semibold tabular-nums text-white">{seq}</span>}
-            <span className="text-[13px] font-semibold leading-tight text-slate-800">{title}</span>
-          </div>
+      <div className="flex items-center justify-between gap-2 border-b border-slate-200 px-3.5 py-3">
+        <button onClick={() => onSelectStep?.(id)} className="flex items-center gap-2 text-left">
+          {seq != null && <span className="flex h-5 w-5 flex-none items-center justify-center rounded-md bg-slate-800 text-[11px] font-semibold tabular-nums text-white">{seq}</span>}
+          <span className="text-[13px] font-semibold leading-tight text-slate-800">{title}</span>
+        </button>
+        <div className="flex items-center gap-1.5">
           <span className="text-[11px] tabular-nums text-slate-400">{tasks.length}</span>
+          {tone === "step" && onDeleteStep && (
+            <button onClick={() => onDeleteStep(id, title)} title="Delete step"
+              className="rounded px-1 text-sm leading-none text-slate-300 hover:text-red-600">×</button>
+          )}
         </div>
-      </button>
+      </div>
       <div className="flex min-h-[60px] flex-col gap-2 p-2.5">
         {tasks.map((t) => (
           <TaskCard key={t.id} t={t} dim={dimOf(t)} roleLit={roleLitOf(t)} draggable onDragStart={onDragStart} onClick={() => onSelectTask(t.id)} onHoverRole={onHoverRole} />
@@ -499,11 +536,11 @@ function Column({ id, title, seq, tasks, dimOf, roleLitOf, isOver, setDragOver, 
   );
 }
 
-function FlowView({ board, dimOf, hoverRole, dragOver, setDragOver, setDragId, onDrop, onSelectTask, onSelectStep, onHoverRole, newStep, setNewStep, addStep }: {
+function FlowView({ board, dimOf, hoverRole, dragOver, setDragOver, setDragId, onDrop, onSelectTask, onSelectStep, onDeleteStep, onHoverRole, newStep, setNewStep, addStep }: {
   board: WorkflowBoard; dimOf: (t: BoardTask) => number; hoverRole: string | null; dragOver: string | null;
   setDragOver: (v: string | null) => void; setDragId: (v: string | null) => void; onDrop: (stepId: string | null) => void;
-  onSelectTask: (id: string) => void; onSelectStep: (id: string) => void; onHoverRole: (r: string | null) => void;
-  newStep: string; setNewStep: (v: string) => void; addStep: () => void;
+  onSelectTask: (id: string) => void; onSelectStep: (id: string) => void; onDeleteStep: (id: string, title: string) => void;
+  onHoverRole: (r: string | null) => void; newStep: string; setNewStep: (v: string) => void; addStep: () => void;
 }) {
   const roleLitOf = (t: BoardTask) => !!hoverRole && t.role === hoverRole;
   return (
@@ -522,7 +559,7 @@ function FlowView({ board, dimOf, hoverRole, dragOver, setDragOver, setDragId, o
             id={s.id} title={s.name} seq={s.seq} tasks={s.tasks} tone="step"
             dimOf={dimOf} roleLitOf={roleLitOf} isOver={dragOver === s.id}
             setDragOver={setDragOver} onDrop={() => onDrop(s.id)}
-            onSelectTask={onSelectTask} onSelectStep={onSelectStep} onHoverRole={onHoverRole} onDragStart={setDragId}
+            onSelectTask={onSelectTask} onSelectStep={onSelectStep} onDeleteStep={onDeleteStep} onHoverRole={onHoverRole} onDragStart={setDragId}
           />
           {i < board.steps.length - 1 && (
             <div className="flex w-7 flex-none items-center justify-center text-slate-300">

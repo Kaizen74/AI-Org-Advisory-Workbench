@@ -25,6 +25,7 @@ export default function TaskIntelligence({
   const [quick, setQuick] = useState<QuickStats | null>(null);
   const [rollup, setRollup] = useState<RollupResult | null>(null);
   const [busy, setBusy] = useState<string>("");
+  const [note, setNote] = useState("");
   const [error, setError] = useState("");
 
   async function loadQuick() {
@@ -101,6 +102,55 @@ export default function TaskIntelligence({
         ) : (
           <Spinner label="Loading preview…" />
         )}
+      </Card>
+
+      <Card title="Local desirability (manual scoring for tasks with no benchmark)">
+        <p className="mb-3 text-xs text-slate-500">
+          When a task has no valid benchmark, score it by hand. Download the template (it lists those
+          tasks, pre-keyed by id — no need to match the org CSV), fill <b>desire_rating</b> (1 = keep
+          human … 5 = automate), and re-upload. These become consultant-approved (client-ready) H-bands.
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="ghost"
+            disabled={!datasetId || !!busy}
+            onClick={() =>
+              api
+                .downloadDesirabilityTemplate(datasetId!)
+                .catch((e) => setError(String((e as Error).message ?? e)))
+            }
+          >
+            Download template (.csv)
+          </Button>
+          <label className="text-sm">
+            <span className="cursor-pointer rounded-md border border-slate-300 px-3 py-1.5 font-medium text-slate-600 hover:bg-slate-100">
+              {busy === "desirability" ? "Applying…" : "Upload filled CSV"}
+            </span>
+            <input
+              type="file"
+              accept=".csv,.xlsx"
+              className="hidden"
+              disabled={!datasetId || !!busy}
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file || !datasetId) return;
+                setBusy("desirability");
+                setError("");
+                try {
+                  const r = await api.applyDesirability(datasetId, file);
+                  setNote(`Applied ${r.applied} manual score(s); ${r.desire_only} desire-only; ${r.skipped} skipped.`);
+                  setRollup(await api.rollup(datasetId));
+                } catch (err) {
+                  setError(String((err as Error).message ?? err));
+                } finally {
+                  setBusy("");
+                  e.target.value = "";
+                }
+              }}
+            />
+          </label>
+        </div>
+        {note && <p className="mt-2 text-xs text-emerald-700">{note}</p>}
       </Card>
 
       {overall && overall.tasks > 0 ? (

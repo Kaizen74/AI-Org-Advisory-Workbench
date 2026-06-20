@@ -239,6 +239,19 @@ export const api = {
       { method: "POST", body: form },
     );
   },
+  downloadDesirabilityTemplate: (datasetId: string) =>
+    downloadBlob(
+      `${BASE}/task-intel/desirability-template.csv?dataset_id=${encodeURIComponent(datasetId)}`,
+      `local-desirability-template.csv`,
+    ),
+  applyDesirability: (datasetId: string, file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return request<{ applied: number; desire_only: number; skipped: number }>(
+      `/task-intel/desirability?dataset_id=${encodeURIComponent(datasetId)}`,
+      { method: "POST", body: form },
+    );
+  },
 
   // Scenarios
   listScenarios: (engagementId: string) =>
@@ -295,6 +308,10 @@ export const api = {
       `/workflows/${processId}/unmap-task`,
       json({ task_id: taskId }),
     ),
+  deleteProcess: (processId: string) =>
+    request<{ deleted: string }>(`/workflows/${processId}`, { method: "DELETE" }),
+  deleteStep: (stepId: string) =>
+    request<{ deleted: string }>(`/workflows/steps/${stepId}`, { method: "DELETE" }),
   resetBoard: (processId: string) =>
     request<{ process_id: string; unmapped: number }>(
       `/workflows/${processId}/reset-board`,

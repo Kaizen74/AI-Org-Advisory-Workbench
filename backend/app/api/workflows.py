@@ -115,3 +115,19 @@ async def reset_board(process_id: str, session: AsyncSession = Depends(get_sessi
     if result is None:
         raise HTTPException(status_code=404, detail="Process not found")
     return result
+
+
+@router.delete("/steps/{step_id}")
+async def delete_step(step_id: str, session: AsyncSession = Depends(get_session)):
+    """Delete a step (its linked tasks return to the unmapped tray)."""
+    if not await svc.delete_step(session, step_id):
+        raise HTTPException(status_code=404, detail="Step not found")
+    return {"deleted": step_id}
+
+
+@router.delete("/{process_id}")
+async def delete_process(process_id: str, session: AsyncSession = Depends(get_session)):
+    """Delete a process and all of its steps + task links."""
+    if not await svc.delete_process(session, process_id):
+        raise HTTPException(status_code=404, detail="Process not found")
+    return {"deleted": process_id}

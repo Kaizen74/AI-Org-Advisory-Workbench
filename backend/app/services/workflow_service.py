@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Dict, List, Optional
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import settings
@@ -326,6 +326,29 @@ async def unmap_task(session: AsyncSession, process_id: str, task_id: str) -> Di
         await session.delete(tl)
     await session.flush()
     return {"task_id": task_id, "unmapped": len(existing)}
+
+
+async def delete_process(session: AsyncSession, process_id: str) -> bool:
+    """Delete a process, its steps, and all task links under it. Returns False if missing."""
+    if await session.get(Process, process_id) is None:
+        return False
+    step_ids = await _process_step_ids(session, process_id)
+    if step_ids:
+        await session.execute(delete(TaskLink).where(TaskLink.process_step_id.in_(step_ids)))
+    await session.execute(delete(ProcessStep).where(ProcessStep.process_id == process_id))
+    await session.execute(delete(Process).where(Process.id == process_id))
+    await session.flush()
+    return True
+
+
+async def delete_step(session: AsyncSession, step_id: str) -> bool:
+    """Delete a single step + its task links (linked tasks return to the unmapped tray). False if missing."""
+    if await session.get(ProcessStep, step_id) is None:
+        return False
+    await session.execute(delete(TaskLink).where(TaskLink.process_step_id == step_id))
+    await session.execute(delete(ProcessStep).where(ProcessStep.id == step_id))
+    await session.flush()
+    return True
 
 
 async def reset_board(session: AsyncSession, process_id: str) -> Optional[Dict]:

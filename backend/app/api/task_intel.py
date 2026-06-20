@@ -124,3 +124,30 @@ async def pulse_responses(engagement_id: str, dataset_id: str, file: UploadFile 
     return await pulse_service.import_responses(
         session, engagement_id, dataset_id, content, filename=file.filename
     )
+
+
+# ── Local desirability → manual AI opportunity for tasks with no valid benchmark (no API key) ──
+@router.get("/desirability-template.csv")
+async def desirability_template(dataset_id: str, session: AsyncSession = Depends(get_session)):
+    """CSV (task_ref=task id, task_text, desire_rating) for tasks lacking a valid benchmark — fill
+    desire_rating (1=keep human .. 5=automate) and re-upload to set a consultant AI opportunity."""
+    await _positions(session, dataset_id)
+    data = await pulse_service.export_desirability_template(session, dataset_id)
+    return Response(
+        content=data, media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=local_desirability_template.csv"},
+    )
+
+
+@router.post("/desirability")
+async def apply_desirability(dataset_id: str, file: UploadFile = File(...),
+                             session: AsyncSession = Depends(get_session)):
+    """Apply a filled local-desirability CSV → consultant-approved AI opportunity for unbenchmarked
+    tasks (keyed by task id; benchmarked tasks only get their local desire updated)."""
+    await _positions(session, dataset_id)
+    content = await file.read()
+    result = await pulse_service.apply_local_desirability(
+        session, dataset_id, content, filename=file.filename
+    )
+    await _audit(session, dataset_id, "local_desirability_applied", result)
+    return result

@@ -520,3 +520,27 @@ layered benchmarking works together with no regressions: WORKBank overlay used f
 robotics lever, `source_mix == {overlay:1, ai_inferred:1, robotics:1, unclassified:0}`, and the
 finalized-workflow deliverable still builds on the same dataset.
 **Gate green — 133 backend tests + clean frontend build, tsc clean, backend↔frontend aligned, zero regressions.**
+
+## 2026-06-16 — D30: Delete process/step + local-desirability manual scoring for no-benchmark tasks
+
+**Source:** Eric — (1) no way to remove an added process/step in the Workflow Mapper; (2) when there's
+no valid benchmark, can the local-desirability CSV manually set the AI opportunity, and must task refs
+align with the diagnostics structure CSV?
+**Answer to (2)'s alignment question:** No — align to the EXTRACTED tasks, not the raw org CSV (tasks are
+extracted from Work Activities). The supplied CSV is in fact the existing desire-pulse format, but the
+pulse keys by taxonomy task_ref so it only reaches benchmarked tasks. Added a task-id-keyed manual path
+and a downloadable template so alignment is automatic.
+**Changes (additive):**
+- Workflow delete: `workflow_service.delete_process` / `delete_step` (+ DELETE `/workflows/{process_id}`,
+  DELETE `/workflows/steps/{step_id}`; step delete returns its tasks to the unmapped tray). Frontend:
+  × on each process chip and each step column header, with confirms + state cleanup.
+- Local desirability: `pulse_service.export_desirability_template` (CSV: task_ref=task id, task_text,
+  desire_rating — only tasks lacking a real benchmark) + `apply_local_desirability` (keyed by task id;
+  sets a CONSULTANT-APPROVED AI opportunity: has_level = 6−rating, derived zone/L0–L3, desire_score_local,
+  source=consultant-approved/review_state=approved → client-ready; external benchmarks WORKBank/SFw/ONET
+  are protected, only their local desire updates; desire_score_us never touched). Endpoints GET
+  `/task-intel/desirability-template.csv` + POST `/task-intel/desirability`. Frontend: a "Local
+  desirability" card in Task Intelligence (download template + upload filled CSV, authed blob).
+**Verification:** +2 tests (process/step delete with task re-tray; template→apply sets H1/H5 +
+client-ready). Gate green — **135 backend tests + clean frontend build**, tsc clean, backend↔frontend
+aligned, zero regressions.

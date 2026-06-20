@@ -29,6 +29,12 @@ from ..models import (
 
 INSTRUMENT_HEADERS = ["task_ref", "task_text", "desire_rating (1=keep human .. 5=automate)"]
 
+# Sources that represent a curated/real benchmark — excluded from the manual template (already scored).
+_BENCHMARK_SOURCES = ("WORKBank", "consultant-approved", "SFw", "ONET")
+# External benchmarks whose AI-opportunity is authoritative and must NOT be overwritten by a manual
+# upload (only their local desire is updated). consultant-approved is re-applicable, so not protected.
+_PROTECTED_SOURCES = ("WORKBank", "SFw", "ONET")
+
 
 async def _benchmarked_task_refs(session: AsyncSession, dataset_id: str) -> List[Tuple[str, str]]:
     """Distinct (task_ref, task_text) for the dataset's benchmarked tasks, by frequency desc."""
@@ -125,6 +131,87 @@ async def import_responses(
 
     updated = await recompute_local_desire(session, engagement_id, dataset_id)
     return {"responses_stored": stored, "scores_updated": updated}
+
+
+async def _dataset_tasks_with_scores(session: AsyncSession, dataset_id: str):
+    tasks = list(await session.scalars(
+        select(Task).join(Position, Task.position_id == Position.id)
+        .where(Position.dataset_id == dataset_id).order_by(Task.id)
+    ))
+    scores = {
+        s.task_id: s
+        for s in await session.scalars(
+            select(TaskAIScore).where(TaskAIScore.task_id.in_([t.id for t in tasks]))
+        )
+    }
+    return tasks, scores
+
+
+async def export_desirability_template(session: AsyncSession, dataset_id: str,
+                                       only_unscored: bool = True) -> bytes:
+    """CSV (task_ref=task id, task_text, desire_rating) for tasks LACKING a valid benchmark, so a
+    consultant can manually set the AI opportunity. `task_ref` is the extracted task's id — download
+    this template rather than hand-keying, so it aligns with the dataset automatically (tasks are
+    extracted from the org CSV's Work Activities, not the raw structure rows)."""
+    tasks, scores = await _dataset_tasks_with_scores(session, dataset_id)
+    out = io.StringIO()
+    w = csv.writer(out)
+    w.writerow(INSTRUMENT_HEADERS)
+    for t in tasks:
+        s = scores.get(t.id)
+        if only_unscored and s is not None and s.source in _BENCHMARK_SOURCES:
+            continue  # already has a real/curated benchmark — no manual scoring needed
+        w.writerow([t.id, t.task_text, ""])
+    return out.getvalue().encode("utf-8")
+
+
+async def apply_local_desirability(session: AsyncSession, dataset_id: str, content: bytes,
+                                   filename: Optional[str] = None) -> Dict:
+    """Apply a filled local-desirability CSV (keyed by task id). For tasks WITHOUT a real benchmark,
+    set a consultant-approved AI-opportunity derived from the rating (1=keep human → H5/L0,
+    5=automate → H1/L3) so it becomes client-ready; for benchmarked tasks, only the local desire is
+    updated (the authoritative benchmark is never overwritten). desire_score_us is never touched."""
+    from .task_intelligence_service import derive_ai_level
+    from .workbank_ingest import derive_zone
+
+    records = _parse_response_rows(content, filename)
+    tasks, scores = await _dataset_tasks_with_scores(session, dataset_id)
+    task_ids = {t.id for t in tasks}
+    applied = desire_only = skipped = 0
+    for rec in records:
+        # Normalise headers to their first word so "desire_rating (1=keep human .. 5=automate)" works
+        # from CSV too (the xlsx parser already splits; CSV keeps the full header).
+        norm = {(k or "").strip().split(" ")[0]: v for k, v in rec.items()}
+        ref = (str(norm.get("task_ref")).strip() if norm.get("task_ref") is not None else "")
+        rating = _to_rating(norm.get("desire_rating"))
+        if not ref or rating is None or ref not in task_ids:
+            skipped += 1
+            continue
+        score = scores.get(ref)
+        if score is None:  # task was never AI-scored — create a consultant row
+            score = TaskAIScore(task_id=ref, source="consultant-approved", review_state="approved")
+            session.add(score)
+            scores[ref] = score
+        score.desire_score_local = round((rating - 1) / 4, 4)  # US score untouched (A4)
+        if score.source in _PROTECTED_SOURCES:
+            desire_only += 1  # keep the authoritative benchmark; only local desire updated
+            continue
+        has = 6 - rating               # 5=automate → H1; 1=keep human → H5
+        cap = round((rating - 1) / 4, 3)
+        score.has_level = has
+        score.capability_score = cap
+        score.zone = derive_zone(cap, has)
+        score.ai_opportunity_level = derive_ai_level(cap, has)
+        score.source = "consultant-approved"
+        score.review_state = "approved"   # client-ready (human judgment, not export-blocked)
+        score.confidence = 1.0
+        score.rationale = (
+            f"Consultant-set AI opportunity from local desirability rating {rating}/5 "
+            "(no benchmark match)."
+        )
+        applied += 1
+    await session.flush()
+    return {"applied": applied, "desire_only": desire_only, "skipped": skipped}
 
 
 async def recompute_local_desire(session: AsyncSession, engagement_id: str, dataset_id: str) -> int:
