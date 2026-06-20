@@ -142,6 +142,20 @@ export default function TaskIntelligence({
             </ResponsiveContainer>
           </Card>
 
+          <Card title="Benchmark coverage (how AI potential was derived)">
+            <p className="mb-3 text-xs text-slate-500">
+              Curated/WORKBank benchmarks are authoritative; AI-inferred tasks use the WORKBank Human
+              Agency rubric and stay unreviewed (export-blocked) until you approve them in the
+              Validation Queue. A high AI-inferred share means a relevant benchmark overlay would help.
+            </p>
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <StatCard label="Curated / WORKBank" value={String(rollup!.source_mix?.overlay ?? 0)} />
+              <StatCard label="AI-inferred (rubric)" value={String(rollup!.source_mix?.ai_inferred ?? 0)} />
+              <StatCard label="Robotics / GSE levers" value={String(rollup!.source_mix?.robotics ?? 0)} />
+              <StatCard label="Unclassified" value={String(rollup!.source_mix?.unclassified ?? 0)} />
+            </div>
+          </Card>
+
           <Card title="By department">
             <table className="w-full text-sm">
               <thead>

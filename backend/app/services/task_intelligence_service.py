@@ -498,6 +498,19 @@ def _accumulate(bucket: Dict, score: TaskAIScore) -> None:
         bucket["robotics_levers"] += 1
 
 
+def _benchmark_source(score: TaskAIScore) -> str:
+    """Where a task's AI potential came from — so reliance on inference is visible (D26).
+    overlay = curated/WORKBank benchmark; ai_inferred = Claude HAS-rubric fallback;
+    robotics = physical/GSE lever; unclassified = no benchmark match yet."""
+    if score.source in ("WORKBank", "consultant-approved", "SFw", "ONET"):
+        return "overlay"
+    if score.zone == "NO_BENCHMARK_MATCH":
+        return "unclassified"
+    if score.zone == "ROBOTICS_GSE_LEVER":
+        return "robotics"
+    return "ai_inferred"  # model-inferred GREEN_LIGHT/RED_LIGHT → HAS-rubric inference
+
+
 async def rollup(session: AsyncSession, dataset_id: str) -> Dict:
     """Aggregate AI-opportunity scores by department and by layer, plus an overall bucket."""
     tasks = await _load_dataset_tasks(session, dataset_id)
@@ -516,6 +529,7 @@ async def rollup(session: AsyncSession, dataset_id: str) -> Dict:
     overall = _blank_bucket()
     by_department: Dict[str, Dict] = {}
     by_layer: Dict[str, Dict] = {}
+    source_mix = {"overlay": 0, "ai_inferred": 0, "robotics": 0, "unclassified": 0}
     for task in tasks:
         score = scores.get(task.id)
         if score is None:
@@ -526,12 +540,14 @@ async def rollup(session: AsyncSession, dataset_id: str) -> Dict:
         _accumulate(overall, score)
         _accumulate(by_department.setdefault(dept, _blank_bucket()), score)
         _accumulate(by_layer.setdefault(layer, _blank_bucket()), score)
+        source_mix[_benchmark_source(score)] += 1
 
     return {
         "dataset_id": dataset_id,
         "overall": overall,
         "by_department": by_department,
         "by_layer": by_layer,
+        "source_mix": source_mix,
         "human_agency_scale": HUMAN_AGENCY_SCALE,
         "caveats": STANDARD_CAVEATS,
     }

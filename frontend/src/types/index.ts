@@ -119,6 +119,7 @@ export interface RollupResult {
   overall: RollupBucket;
   by_department: Record<string, RollupBucket>;
   by_layer: Record<string, RollupBucket>;
+  source_mix: Record<string, number>;
   human_agency_scale: Record<string, string>;
   caveats: string[];
 }

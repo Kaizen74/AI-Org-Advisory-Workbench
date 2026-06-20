@@ -439,3 +439,28 @@ locally), run the build script, commit the curated subset. Then far fewer tasks 
 **Verification:** +2 tests (robotics correction + curated-overlay load); build script compiles; live
 behaviour covered by D24 tests. Gate green — **128 backend tests + clean frontend build**, tsc clean,
 backend↔frontend aligned, zero regressions.
+
+## 2026-06-16 — D26: Harden WORKBank ingestion (importable + tested) + benchmark source-mix transparency
+
+**Source:** Eric reconfirmed the HF dataset URL and asked for the best robust-benchmarking approach + a
+verifying test. **`huggingface.co` is STILL not in this environment's egress allowlist** (re-checked: 403
+"Host not in allowlist") — enabling it is an environment network-egress setting (Claude Code on the web),
+not changeable from the sandbox. So the live tables still can't be pulled here; I hardened+verified the
+ingestion path so the data drops in cleanly once HF is allowlisted.
+**Changes (additive):**
+- Extracted the converter into `app/services/workbank_ingest.build_overlay_from_dir` (importable, pure,
+  schema-tolerant; aggregates WORKBank tasks to O*NET-SOC level: normalised capability/desire, modal HAS,
+  derived zone). `scripts/build_workbank_overlay.py` is now a thin CLI over it. This let me UNIT-TEST the
+  D25 converter logic offline against synthetic WORKBank-shaped CSVs (capability normalisation, HAS
+  aggregation, zone) — previously unverifiable.
+- **Benchmark source-mix transparency:** `rollup` now returns `source_mix`
+  {overlay, ai_inferred, robotics, unclassified} via `_benchmark_source(score)`, and the Task Intelligence
+  page shows a "Benchmark coverage" card. This makes reliance on Claude inference *visible/measurable*
+  (Eric's concern) and signals when loading a WORKBank overlay would help.
+- Verified the **layering** end-to-end: a task whose O*NET code is covered by the WORKBank overlay is
+  scored from the overlay (source=WORKBank, real has_level) and inference is a no-op — proving the overlay
+  reduces inference.
+**To go live:** allowlist `huggingface.co` → download the 3 CSVs → `python scripts/build_workbank_overlay.py
+--src ./workbank_csv` → commit `workbank_overlay.curated.json` (loader auto-picks it up).
+**Verification:** +2 tests (converter aggregation; overlay-bypasses-inference incl. source_mix). Gate green —
+**130 backend tests + clean frontend build**, tsc clean, backend↔frontend aligned, zero regressions.

@@ -525,3 +525,15 @@ taxonomy_loader hook that loads workbank_overlay.curated.json as the authoritati
 Also fixed lingering robotics levers: infer-potential now re-bands auto-assigned ROBOTICS_GSE_LEVER rows
 via the HAS rubric (keeps genuine physical; idempotent via a rationale tag).
 **Tests:** +2 (robotics correction, curated-overlay load). **Gate:** PASS — 128 backend tests + clean build; tsc clean.
+
+---
+
+## 2026-06-16 — WORKBank ingestion hardened + benchmark source-mix (D26)
+
+HF still not allowlisted in the sandbox (403), so live tables can't be pulled here. Made the converter an
+importable, unit-tested module (app/services/workbank_ingest.build_overlay_from_dir; CLI is now a thin
+wrapper) and verified it offline with synthetic WORKBank-shaped CSVs. Added rollup `source_mix`
+{overlay/ai_inferred/robotics/unclassified} + a Task Intelligence "Benchmark coverage" card so reliance on
+inference is measurable. Proved overlay-backed tasks bypass inference (source=WORKBank).
+**Tests:** +2 (converter aggregation, overlay-bypasses-inference + source_mix). **Gate:** PASS — 130 backend
+tests + clean build; tsc clean; aligned.
