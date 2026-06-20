@@ -558,3 +558,13 @@ occupations so they fall to inference). Loader auto-promotes it; tests made herm
 fixture so the committed overlay doesn't shadow the air-transport seed fixtures; +1 real-file load test.
 Verified end-to-end: a marketing task now scores from the WORKBank overlay (source=WORKBank), no inference.
 Raw dataset stays git-ignored. **Gate:** PASS — 132 backend tests + clean build; tsc clean.
+
+---
+
+## 2026-06-16 — WORKBank coverage complete + integrated test (D29)
+
+Confirmed the uploaded CSVs are the entire WORKBank dataset (HF has only task_data/expert_ratings/
+worker_data); the D28 overlay (104 occupations) is complete. Verified deterministic rebuild (byte-identical
+to committed) and git-ignored raw data. Added test_workbank_integration.py: one mixed-dataset end-to-end
+test proving overlay + inference + robotics + source_mix + workflow deliverable all work together.
+**Gate:** PASS — 133 backend tests + clean build; tsc clean; aligned; no regressions.

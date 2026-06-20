@@ -506,3 +506,17 @@ tests + clean frontend build**, tsc clean, backend↔frontend aligned, zero regr
 SOC 13-1161.01 → scored from the WORKBank overlay (source=WORKBank, has_level=2, GREEN_LIGHT, L3),
 inference is a no-op, source_mix.overlay=1. Gate green — **132 backend tests + clean frontend build**,
 tsc clean, backend↔frontend aligned, zero regressions. Raw dataset NOT committed (git check-ignore ✓).
+
+## 2026-06-16 — D29: WORKBank coverage confirmed complete + integrated regression test
+
+**Source:** Eric confirmed (HF screenshot) the WORKBank dataset is just task_data/expert_ratings/
+worker_data — exactly the CSVs already supplied. So the D28 overlay (104 occupations) is the COMPLETE
+occupational coverage; nothing more to ingest. Occupation-level aggregation remains the right grain (the
+benchmark step keys overlays by O*NET-SOC). Confirmed the build is **deterministic** (rebuild == committed,
+byte-identical) and the raw dataset stays git-ignored.
+**Added** `test_workbank_integration.py` — one end-to-end test over a mixed marketing dataset proving the
+layered benchmarking works together with no regressions: WORKBank overlay used for a covered task
+(source=WORKBank, real has_level), Claude HAS inference fills an unmatched task, a physical task stays a
+robotics lever, `source_mix == {overlay:1, ai_inferred:1, robotics:1, unclassified:0}`, and the
+finalized-workflow deliverable still builds on the same dataset.
+**Gate green — 133 backend tests + clean frontend build, tsc clean, backend↔frontend aligned, zero regressions.**

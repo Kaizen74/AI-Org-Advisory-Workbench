@@ -2,7 +2,8 @@
 **Updated:** 2026-06-16T12:50:00 (P7 + D13 + bugfixes D14–D16 + refocus D17; live deploy still pending Eric)
 **Phase:** P7 done + access-control (D13) + D14–D16 fixes + **D17 product refocus**. **All seven phases
 P0–P7 built; app is private and now centred on role→task→AI-potential (H0–H5).**
-**Last completed micro-task:** D28 — embedded the REAL WORKBank overlay: Eric supplied the 4 CSVs; built backend/app/resources/taxonomies/workbank_overlay.curated.json (104 occupations, 32 KB) via the hardened converter (Automation Capacity Rating, multi-rater averaging, drops un-surveyed occupations→inference). Loader auto-promotes it; tests hermetic via autouse fixture; verified a marketing task now scores from WORKBank (no inference). Raw dataset git-ignored. Gate GREEN (132 tests + build).
+**Last completed micro-task:** D29 — confirmed WORKBank coverage is complete (uploaded CSVs = the whole dataset; 104-occupation overlay is full); verified deterministic rebuild + git-ignored raw data; added test_workbank_integration.py (one end-to-end test: overlay + inference + robotics + source_mix + workflow deliverable together, no regressions). Gate GREEN (133 tests + build).
+**Prior micro-task:** D28 — embedded the REAL WORKBank overlay: Eric supplied the 4 CSVs; built backend/app/resources/taxonomies/workbank_overlay.curated.json (104 occupations, 32 KB) via the hardened converter (Automation Capacity Rating, multi-rater averaging, drops un-surveyed occupations→inference). Loader auto-promotes it; tests hermetic via autouse fixture; verified a marketing task now scores from WORKBank (no inference). Raw dataset git-ignored. Gate GREEN (132 tests + build).
 **Prior micro-task:** D27 — WORKBank clone guidance: clone HF dataset into ./workbank as a git-ignored BUILD INPUT (never commit raw data, A4); commit only the curated overlay. Added /workbank/ to .gitignore; converter now finds CSVs recursively (HF nested layout); --src defaults to ./workbank. HF clone still 403 in sandbox (allowlist needed). Gate GREEN (131 tests + build).
 **Prior micro-task:** D26 — hardened WORKBank ingestion: converter extracted to importable app/services/workbank_ingest (unit-tested offline with synthetic CSVs; CLI is now a thin wrapper) + rollup `source_mix` {overlay/ai_inferred/robotics/unclassified} with a Task Intelligence 'Benchmark coverage' card so reliance on inference is measurable; proved overlay-backed tasks bypass inference. HF still not allowlisted in sandbox (403) — allowlist + run the script to go live. Gate GREEN (130 tests + build).
 **Prior micro-task:** D25 — WORKBank integration path (HF-hosted tables; HF not allowlisted here): scripts/build_workbank_overlay.py + additive taxonomy_loader hook (workbank_overlay.curated.json → authoritative overlay) so real values drop in once HF is reachable; layered authority curated>WORKBank>Claude inference. Also fixed lingering robotics levers — infer-potential re-bands auto ROBOTICS_GSE_LEVER rows via the HAS rubric (idempotent). Gate GREEN (128 tests + build).
@@ -28,7 +29,7 @@ ai_score band; Task Intelligence headline chart+legend). L0–L3 kept internally
      wording corrections (actual Vercel/Railway button names) back into README §4.
   Optional follow-ups (additive): branch merge to `main` (then delete `legacy v1 app.zip` from main);
   expand audit UI; refine activator/L0-L3 rubrics if Eric supplies definitions.
-**Test status:** PASS — gate GREEN, **132 backend tests + clean frontend build**, zero regressions.
+**Test status:** PASS — gate GREEN, **133 backend tests + clean frontend build**, zero regressions.
 **Recovery commands:** `bash scripts/gate.sh`
 **Open questions for Eric:**
   1. **Live cloud deploy** needs your Vercel + Railway accounts connected to the GitHub repo — say
