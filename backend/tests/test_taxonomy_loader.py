@@ -1,10 +1,35 @@
 """P2.3 — seed loader tests against the real starter file (Build Spec B0/M2 acceptance #4)."""
 from __future__ import annotations
 
+import json
+
 from sqlalchemy import func, select
 
 from app.models import TaskAIOverlay, TaxonomyCrosswalk, TaxonomySource, TaxonomyTask
+from app.services import taxonomy_loader
 from app.services.taxonomy_loader import load_taxonomies
+
+
+async def test_curated_workbank_overlay_is_loaded_when_present(async_session, tmp_path, monkeypatch):
+    """The optional curated WORKBank overlay (D25) upserts authoritative rows keyed by O*NET code."""
+    wb = tmp_path / "workbank_overlay.curated.json"
+    wb.write_text(json.dumps({"task_ai_overlay": [
+        {"onet_task_code": "11-2021.00", "occupation": "Marketing Managers", "has_level": 2,
+         "capability_score": 0.81, "desire_score_us": 0.55, "zone": "GREEN_LIGHT", "source": "WORKBank"},
+    ]}), encoding="utf-8")
+    monkeypatch.setattr(taxonomy_loader, "WORKBANK_OVERLAY_PATH", wb)
+
+    await load_taxonomies(async_session)
+    row = await async_session.scalar(
+        select(TaskAIOverlay).where(TaskAIOverlay.onet_task_code == "11-2021.00")
+    )
+    assert row is not None and row.source == "WORKBank"
+    assert row.has_level == 2 and row.capability_score == 0.81
+    assert row.desire_score_us == 0.55 and row.desire_score_local is None  # US only (A4)
+    # The illustrative seed overlay still loads alongside it (additive).
+    assert await async_session.scalar(
+        select(TaskAIOverlay).where(TaskAIOverlay.onet_task_code == "43-5011.00")
+    ) is not None
 
 
 async def _counts(session):

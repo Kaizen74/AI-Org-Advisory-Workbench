@@ -133,6 +133,69 @@ async def test_infer_unmatched_potential_via_rubric(api_client, async_session, m
     assert again["candidates"] == 0 and again["updated"] == 0
 
 
+async def test_infer_corrects_spurious_robotics_keeps_physical(api_client, async_session, monkeypatch):
+    """A knowledge task auto-tagged ROBOTICS_GSE_LEVER (matched an O*NET code with no overlay) is
+    re-banded by the HAS rubric, while a genuinely physical task stays a robotics/GSE lever (B-fix)."""
+    def _ai(*, model, max_tokens=2048, messages):  # noqa: ARG001
+        c = messages[0]["content"]
+        if "HUMAN AGENCY SCALE BENCHMARK" in c:
+            payload = json.loads(c.split("TASKS:\n```json\n")[1].split("\n```")[0])
+            out = []
+            for t in payload:
+                if "baggage" in t["task_text"].lower() or "load" in t["task_text"].lower():
+                    out.append({"task_id": t["task_id"], "has_level": None, "capability_score": None,
+                                "zone": "ROBOTICS_GSE_LEVER", "confidence": 0.5,
+                                "rationale": "Physical handling task."})
+                else:
+                    out.append({"task_id": t["task_id"], "has_level": 2, "capability_score": 0.8,
+                                "zone": "GREEN_LIGHT", "confidence": 0.6, "rationale": "Knowledge task."})
+            return json.dumps({"scores": out})
+        if "GROUNDING:" in c:  # match everything to an O*NET code with NO overlay -> robotics
+            tasks = json.loads(c.split("TASKS:\n```json\n")[1].split("\n```")[0])
+            return json.dumps({"benchmarks": [
+                {"task_id": t["task_id"], "status": "MATCHED", "matched_task_ref": "X",
+                 "onet_task_code": "53-7062.00", "taxonomy_source_code": "SFW_AIR_TRANSPORT",
+                 "source": "SFw", "confidence": 0.6} for t in tasks]})
+        items = json.loads(c.split("INPUT:\n```json\n")[1].split("\n```")[0])
+        return json.dumps({"extractions": [
+            {"employee_key": it["employee_key"],
+             "tasks": [s.strip() for s in it["work_activities"].split(";") if s.strip()]}
+            for it in items]})
+
+    monkeypatch.setattr(type(claude_service), "has_api_key", property(lambda self: True))
+    monkeypatch.setattr(claude_service, "complete", _ai)
+    await load_taxonomies(async_session)
+    c = await api_client.post("/api/v1/engagements/clients", json={"name": "GM"})
+    e = await api_client.post("/api/v1/engagements",
+                              json={"client_id": c.json()["id"], "name": "AI"})
+    eng = e.json()["id"]
+    csv = (
+        "Name,Job Title,Grade,Department,Level,Line Manager,Salary,Employee ID,Work Activities\n"
+        "Ann,Head,H5,Marketing,1,Top,300000,E1,Develop content strategy\n"
+        "Ben,Ramp,AO,Ops,2,Ann,70000,E2,Load baggage onto aircraft\n"
+    )
+    ds = (await api_client.post(f"/api/v1/engagements/{eng}/datasets",
+          files={"file": ("o.csv", csv.encode(), "text/csv")})).json()["id"]
+    await api_client.post("/api/v1/task-intel/extract", params={"dataset_id": ds})
+    await api_client.post("/api/v1/task-intel/benchmark", params={"dataset_id": ds})
+    aiopp = (await api_client.post("/api/v1/task-intel/ai-opportunity",
+                                   params={"dataset_id": ds})).json()
+    assert aiopp["robotics_levers"] == 2  # both auto-tagged robotics (matched, no overlay)
+
+    infer = (await api_client.post("/api/v1/task-intel/infer-potential",
+                                   params={"dataset_id": ds})).json()
+    assert infer["updated"] == 2
+    q = (await api_client.get("/api/v1/validation/queue", params={"dataset_id": ds})).json()
+    ai = {i["task_text"]: i["label"] for i in q["items"] if i["kind"] == "ai_score"}
+    assert ai["Develop content strategy"].startswith("H2") and "GREEN_LIGHT" in ai["Develop content strategy"]
+    assert ai["Load baggage onto aircraft"].startswith("H0") and "ROBOTICS_GSE_LEVER" in ai["Load baggage onto aircraft"]
+
+    # Idempotent: the confirmed physical lever is not re-inferred on a second pass.
+    again = (await api_client.post("/api/v1/task-intel/infer-potential",
+                                   params={"dataset_id": ds})).json()
+    assert again["candidates"] == 0
+
+
 async def test_quick_works_without_api_key(api_client):
     dataset_id = await _make_dataset(api_client)
     r = await api_client.get("/api/v1/task-intel/quick", params={"dataset_id": dataset_id})

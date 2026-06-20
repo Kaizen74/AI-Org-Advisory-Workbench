@@ -411,24 +411,32 @@ def _build_inference_prompt(payload: List[Dict]) -> str:
     )
 
 
+_INFERRED_TAG = "[WORKBank HAS inference]"
+
+
 async def infer_unmatched_potential(session: AsyncSession, dataset_id: str) -> Dict:
-    """Score tasks that the curated benchmark could not match (zone NO_BENCHMARK_MATCH) by asking
-    Claude to apply the WORKBank HAS rubric. Updates those TaskAIScore rows in place. Idempotent:
-    re-running re-infers the still-unmatched set. Does nothing if there are no candidates."""
+    """Robustly score the tasks the curated benchmark could not resolve — both `NO_BENCHMARK_MATCH`
+    (no match at all) and the auto-assigned `ROBOTICS_GSE_LEVER` rows (matched an O*NET code with no
+    overlay, heuristically 'physical') — by asking Claude to apply the WORKBank HAS rubric. Claude
+    keeps genuinely physical tasks as a robotics/GSE lever (has_level null) and re-bands misclassified
+    knowledge work (H1-H5). Updates rows in place; tags the rationale so re-runs are idempotent. Does
+    nothing if there are no candidates. (Curated/WORKBank-overlay rows, source='WORKBank', are never
+    touched — the curated layer always wins.)"""
     tasks = await _load_dataset_tasks(session, dataset_id)
     by_task = {t.id: t for t in tasks}
     if not tasks:
         return {"dataset_id": dataset_id, "candidates": 0, "updated": 0, "caveats": STANDARD_CAVEATS}
 
-    scores = {
-        s.task_id: s
-        for s in await session.scalars(
-            select(TaskAIScore).where(
-                TaskAIScore.task_id.in_(list(by_task)),
-                TaskAIScore.zone == "NO_BENCHMARK_MATCH",
-            )
+    rows = await session.scalars(
+        select(TaskAIScore).where(
+            TaskAIScore.task_id.in_(list(by_task)),
+            TaskAIScore.source == "model-inferred",
+            TaskAIScore.review_state == "unreviewed",
+            TaskAIScore.zone.in_(["NO_BENCHMARK_MATCH", "ROBOTICS_GSE_LEVER"]),
         )
-    }
+    )
+    # Skip rows already rubric-inferred (idempotency) — keeps confirmed robotics levers stable.
+    scores = {s.task_id: s for s in rows if not (s.rationale and _INFERRED_TAG in s.rationale)}
     if not scores:
         return {"dataset_id": dataset_id, "candidates": 0, "updated": 0, "caveats": STANDARD_CAVEATS}
 
@@ -448,6 +456,8 @@ async def infer_unmatched_potential(session: AsyncSession, dataset_id: str) -> D
         zone = item.get("zone") or "RED_LIGHT"
         if zone not in ("GREEN_LIGHT", "RED_LIGHT", "ROBOTICS_GSE_LEVER"):
             zone = "RED_LIGHT"
+        if zone == "ROBOTICS_GSE_LEVER":
+            has_level = None  # physical lever → off the software-agent scale
         s.has_level = has_level
         s.capability_score = cap
         s.zone = zone
@@ -455,7 +465,7 @@ async def infer_unmatched_potential(session: AsyncSession, dataset_id: str) -> D
         s.confidence = item.get("confidence")
         s.rationale = (
             (item.get("rationale") or "AI-inferred via the WORKBank Human Agency Scale rubric.")
-            + " [AI-inferred — no curated benchmark match; verify before client use.]"
+            + f" {_INFERRED_TAG} — no curated benchmark match; verify before client use."
         )
         s.source = "model-inferred"
         s.review_state = "unreviewed"  # export-blocked until consultant approval (M6)

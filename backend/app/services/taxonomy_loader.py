@@ -26,8 +26,33 @@ from ..models import TaskAIOverlay, TaxonomyCrosswalk, TaxonomySource, TaxonomyT
 DEFAULT_SEED_PATH = (
     Path(__file__).resolve().parents[1] / "resources" / "taxonomies" / "taxonomy_seed.starter.json"
 )
+# Optional curated WORKBank overlay (authoritative AI-potential layer). Build it from the WORKBank
+# dataset with scripts/build_workbank_overlay.py and commit a curated subset here. When present it
+# upserts real has_level/capability/desire keyed by O*NET code, so benchmarking relies far less on
+# Claude inference. Absent => seed-only (unchanged behaviour).
+WORKBANK_OVERLAY_PATH = (
+    Path(__file__).resolve().parents[1] / "resources" / "taxonomies" / "workbank_overlay.curated.json"
+)
 
 REVIEW_CONFIDENCE_THRESHOLD = 0.70
+
+
+async def _upsert_overlay(session: AsyncSession, o: dict, default_source: Optional[str] = None) -> None:
+    """Upsert one AI overlay row by its natural key (onet_task_code). Accepts the seed's `desire_score`
+    or an explicit `desire_score_us`. `has_level` and `capability_score` stay independent (A4)."""
+    row = await _get(session, TaskAIOverlay, onet_task_code=o["onet_task_code"])
+    if row is None:
+        row = TaskAIOverlay(onet_task_code=o["onet_task_code"])
+        session.add(row)
+    row.onet_task_text = o.get("onet_task_text")
+    row.occupation = o.get("occupation")
+    row.has_level = o.get("has_level")  # independent of capability (A4)
+    row.desire_score_us = o.get("desire_score_us", o.get("desire_score"))  # US preference only
+    # desire_score_local intentionally untouched (NULL until the pulse instrument runs)
+    row.capability_score = o.get("capability_score")
+    row.zone = o.get("zone")
+    row.source = o.get("source", default_source)
+    await session.flush()
 
 
 async def _get(session: AsyncSession, model, **filters):
@@ -79,20 +104,16 @@ async def load_taxonomies(session: AsyncSession, path: Optional[Path] = None) ->
 
     # ── Overlay (natural key: onet_task_code) — desire_score → desire_score_us ──
     for o in data.get("task_ai_overlay", []):
-        row = await _get(session, TaskAIOverlay, onet_task_code=o["onet_task_code"])
-        if row is None:
-            row = TaskAIOverlay(onet_task_code=o["onet_task_code"])
-            session.add(row)
-        row.onet_task_text = o.get("onet_task_text")
-        row.occupation = o.get("occupation")
-        row.has_level = o.get("has_level")  # independent of capability (A4)
-        row.desire_score_us = o.get("desire_score")  # seed single score is the US score
-        # desire_score_local intentionally untouched (NULL until the pulse instrument runs)
-        row.capability_score = o.get("capability_score")
-        row.zone = o.get("zone")
-        row.source = o.get("source")
-        await session.flush()
+        await _upsert_overlay(session, o)
         counts["overlays"] += 1
+
+    # ── Curated WORKBank overlay (optional, additive) — the authoritative AI-potential layer ──
+    if WORKBANK_OVERLAY_PATH.exists():
+        wb = json.loads(WORKBANK_OVERLAY_PATH.read_text(encoding="utf-8"))
+        wb_rows = wb.get("task_ai_overlay", wb) if isinstance(wb, dict) else wb
+        for o in wb_rows:
+            await _upsert_overlay(session, o, default_source="WORKBank")
+            counts["overlays"] += 1
 
     # ── Crosswalk (natural key: from_task_ref + to_task_code) ───────────────
     for c in data.get("taxonomy_crosswalk", []):

@@ -412,3 +412,30 @@ rather than the illustrative seed?
 **Verification:** new `test_infer_unmatched_potential_via_rubric` (marketing dataset → all unmatched →
 inferred H2/GREEN_LIGHT, still model-inferred/unreviewed, idempotent). Gate green — **126 backend tests
 + clean frontend build**, tsc clean, backend↔frontend aligned, zero regressions.
+
+## 2026-06-16 — D25: WORKBank dataset integration path + fix lingering robotics levers
+
+**Source:** Eric — integrate the WORKBank GitHub DB (SALT-NLP/workbank) instead of separate taxonomy
+uploads + over-reliance on Claude inference; and still seeing ROBOTICS_GSE_LEVER on some queue items.
+**Findings:** The WORKBank GitHub repo holds only analysis notebooks + O*NET/BLS reference data + the
+codebook; the per-task tables (Human Agency Scale, expert capability, worker desire) are on **Hugging
+Face** (`SALT-NLP/WORKBank`). **`huggingface.co` is NOT in this environment's egress allowlist** (GitHub
+is — clone succeeded), so the real values can't be pulled from the sandbox right now.
+**Approach (layered authority):** curated/consultant-approved overlay > **WORKBank overlay** (real,
+authoritative) > Claude HAS-rubric inference (last resort). Implemented the integration *mechanism* so
+the data drops in cleanly once HF is reachable:
+- `scripts/build_workbank_overlay.py`: converts the 3 WORKBank CSVs → a curated overlay JSON in our
+  schema (aggregated to O*NET-SOC level; mean capability/desire, modal HAS; zone derived). Fuzzy column
+  matching (schema-tolerant), `--limit`/attribution, writes `workbank_overlay.curated.json`.
+- `taxonomy_loader`: refactored overlay upsert into `_upsert_overlay`; added an additive hook that loads
+  the optional `WORKBANK_OVERLAY_PATH` curated file (source="WORKBank") when present — absent ⇒ seed-only
+  (no behaviour change). Did NOT fabricate WORKBank values.
+**Robotics fix (B):** `infer_unmatched_potential` now re-evaluates BOTH `NO_BENCHMARK_MATCH` and the
+auto-assigned model-inferred `ROBOTICS_GSE_LEVER` rows via the HAS rubric — Claude re-bands misclassified
+knowledge work (H1-H5) and keeps genuinely physical tasks as a robotics lever (has_level null). Rationale
+is tagged `[WORKBank HAS inference]` for idempotency (confirmed physical levers aren't re-processed).
+**To activate real WORKBank data:** add `huggingface.co` to the env egress allowlist (or download the CSVs
+locally), run the build script, commit the curated subset. Then far fewer tasks need inference.
+**Verification:** +2 tests (robotics correction + curated-overlay load); build script compiles; live
+behaviour covered by D24 tests. Gate green — **128 backend tests + clean frontend build**, tsc clean,
+backend↔frontend aligned, zero regressions.

@@ -513,3 +513,15 @@ with Claude grounded in the WORKBank Human Agency Scale rubric — additive, pro
   infer-potential→rollup; AIOpportunityResult gains `unclassified`.
 **Tests:** new rubric-inference test (marketing → H2/GREEN_LIGHT, unreviewed, idempotent).
 **Gate:** PASS — 126 backend tests + clean frontend build; tsc clean; aligned; no regressions.
+
+---
+
+## 2026-06-16 — WORKBank integration path + robotics-lever fix (D25)
+
+WORKBank's per-task tables live on Hugging Face (not the GitHub repo, and HF is not allowlisted here), so
+real values can't be pulled from the sandbox. Built the integration mechanism instead:
+scripts/build_workbank_overlay.py (CSV→overlay, fuzzy columns, O*NET-SOC aggregation) + an additive
+taxonomy_loader hook that loads workbank_overlay.curated.json as the authoritative overlay when present.
+Also fixed lingering robotics levers: infer-potential now re-bands auto-assigned ROBOTICS_GSE_LEVER rows
+via the HAS rubric (keeps genuine physical; idempotent via a rationale tag).
+**Tests:** +2 (robotics correction, curated-overlay load). **Gate:** PASS — 128 backend tests + clean build; tsc clean.
