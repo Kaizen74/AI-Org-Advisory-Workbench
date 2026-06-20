@@ -546,3 +546,15 @@ Recommendation: clone the HF dataset into ./workbank as a build input, git-ignor
 curated overlay subset (A4). Added /workbank/ + /workbank_csv/ to .gitignore; the converter now finds the
 CSVs recursively (handles the HF nested layout) and --src defaults to ./workbank. HF clone still blocked
 in sandbox (403). **Tests:** +1 (nested layout) + gitignore guard. **Gate:** PASS — 131 backend tests + clean build; tsc clean.
+
+---
+
+## 2026-06-16 — Real WORKBank overlay embedded (D28)
+
+Eric uploaded the WORKBank CSVs. Built + committed the curated overlay
+(backend/app/resources/taxonomies/workbank_overlay.curated.json, 104 occupations, 32 KB) via the
+hardened converter (handles "Automation Capacity Rating", multi-rater averaging, drops un-surveyed
+occupations so they fall to inference). Loader auto-promotes it; tests made hermetic via an autouse
+fixture so the committed overlay doesn't shadow the air-transport seed fixtures; +1 real-file load test.
+Verified end-to-end: a marketing task now scores from the WORKBank overlay (source=WORKBank), no inference.
+Raw dataset stays git-ignored. **Gate:** PASS — 132 backend tests + clean build; tsc clean.

@@ -71,6 +71,15 @@ def mock_claude(monkeypatch):
 
 
 # ── Async DB + API client fixtures (Phase 1) ─────────────────────────────────
+@pytest.fixture(autouse=True)
+def _isolate_workbank_overlay(monkeypatch, tmp_path):
+    """Keep tests hermetic: the committed curated WORKBank overlay (D28) must NOT auto-load during
+    tests (it would shadow the air-transport seed the fixtures rely on). Tests that exercise the
+    curated overlay opt in by monkeypatching WORKBANK_OVERLAY_PATH themselves (that override wins)."""
+    from app.services import taxonomy_loader
+    monkeypatch.setattr(taxonomy_loader, "WORKBANK_OVERLAY_PATH", tmp_path / "_no_workbank.json")
+
+
 @pytest_asyncio.fixture
 async def async_session():
     """A fresh in-memory SQLite (StaticPool keeps one connection so tables persist)."""

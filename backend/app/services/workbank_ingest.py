@@ -81,15 +81,19 @@ def build_overlay_from_dir(src: Path, limit: Optional[int] = None) -> List[Dict]
         raise ValueError("WORKBank CSVs missing or empty (task metadata + expert capability required).")
 
     m_task = find_col(list(meta[0]), "task", "id") or find_col(list(meta[0]), "task")
-    m_soc = (find_col(list(meta[0]), "onet") or find_col(list(meta[0]), "soc")
+    m_soc = (find_col(list(meta[0]), "onet", "code") or find_col(list(meta[0]), "soc")
              or find_col(list(meta[0]), "occupation", "code"))
     m_occ = find_col(list(meta[0]), "occupation", "title") or find_col(list(meta[0]), "occupation")
-    m_text = find_col(list(meta[0]), "task", "statement") or find_col(list(meta[0]), "statement")
+    # task statement column: prefer an exact "task" header that is NOT the id column
+    m_text = (find_col(list(meta[0]), "task", "statement") or find_col(list(meta[0]), "statement")
+              or next((c for c in meta[0] if c.strip().lower() == "task"), None))
     c_task = find_col(list(cap[0]), "task", "id") or find_col(list(cap[0]), "task")
-    c_cap = find_col(list(cap[0]), "capability") or find_col(list(cap[0]), "tech")
-    c_has = find_col(list(cap[0]), "agency") or find_col(list(cap[0]), "has")
-    d_task = find_col(list(des[0]), "task", "id") or find_col(list(des[0]), "task") if des else None
-    d_des = find_col(list(des[0]), "desire") or find_col(list(des[0]), "automat") if des else None
+    # WORKBank's expert capability column is "Automation Capacity Rating".
+    c_cap = (find_col(list(cap[0]), "capability") or find_col(list(cap[0]), "capacity")
+             or find_col(list(cap[0]), "automation", "rating") or find_col(list(cap[0]), "tech"))
+    c_has = find_col(list(cap[0]), "agency") or find_col(list(cap[0]), "has")  # expert (feasible) HAS
+    d_task = (find_col(list(des[0]), "task", "id") or find_col(list(des[0]), "task")) if des else None
+    d_des = (find_col(list(des[0]), "desire", "rating") or find_col(list(des[0]), "desire")) if des else None
 
     if not (m_task and m_soc and c_task and c_cap):
         raise ValueError(
@@ -97,14 +101,26 @@ def build_overlay_from_dir(src: Path, limit: Optional[int] = None) -> List[Dict]
             f"cap_task={c_task} capability={c_cap}). Check headers vs the WORKBank codebook."
         )
 
-    cap_by_task = {r[c_task]: r for r in cap}
-    des_by_task = {r[d_task]: r for r in des} if d_task else {}
+    def _mean_by_task(rows: List[dict], task_col: str, val_col: Optional[str]) -> Dict[str, float]:
+        """Average a rating across all raters of the same task (multi-rater files)."""
+        acc: Dict[str, List[float]] = defaultdict(list)
+        if not val_col:
+            return {}
+        for r in rows:
+            v = _num(r.get(val_col))
+            if v is not None and r.get(task_col) is not None:
+                acc[r[task_col]].append(v)
+        return {tid: statistics.fmean(vs) for tid, vs in acc.items() if vs}
 
-    # normalise capability across the corpus (rescale by max if values exceed 1.0)
-    raw_caps = [(_num(r.get(c_cap))) for r in cap]
-    cap_hi = max([v for v in raw_caps if v is not None], default=1.0) or 1.0
-    cap_norm = {r[c_task]: (v / cap_hi if cap_hi > 1.0 else v)
-                for r, v in zip(cap, raw_caps) if v is not None}
+    cap_raw = _mean_by_task(cap, c_task, c_cap)            # expert automation-capacity, per task
+    has_raw = _mean_by_task(cap, c_task, c_has)            # expert feasible HAS, per task
+    des_raw = _mean_by_task(des, d_task, d_des) if d_task else {}  # worker automation desire, per task
+
+    # normalise capability / desire to 0..1 (rescale by observed max if it looks like a Likert scale)
+    cap_hi = max(cap_raw.values(), default=1.0) or 1.0
+    des_hi = max(des_raw.values(), default=1.0) or 1.0
+    cap_norm = {t: (v / cap_hi if cap_hi > 1.0 else v) for t, v in cap_raw.items()}
+    des_norm = {t: (v / des_hi if des_hi > 1.0 else v) for t, v in des_raw.items()}
 
     by_soc: Dict[str, dict] = defaultdict(
         lambda: {"cap": [], "has": [], "des": [], "occ": None, "text": None}
@@ -119,17 +135,10 @@ def build_overlay_from_dir(src: Path, limit: Optional[int] = None) -> List[Dict]
         agg["text"] = agg["text"] or (r.get(m_text) if m_text else None)
         if tid in cap_norm:
             agg["cap"].append(cap_norm[tid])
-        if c_has and tid in cap_by_task:
-            h = _num(cap_by_task[tid].get(c_has))
-            if h is not None:
-                agg["has"].append(h)
-        if d_des and tid in des_by_task:
-            dv = _num(des_by_task[tid].get(d_des))
-            if dv is not None:
-                agg["des"].append(dv)
-
-    des_all = [v for a in by_soc.values() for v in a["des"]]
-    des_hi = (max(des_all) if des_all else 1.0) or 1.0
+        if tid in has_raw:
+            agg["has"].append(has_raw[tid])
+        if tid in des_norm:
+            agg["des"].append(des_norm[tid])
 
     overlay: List[Dict] = []
     for soc, a in sorted(by_soc.items()):
@@ -137,8 +146,11 @@ def build_overlay_from_dir(src: Path, limit: Optional[int] = None) -> List[Dict]
         has_level = int(round(statistics.fmean(a["has"]))) if a["has"] else None
         if has_level is not None:
             has_level = max(1, min(5, has_level))
-        desire = round(statistics.fmean(a["des"]) / des_hi, 3) if (a["des"] and des_hi > 1.0) else (
-            round(statistics.fmean(a["des"]), 3) if a["des"] else None)
+        desire = round(statistics.fmean(a["des"]), 3) if a["des"] else None
+        # Only emit occupations WORKBank actually rated — a no-signal row would otherwise shadow the
+        # Claude inference fallback (the SOC would "match" an overlay carrying no AI-potential data).
+        if capability is None and has_level is None:
+            continue
         overlay.append({
             "onet_task_code": soc,
             "occupation": a["occ"],

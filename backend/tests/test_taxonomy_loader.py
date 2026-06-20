@@ -10,6 +10,29 @@ from app.services import taxonomy_loader
 from app.services.taxonomy_loader import load_taxonomies
 
 
+async def test_committed_workbank_overlay_file_loads(async_session, monkeypatch):
+    """The real committed WORKBank overlay (D28) loads as authoritative WORKBank-sourced rows."""
+    from pathlib import Path
+
+    from app.services import taxonomy_loader
+    real = (Path(taxonomy_loader.__file__).resolve().parents[1]
+            / "resources" / "taxonomies" / "workbank_overlay.curated.json")
+    if not real.exists():  # overlay is built from the (git-ignored) WORKBank dataset
+        import pytest
+        pytest.skip("workbank_overlay.curated.json not present")
+    monkeypatch.setattr(taxonomy_loader, "WORKBANK_OVERLAY_PATH", real)
+    await load_taxonomies(async_session)
+    n = await async_session.scalar(
+        select(func.count()).select_from(TaskAIOverlay).where(TaskAIOverlay.source == "WORKBank")
+    )
+    assert n >= 100  # ~104 WORKBank-surveyed occupations
+    sample = await async_session.scalar(
+        select(TaskAIOverlay).where(TaskAIOverlay.source == "WORKBank",
+                                    TaskAIOverlay.has_level.isnot(None))
+    )
+    assert 1 <= sample.has_level <= 5 and 0.0 <= (sample.capability_score or 0) <= 1.0
+
+
 async def test_curated_workbank_overlay_is_loaded_when_present(async_session, tmp_path, monkeypatch):
     """The optional curated WORKBank overlay (D25) upserts authoritative rows keyed by O*NET code."""
     wb = tmp_path / "workbank_overlay.curated.json"

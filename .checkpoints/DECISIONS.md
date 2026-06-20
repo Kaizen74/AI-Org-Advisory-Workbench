@@ -485,3 +485,24 @@ egress setting.)
 card flips from AI-inferred to Curated/WORKBank).
 **Verification:** +1 test (nested HF layout) + gitignore guard (`git check-ignore`). Gate green — **131 backend
 tests + clean frontend build**, tsc clean, backend↔frontend aligned, zero regressions.
+
+## 2026-06-16 — D28: Real WORKBank overlay embedded (built from the dataset CSVs)
+
+**Source:** Eric uploaded the four WORKBank CSVs directly (HF egress allowlist proved impractical).
+**Done:** Built the authoritative overlay from the REAL data and committed the curated subset.
+- Real schema confirmed: capability col is "Automation Capacity Rating"; expert "Human Agency Scale
+  Rating" = feasible HAS (used for has_level); worker "Automation Desire Rating" → desire_score_us;
+  files are multi-rater. Hardened `workbank_ingest`: detect "capacity"/"automation rating"; average
+  each rating per task across raters before the O*NET-SOC rollup; DROP occupations WORKBank didn't rate
+  (no capability AND no HAS) so they fall through to Claude inference instead of shadowing it.
+- Output: `backend/app/resources/taxonomies/workbank_overlay.curated.json` — **104 occupations**, 32 KB
+  (well within A4). zones 45 GREEN / 59 RED; HAS dist {1:4,2:41,3:45,4:14}. The raw dataset stays in
+  the git-ignored `workbank/` (build input only).
+- The loader auto-promotes it to the authoritative layer. Tests kept hermetic via an autouse conftest
+  fixture (`_isolate_workbank_overlay`) that disables the committed file unless a test opts in (the
+  air-transport seed fixtures must not be shadowed); +1 test loads the real committed file; the
+  multi-rater/"drop no-signal" converter behaviour is covered.
+**Verified end-to-end:** a marketing task ("optimize search marketing campaigns") → benchmark matches
+SOC 13-1161.01 → scored from the WORKBank overlay (source=WORKBank, has_level=2, GREEN_LIGHT, L3),
+inference is a no-op, source_mix.overlay=1. Gate green — **132 backend tests + clean frontend build**,
+tsc clean, backend↔frontend aligned, zero regressions. Raw dataset NOT committed (git check-ignore ✓).

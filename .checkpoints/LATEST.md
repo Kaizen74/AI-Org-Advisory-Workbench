@@ -2,7 +2,8 @@
 **Updated:** 2026-06-16T12:50:00 (P7 + D13 + bugfixes D14–D16 + refocus D17; live deploy still pending Eric)
 **Phase:** P7 done + access-control (D13) + D14–D16 fixes + **D17 product refocus**. **All seven phases
 P0–P7 built; app is private and now centred on role→task→AI-potential (H0–H5).**
-**Last completed micro-task:** D27 — WORKBank clone guidance: clone HF dataset into ./workbank as a git-ignored BUILD INPUT (never commit raw data, A4); commit only the curated overlay. Added /workbank/ to .gitignore; converter now finds CSVs recursively (HF nested layout); --src defaults to ./workbank. HF clone still 403 in sandbox (allowlist needed). Gate GREEN (131 tests + build).
+**Last completed micro-task:** D28 — embedded the REAL WORKBank overlay: Eric supplied the 4 CSVs; built backend/app/resources/taxonomies/workbank_overlay.curated.json (104 occupations, 32 KB) via the hardened converter (Automation Capacity Rating, multi-rater averaging, drops un-surveyed occupations→inference). Loader auto-promotes it; tests hermetic via autouse fixture; verified a marketing task now scores from WORKBank (no inference). Raw dataset git-ignored. Gate GREEN (132 tests + build).
+**Prior micro-task:** D27 — WORKBank clone guidance: clone HF dataset into ./workbank as a git-ignored BUILD INPUT (never commit raw data, A4); commit only the curated overlay. Added /workbank/ to .gitignore; converter now finds CSVs recursively (HF nested layout); --src defaults to ./workbank. HF clone still 403 in sandbox (allowlist needed). Gate GREEN (131 tests + build).
 **Prior micro-task:** D26 — hardened WORKBank ingestion: converter extracted to importable app/services/workbank_ingest (unit-tested offline with synthetic CSVs; CLI is now a thin wrapper) + rollup `source_mix` {overlay/ai_inferred/robotics/unclassified} with a Task Intelligence 'Benchmark coverage' card so reliance on inference is measurable; proved overlay-backed tasks bypass inference. HF still not allowlisted in sandbox (403) — allowlist + run the script to go live. Gate GREEN (130 tests + build).
 **Prior micro-task:** D25 — WORKBank integration path (HF-hosted tables; HF not allowlisted here): scripts/build_workbank_overlay.py + additive taxonomy_loader hook (workbank_overlay.curated.json → authoritative overlay) so real values drop in once HF is reachable; layered authority curated>WORKBank>Claude inference. Also fixed lingering robotics levers — infer-potential re-bands auto ROBOTICS_GSE_LEVER rows via the HAS rubric (idempotent). Gate GREEN (128 tests + build).
 **Prior micro-task:** D24 — robust AI benchmarking: unmatched tasks (NO_BENCHMARK_MATCH) are now scored by Claude grounded in the WORKBank HAS rubric (infer_unmatched_potential + POST /task-intel/infer-potential; model-inferred/unreviewed → export-blocked; idempotent). Pipeline adds the step; AIInferResult type + api.inferPotential. Decided AGAINST live O*NET/ESCO/WORKBank API wiring (static dataset / keys / 200MB guardrail). Gate GREEN (126 tests + build).
@@ -16,23 +17,7 @@ P0–P7 built; app is private and now centred on role→task→AI-potential (H0�
 (reversible nav flag; code+tests intact) and made the **WORKBank Human Agency Scale (H0–H5)** the headline
 AI-potential metric (`human_agency_band` + `HUMAN_AGENCY_SCALE` rubric; rollup `agency` breakdown; queue
 ai_score band; Task Intelligence headline chart+legend). L0–L3 kept internally. Gate GREEN (118 tests + build).
-**In-flight micro-task:** D28 (BLOCKED on environment) — load the real WORKBank overlay. The ingestion
-path (D25–D27) is complete and green; the ONLY blocker is network egress: `huggingface.co` / `hf.co` /
-`cdn-lfs*.huggingface.co` are not in this container's allowlist (clone returns HTTP 403). Egress rules
-apply at session creation, so a NEW session is required after the allowlist is updated.
-**RESUME HERE (new session) — load WORKBank, exact steps:**
-  1. Confirm HF reachable: `curl -sL -o /dev/null -w "%{http_code}\n" https://huggingface.co` → expect 200.
-     (If 403, the allowlist didn't take effect — needs HF + the LFS CDN hosts, then a fresh session.)
-  2. `cd /home/user/AI-Org-Advisory-Workbench && git clone https://huggingface.co/datasets/SALT-NLP/WORKBank workbank`
-     (`workbank/` is gitignored — build input only, never commit the raw dataset).
-  3. `cd backend && source .venv/bin/activate && cd ..` then
-     `python scripts/build_workbank_overlay.py` (defaults --src ./workbank; finds CSVs recursively).
-     → writes `backend/app/resources/taxonomies/workbank_overlay.curated.json` (commit THIS only).
-  4. Sanity check the output row count + a sample row; consider `--limit` to keep the subset small (A4).
-  5. Run the gate: `bash scripts/gate.sh`. The loader auto-promotes the curated overlay to the
-     authoritative layer; re-running Task Intelligence shows the Benchmark-coverage card shift from
-     "AI-inferred" to "Curated / WORKBank".
-  6. Commit `workbank_overlay.curated.json` + memory updates (DECISIONS/PROGRESS/LATEST/CLAUDE) as D28; push.
+**In-flight micro-task:** none. (D28 DONE — real WORKBank overlay embedded.)
 **Next action (be exact):** Two things remain, both needing Eric (cannot be done from this sandbox):
   1. **Live deploy** — follow README §4 to deploy backend→Railway (root `backend`, add Postgres, set
      `DATABASE_URL` with `+asyncpg`, `ANON_SALT`, **`AUTH_SECRET`, `ACCESS_USERS=you@email:passcode`**,
@@ -43,7 +28,7 @@ apply at session creation, so a NEW session is required after the allowlist is u
      wording corrections (actual Vercel/Railway button names) back into README §4.
   Optional follow-ups (additive): branch merge to `main` (then delete `legacy v1 app.zip` from main);
   expand audit UI; refine activator/L0-L3 rubrics if Eric supplies definitions.
-**Test status:** PASS — gate GREEN, **131 backend tests + clean frontend build**, zero regressions.
+**Test status:** PASS — gate GREEN, **132 backend tests + clean frontend build**, zero regressions.
 **Recovery commands:** `bash scripts/gate.sh`
 **Open questions for Eric:**
   1. **Live cloud deploy** needs your Vercel + Railway accounts connected to the GitHub repo — say

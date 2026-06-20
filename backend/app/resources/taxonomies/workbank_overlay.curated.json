@@ -1,0 +1,1050 @@
+{
+  "_meta": {
+    "source": "WORKBank (Stanford SALT-NLP, arXiv:2506.06576)",
+    "url": "https://huggingface.co/datasets/SALT-NLP/WORKBank",
+    "note": "Aggregated to O*NET-SOC occupation level. desire_score_us is US worker preference. Verify/refine before client use.",
+    "rows": 104
+  },
+  "task_ai_overlay": [
+    {
+      "onet_task_code": "31-9094.00",
+      "occupation": "Medical Transcriptionists",
+      "onet_task_text": "Return dictated reports in printed or electronic form for physician's review, signature, and corrections and for inclusion in patients' medical records.",
+      "has_level": 1,
+      "capability_score": 0.975,
+      "desire_score_us": 0.633,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "41-3041.00",
+      "occupation": "Travel Agents",
+      "onet_task_text": "Collect payment for transportation and accommodations from customer.",
+      "has_level": 1,
+      "capability_score": 0.925,
+      "desire_score_us": 0.59,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "43-3051.00",
+      "occupation": "Payroll and Timekeeping Clerks",
+      "onet_task_text": "Verify attendance, hours worked, and pay adjustments, and post information onto designated records.",
+      "has_level": 2,
+      "capability_score": 0.91,
+      "desire_score_us": 0.704,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "43-9081.00",
+      "occupation": "Proofreaders and Copy Markers",
+      "onet_task_text": "Read corrected copies or proofs to ensure that all corrections have been made.",
+      "has_level": 1,
+      "capability_score": 0.887,
+      "desire_score_us": 0.507,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "43-3031.00",
+      "occupation": "Bookkeeping, Accounting, and Auditing Clerks",
+      "onet_task_text": "Operate computers programmed with accounting software to record, store, and analyze information.",
+      "has_level": 2,
+      "capability_score": 0.883,
+      "desire_score_us": 0.624,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "27-4021.00",
+      "occupation": "Photographers",
+      "onet_task_text": "Transfer photographs to computers for editing, archiving, and electronic transmission.",
+      "has_level": 2,
+      "capability_score": 0.871,
+      "desire_score_us": 0.566,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "41-3031.00",
+      "occupation": "Securities, Commodities, and Financial Services Sales Agents",
+      "onet_task_text": "Make bids or offers to buy or sell securities.",
+      "has_level": 1,
+      "capability_score": 0.85,
+      "desire_score_us": 0.62,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "43-4051.00",
+      "occupation": "Customer Service Representatives",
+      "onet_task_text": "Keep records of customer interactions or transactions, recording details of inquiries, complaints, or comments, as well as actions taken.",
+      "has_level": 2,
+      "capability_score": 0.848,
+      "desire_score_us": 0.565,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "13-1199.06",
+      "occupation": "Online Merchants",
+      "onet_task_text": "Receive and process payments from customers, using electronic transaction services.",
+      "has_level": 2,
+      "capability_score": 0.847,
+      "desire_score_us": 0.65,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "13-2082.00",
+      "occupation": "Tax Preparers",
+      "onet_task_text": "Use all appropriate adjustments, deductions, and credits to keep clients' taxes to a minimum.",
+      "has_level": 2,
+      "capability_score": 0.844,
+      "desire_score_us": 0.735,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "15-1299.01",
+      "occupation": "Web Administrators",
+      "onet_task_text": "Monitor systems for intrusions or denial of service attacks, and report security breaches to appropriate personnel.",
+      "has_level": 2,
+      "capability_score": 0.836,
+      "desire_score_us": 0.713,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "41-9041.00",
+      "occupation": "Telemarketers",
+      "onet_task_text": "Obtain customer information such as name, address, and payment method, and enter orders into computers.",
+      "has_level": 2,
+      "capability_score": 0.833,
+      "desire_score_us": 0.592,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "15-1254.00",
+      "occupation": "Web Developers",
+      "onet_task_text": "Write supporting code for Web applications or Web sites.",
+      "has_level": 2,
+      "capability_score": 0.813,
+      "desire_score_us": 0.614,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "43-4031.00",
+      "occupation": "Court, Municipal, and License Clerks",
+      "onet_task_text": "Record and edit the minutes of meetings and distribute to appropriate officials or staff members.",
+      "has_level": 2,
+      "capability_score": 0.811,
+      "desire_score_us": 0.57,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "13-1161.01",
+      "occupation": "Search Marketing Strategists",
+      "onet_task_text": "Manage tracking and reporting of search-related activities and provide analyses to marketing executives.",
+      "has_level": 2,
+      "capability_score": 0.807,
+      "desire_score_us": 0.686,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "11-3051.01",
+      "occupation": "Quality Control Systems Managers",
+      "onet_task_text": "Review and update standard operating procedures or quality assurance manuals.",
+      "has_level": 2,
+      "capability_score": 0.8,
+      "desire_score_us": 0.627,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "15-1232.00",
+      "occupation": "Computer User Support Specialists",
+      "onet_task_text": "Oversee the daily performance of computer systems.",
+      "has_level": 2,
+      "capability_score": 0.795,
+      "desire_score_us": 0.599,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "11-3031.00",
+      "occupation": "Financial Managers",
+      "onet_task_text": "Oversee the flow of cash or financial instruments.",
+      "has_level": 2,
+      "capability_score": 0.789,
+      "desire_score_us": 0.57,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "13-1111.00",
+      "occupation": "Management Analysts",
+      "onet_task_text": "Gather and organize information on problems or procedures.",
+      "has_level": 2,
+      "capability_score": 0.783,
+      "desire_score_us": 0.554,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "13-2072.00",
+      "occupation": "Loan Officers",
+      "onet_task_text": "Analyze applicants' financial status, credit, and property evaluations to determine feasibility of granting loans.",
+      "has_level": 2,
+      "capability_score": 0.783,
+      "desire_score_us": 0.624,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "27-3043.00",
+      "occupation": "Writers and Authors",
+      "onet_task_text": "Vary language and tone of messages based on product and medium.",
+      "has_level": 2,
+      "capability_score": 0.78,
+      "desire_score_us": 0.551,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "11-3061.00",
+      "occupation": "Purchasing Managers",
+      "onet_task_text": "Locate vendors of materials, equipment or supplies, and interview them to determine product availability and terms of sales.",
+      "has_level": 2,
+      "capability_score": 0.779,
+      "desire_score_us": 0.577,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "15-1242.00",
+      "occupation": "Database Administrators",
+      "onet_task_text": "Modify existing databases and database management systems or direct programmers and analysts to make changes.",
+      "has_level": 2,
+      "capability_score": 0.778,
+      "desire_score_us": 0.483,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "15-1251.00",
+      "occupation": "Computer Programmers",
+      "onet_task_text": "Write, analyze, review, and rewrite programs, using workflow chart and diagram, and applying knowledge of computer capabilities, subject matter, and symbolic logic.",
+      "has_level": 2,
+      "capability_score": 0.773,
+      "desire_score_us": 0.585,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "13-2011.00",
+      "occupation": "Accountants and Auditors",
+      "onet_task_text": "Examine and evaluate financial and information systems, recommending controls to ensure system reliability and data integrity.",
+      "has_level": 2,
+      "capability_score": 0.767,
+      "desire_score_us": 0.491,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "23-1011.00",
+      "occupation": "Lawyers",
+      "onet_task_text": "Analyze the probable outcomes of cases, using knowledge of legal precedents.",
+      "has_level": 2,
+      "capability_score": 0.767,
+      "desire_score_us": 0.63,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "43-4061.00",
+      "occupation": "Eligibility Interviewers, Government Programs",
+      "onet_task_text": "Compute and authorize amounts of assistance for programs, such as grants, monetary payments, and food stamps.",
+      "has_level": 2,
+      "capability_score": 0.767,
+      "desire_score_us": 0.596,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "15-1253.00",
+      "occupation": "Software Quality Assurance Analysts and Testers",
+      "onet_task_text": "Identify, analyze, and document problems with program function, output, online screen, or content.",
+      "has_level": 2,
+      "capability_score": 0.765,
+      "desire_score_us": 0.648,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "13-1041.00",
+      "occupation": "Compliance Officers",
+      "onet_task_text": "Evaluate applications, records, or documents to gather information about eligibility or liability issues.",
+      "has_level": 2,
+      "capability_score": 0.758,
+      "desire_score_us": 0.75,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "41-4011.00",
+      "occupation": "Sales Representatives, Wholesale and Manufacturing, Technical and Scientific Products",
+      "onet_task_text": "Prepare and submit sales contracts for orders.",
+      "has_level": 2,
+      "capability_score": 0.758,
+      "desire_score_us": 0.589,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "11-3051.03",
+      "occupation": "Biofuels Production Managers",
+      "onet_task_text": "Review logs, datasheets, or reports to ensure adequate production levels or to identify abnormalities with biofuels production equipment or processes.",
+      "has_level": 2,
+      "capability_score": 0.756,
+      "desire_score_us": 0.723,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "11-3121.00",
+      "occupation": "Human Resources Managers",
+      "onet_task_text": "Provide current and prospective employees with information about policies, job duties, working conditions, wages, opportunities for promotion, and employee benefits.",
+      "has_level": 2,
+      "capability_score": 0.747,
+      "desire_score_us": 0.628,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "11-3071.04",
+      "occupation": "Supply Chain Managers",
+      "onet_task_text": "Determine appropriate equipment and staffing levels to load, unload, move, or store materials.",
+      "has_level": 2,
+      "capability_score": 0.744,
+      "desire_score_us": 0.66,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "43-9021.00",
+      "occupation": "Data Entry Keyers",
+      "onet_task_text": "Locate and correct data entry errors, or report them to supervisors.",
+      "has_level": 2,
+      "capability_score": 0.744,
+      "desire_score_us": 0.744,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "19-1029.01",
+      "occupation": "Bioinformatics Scientists",
+      "onet_task_text": "Develop new software applications or customize existing applications to meet specific scientific project needs.",
+      "has_level": 3,
+      "capability_score": 0.743,
+      "desire_score_us": 0.681,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "13-1051.00",
+      "occupation": "Cost Estimators",
+      "onet_task_text": "Analyze blueprints and other documentation to prepare time, cost, materials, and labor estimates.",
+      "has_level": 2,
+      "capability_score": 0.742,
+      "desire_score_us": 0.464,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "15-2041.01",
+      "occupation": "Biostatisticians",
+      "onet_task_text": "Analyze clinical or survey data, using statistical approaches such as longitudinal analysis, mixed-effect modeling, logistic regression analyses, and model-building techniques.",
+      "has_level": 3,
+      "capability_score": 0.74,
+      "desire_score_us": 0.638,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "11-3031.01",
+      "occupation": "Treasurers and Controllers",
+      "onet_task_text": "Evaluate needs for procurement of funds and investment of surpluses and make appropriate recommendations.",
+      "has_level": 3,
+      "capability_score": 0.739,
+      "desire_score_us": 0.503,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "13-2041.00",
+      "occupation": "Credit Analysts",
+      "onet_task_text": "Analyze credit data and financial statements to determine the degree of risk involved in extending credit or lending money.",
+      "has_level": 2,
+      "capability_score": 0.738,
+      "desire_score_us": 0.591,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "15-1231.00",
+      "occupation": "Computer Network Support Specialists",
+      "onet_task_text": "Back up network data.",
+      "has_level": 2,
+      "capability_score": 0.737,
+      "desire_score_us": 0.55,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "43-9031.00",
+      "occupation": "Desktop Publishers",
+      "onet_task_text": "Operate desktop publishing software and equipment to design, lay out, and produce camera-ready copy.",
+      "has_level": 3,
+      "capability_score": 0.722,
+      "desire_score_us": 0.651,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "19-4061.00",
+      "occupation": "Social Science Research Assistants",
+      "onet_task_text": "Design and create special programs for tasks such as statistical analysis and data entry and cleaning.",
+      "has_level": 3,
+      "capability_score": 0.72,
+      "desire_score_us": 0.702,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "25-4022.00",
+      "occupation": "Librarians and Media Collections Specialists",
+      "onet_task_text": "Review and evaluate materials, using book reviews, catalogs, faculty recommendations, and current holdings to select and order print, audio-visual, and electronic resources.",
+      "has_level": 3,
+      "capability_score": 0.719,
+      "desire_score_us": 0.522,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "11-9111.00",
+      "occupation": "Medical and Health Services Managers",
+      "onet_task_text": "Develop and maintain computerized record management systems to store and process data, such as personnel activities and information, and to produce reports.",
+      "has_level": 2,
+      "capability_score": 0.717,
+      "desire_score_us": 0.61,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "15-2041.00",
+      "occupation": "Statisticians",
+      "onet_task_text": "Analyze and interpret statistical data to identify significant differences in relationships among sources of information.",
+      "has_level": 3,
+      "capability_score": 0.711,
+      "desire_score_us": 0.709,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "13-1199.05",
+      "occupation": "Sustainability Specialists",
+      "onet_task_text": "Monitor or track sustainability indicators, such as energy usage, natural resource usage, waste generation, and recycling.",
+      "has_level": 3,
+      "capability_score": 0.708,
+      "desire_score_us": 0.573,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "13-2099.01",
+      "occupation": "Financial Quantitative Analysts",
+      "onet_task_text": "Apply mathematical or statistical techniques to address practical issues in finance, such as derivative valuation, securities trading, risk management, or financial market regulation.",
+      "has_level": 2,
+      "capability_score": 0.7,
+      "desire_score_us": 0.66,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "43-9041.00",
+      "occupation": "Insurance Claims and Policy Processing Clerks",
+      "onet_task_text": "Prepare insurance claim forms or related documents, and review them for completeness.",
+      "has_level": 2,
+      "capability_score": 0.698,
+      "desire_score_us": 0.568,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "23-1012.00",
+      "occupation": "Judicial Law Clerks",
+      "onet_task_text": "Prepare briefs, legal memoranda, or statements of issues involved in cases, including appropriate suggestions or recommendations.",
+      "has_level": 3,
+      "capability_score": 0.696,
+      "desire_score_us": 0.599,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "13-1131.00",
+      "occupation": "Fundraisers",
+      "onet_task_text": "Write and send letters of thanks to donors.",
+      "has_level": 2,
+      "capability_score": 0.69,
+      "desire_score_us": 0.652,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "43-6012.00",
+      "occupation": "Legal Secretaries and Administrative Assistants",
+      "onet_task_text": "Organize and maintain law libraries, documents, and case files.",
+      "has_level": 2,
+      "capability_score": 0.688,
+      "desire_score_us": 0.583,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "17-3011.00",
+      "occupation": "Architectural and Civil Drafters",
+      "onet_task_text": "Produce drawings, using computer-assisted drafting systems (CAD) or drafting machines, or by hand, using compasses, dividers, protractors, triangles, and other drafting devices.",
+      "has_level": 3,
+      "capability_score": 0.687,
+      "desire_score_us": 0.597,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "13-1023.00",
+      "occupation": "Purchasing Agents, Except Wholesale, Retail, and Farm Products",
+      "onet_task_text": "Monitor and follow applicable laws and regulations.",
+      "has_level": 3,
+      "capability_score": 0.683,
+      "desire_score_us": 0.572,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "15-1211.00",
+      "occupation": "Computer Systems Analysts",
+      "onet_task_text": "Troubleshoot program and system malfunctions to restore normal functioning.",
+      "has_level": 3,
+      "capability_score": 0.681,
+      "desire_score_us": 0.521,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "43-5031.00",
+      "occupation": "Public Safety Telecommunicators",
+      "onet_task_text": "Determine response requirements and relative priorities of situations, and dispatch units in accordance with established procedures.",
+      "has_level": 3,
+      "capability_score": 0.68,
+      "desire_score_us": 0.76,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "11-2011.00",
+      "occupation": "Advertising and Promotions Managers",
+      "onet_task_text": "Inspect layouts and advertising copy, and edit scripts, audio, video, and other promotional material for adherence to specifications.",
+      "has_level": 3,
+      "capability_score": 0.678,
+      "desire_score_us": 0.664,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "13-1081.02",
+      "occupation": "Logistics Analysts",
+      "onet_task_text": "Maintain databases of logistics information.",
+      "has_level": 3,
+      "capability_score": 0.673,
+      "desire_score_us": 0.544,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "15-1244.00",
+      "occupation": "Network and Computer Systems Administrators",
+      "onet_task_text": "Maintain and administer computer networks and related computing environments, including computer hardware, systems software, applications software, and all configurations.",
+      "has_level": 3,
+      "capability_score": 0.673,
+      "desire_score_us": 0.731,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "43-4181.00",
+      "occupation": "Reservation and Transportation Ticket Agents and Travel Clerks",
+      "onet_task_text": "Examine passenger documentation to determine destinations and to assign boarding passes.",
+      "has_level": 3,
+      "capability_score": 0.673,
+      "desire_score_us": 0.516,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "27-3023.00",
+      "occupation": "News Analysts, Reporters, and Journalists",
+      "onet_task_text": "Write commentaries, columns, or scripts, using computers.",
+      "has_level": 3,
+      "capability_score": 0.667,
+      "desire_score_us": 0.505,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "27-1024.00",
+      "occupation": "Graphic Designers",
+      "onet_task_text": "Key information into computer equipment to create layouts for client or supervisor.",
+      "has_level": 3,
+      "capability_score": 0.664,
+      "desire_score_us": 0.432,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "13-1071.00",
+      "occupation": "Human Resources Specialists",
+      "onet_task_text": "Hire employees and process hiring-related paperwork.",
+      "has_level": 3,
+      "capability_score": 0.659,
+      "desire_score_us": 0.531,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "13-2031.00",
+      "occupation": "Budget Analysts",
+      "onet_task_text": "Analyze monthly department budgeting and accounting reports to maintain expenditure controls.",
+      "has_level": 2,
+      "capability_score": 0.658,
+      "desire_score_us": 0.646,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "19-3092.00",
+      "occupation": "Geographers",
+      "onet_task_text": "Create and modify maps, graphs, or diagrams, using geographical information software and related equipment, and principles of cartography, such as coordinate systems, longitude, latitude, elevation, topography, and map scales.",
+      "has_level": 3,
+      "capability_score": 0.658,
+      "desire_score_us": 0.558,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "17-2051.00",
+      "occupation": "Civil Engineers",
+      "onet_task_text": "Compute load and grade requirements, water flow rates, or material stress factors to determine design specifications.",
+      "has_level": 3,
+      "capability_score": 0.653,
+      "desire_score_us": 0.615,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "13-1151.00",
+      "occupation": "Training and Development Specialists",
+      "onet_task_text": "Obtain, organize, or develop training procedure manuals, guides, or course materials, such as handouts or visual materials.",
+      "has_level": 3,
+      "capability_score": 0.637,
+      "desire_score_us": 0.667,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "13-2071.00",
+      "occupation": "Credit Counselors",
+      "onet_task_text": "Calculate clients' available monthly income to meet debt obligations.",
+      "has_level": 3,
+      "capability_score": 0.633,
+      "desire_score_us": 0.565,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "15-2051.01",
+      "occupation": "Business Intelligence Analysts",
+      "onet_task_text": "Generate standard or custom reports summarizing business, financial, or economic data for review by executives, managers, clients, and other stakeholders.",
+      "has_level": 3,
+      "capability_score": 0.633,
+      "desire_score_us": 0.679,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "19-4012.01",
+      "occupation": "Precision Agriculture Technicians",
+      "onet_task_text": "Document and maintain records of precision agriculture information.",
+      "has_level": 3,
+      "capability_score": 0.633,
+      "desire_score_us": 0.598,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "27-3042.00",
+      "occupation": "Technical Writers",
+      "onet_task_text": "Organize material and complete writing assignment according to set standards regarding order, clarity, conciseness, style, and terminology.",
+      "has_level": 3,
+      "capability_score": 0.629,
+      "desire_score_us": 0.544,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "13-2052.00",
+      "occupation": "Personal Financial Advisors",
+      "onet_task_text": "Analyze financial information obtained from clients to determine strategies for meeting clients' financial objectives.",
+      "has_level": 3,
+      "capability_score": 0.627,
+      "desire_score_us": 0.608,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "43-6014.00",
+      "occupation": "Secretaries and Administrative Assistants, Except Legal, Medical, and Executive",
+      "onet_task_text": "Create, maintain, and enter information into databases.",
+      "has_level": 2,
+      "capability_score": 0.624,
+      "desire_score_us": 0.487,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "13-2061.00",
+      "occupation": "Financial Examiners",
+      "onet_task_text": "Recommend actions to ensure compliance with laws and regulations, or to protect solvency of institutions.",
+      "has_level": 3,
+      "capability_score": 0.622,
+      "desire_score_us": 0.597,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "19-4099.01",
+      "occupation": "Quality Control Analysts",
+      "onet_task_text": "Interpret test results, compare them to established specifications and control limits, and make recommendations on appropriateness of data for release.",
+      "has_level": 3,
+      "capability_score": 0.621,
+      "desire_score_us": 0.668,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "15-1212.00",
+      "occupation": "Information Security Analysts",
+      "onet_task_text": "Develop plans to safeguard computer files against accidental or unauthorized modification, destruction, or disclosure and to meet emergency data processing needs.",
+      "has_level": 3,
+      "capability_score": 0.613,
+      "desire_score_us": 0.631,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "17-2199.03",
+      "occupation": "Energy Engineers, Except Wind and Solar",
+      "onet_task_text": "Identify and recommend energy savings strategies to achieve more energy-efficient operation.",
+      "has_level": 3,
+      "capability_score": 0.611,
+      "desire_score_us": 0.617,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "13-2023.00",
+      "occupation": "Appraisers and Assessors of Real Estate",
+      "onet_task_text": "Compute final estimation of property values, taking into account such factors as depreciation, replacement costs, value comparisons of similar properties, and income potential.",
+      "has_level": 3,
+      "capability_score": 0.61,
+      "desire_score_us": 0.656,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "15-1299.08",
+      "occupation": "Computer Systems Engineers/Architects",
+      "onet_task_text": "Investigate system component suitability for specified purposes, and make recommendations regarding component use.",
+      "has_level": 3,
+      "capability_score": 0.61,
+      "desire_score_us": 0.634,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "43-6013.00",
+      "occupation": "Medical Secretaries and Administrative Assistants",
+      "onet_task_text": "Schedule and confirm patient diagnostic appointments, surgeries, or medical consultations.",
+      "has_level": 2,
+      "capability_score": 0.61,
+      "desire_score_us": 0.627,
+      "zone": "GREEN_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "11-9121.01",
+      "occupation": "Clinical Research Coordinators",
+      "onet_task_text": "Schedule subjects for appointments, procedures, or inpatient stays as required by study protocols.",
+      "has_level": 3,
+      "capability_score": 0.608,
+      "desire_score_us": 0.59,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "43-5061.00",
+      "occupation": "Production, Planning, and Expediting Clerks",
+      "onet_task_text": "Distribute production schedules or work orders to departments.",
+      "has_level": 3,
+      "capability_score": 0.603,
+      "desire_score_us": 0.604,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "15-2021.00",
+      "occupation": "Mathematicians",
+      "onet_task_text": "Address the relationships of quantities, magnitudes, and forms through the use of numbers and symbols.",
+      "has_level": 4,
+      "capability_score": 0.587,
+      "desire_score_us": 0.646,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "15-2051.02",
+      "occupation": "Clinical Data Managers",
+      "onet_task_text": "Process clinical data, including receipt, entry, verification, or filing of information.",
+      "has_level": 3,
+      "capability_score": 0.586,
+      "desire_score_us": 0.719,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "25-1011.00",
+      "occupation": "Business Teachers, Postsecondary",
+      "onet_task_text": "Evaluate and grade students' class work, assignments, and papers.",
+      "has_level": 3,
+      "capability_score": 0.576,
+      "desire_score_us": 0.688,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "15-1211.01",
+      "occupation": "Health Informatics Specialists",
+      "onet_task_text": "Translate nursing practice information between nurses and systems engineers, analysts, or designers, using object-oriented models or other techniques.",
+      "has_level": 3,
+      "capability_score": 0.567,
+      "desire_score_us": 0.524,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "17-3027.00",
+      "occupation": "Mechanical Engineering Technologists and Technicians",
+      "onet_task_text": "Interpret engineering sketches, specifications, or drawings.",
+      "has_level": 3,
+      "capability_score": 0.563,
+      "desire_score_us": 0.569,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "17-2171.00",
+      "occupation": "Petroleum Engineers",
+      "onet_task_text": "Monitor production rates, and plan rework processes to improve production.",
+      "has_level": 4,
+      "capability_score": 0.552,
+      "desire_score_us": 0.73,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "27-3041.00",
+      "occupation": "Editors",
+      "onet_task_text": "Read copy or proof to detect and correct errors in spelling, punctuation, and syntax.",
+      "has_level": 3,
+      "capability_score": 0.548,
+      "desire_score_us": 0.411,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "15-1221.00",
+      "occupation": "Computer and Information Research Scientists",
+      "onet_task_text": "Analyze problems to develop solutions involving computer hardware and software.",
+      "has_level": 4,
+      "capability_score": 0.539,
+      "desire_score_us": 0.758,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "17-1011.00",
+      "occupation": "Architects, Except Landscape and Naval",
+      "onet_task_text": "Develop final construction plans that include aesthetic representations of the structure or details for its construction.",
+      "has_level": 3,
+      "capability_score": 0.53,
+      "desire_score_us": 0.554,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "17-2141.00",
+      "occupation": "Mechanical Engineers",
+      "onet_task_text": "Read and interpret blueprints, technical drawings, schematics, or computer-generated reports.",
+      "has_level": 4,
+      "capability_score": 0.528,
+      "desire_score_us": 0.669,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "17-2011.00",
+      "occupation": "Aerospace Engineers",
+      "onet_task_text": "Formulate mathematical models or other methods of computer analysis to develop, evaluate, or modify design, according to customer engineering requirements.",
+      "has_level": 4,
+      "capability_score": 0.527,
+      "desire_score_us": 0.632,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "15-1299.09",
+      "occupation": "Information Technology Project Managers",
+      "onet_task_text": "Monitor or track project milestones and deliverables.",
+      "has_level": 4,
+      "capability_score": 0.521,
+      "desire_score_us": 0.573,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "27-3031.00",
+      "occupation": "Public Relations Specialists",
+      "onet_task_text": "Respond to requests for information from the media or designate an appropriate spokesperson or information source.",
+      "has_level": 4,
+      "capability_score": 0.52,
+      "desire_score_us": 0.549,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "15-1255.01",
+      "occupation": "Video Game Designers",
+      "onet_task_text": "Balance and adjust gameplay experiences to ensure the critical and commercial success of the product.",
+      "has_level": 4,
+      "capability_score": 0.518,
+      "desire_score_us": 0.566,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "11-9199.01",
+      "occupation": "Regulatory Affairs Managers",
+      "onet_task_text": "Review all regulatory agency submission materials to ensure timeliness, accuracy, comprehensiveness, or compliance with regulatory standards.",
+      "has_level": 4,
+      "capability_score": 0.513,
+      "desire_score_us": 0.688,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "11-3021.00",
+      "occupation": "Computer and Information Systems Managers",
+      "onet_task_text": "Review project plans to plan and coordinate project activity.",
+      "has_level": 3,
+      "capability_score": 0.511,
+      "desire_score_us": 0.662,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "27-2012.00",
+      "occupation": "Producers and Directors",
+      "onet_task_text": "Research production topics using the internet, video archives, and other informational sources.",
+      "has_level": 4,
+      "capability_score": 0.5,
+      "desire_score_us": 0.542,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "29-1224.00",
+      "occupation": "Radiologists",
+      "onet_task_text": "Prepare comprehensive interpretive reports of findings.",
+      "has_level": 3,
+      "capability_score": 0.5,
+      "desire_score_us": 0.622,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "51-8012.00",
+      "occupation": "Power Distributors and Dispatchers",
+      "onet_task_text": "Control, monitor, or operate equipment that regulates or distributes electricity or steam, using data obtained from instruments or computers.",
+      "has_level": 3,
+      "capability_score": 0.5,
+      "desire_score_us": 0.6,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "19-3099.01",
+      "occupation": "Transportation Planners",
+      "onet_task_text": "Prepare reports or recommendations on transportation planning.",
+      "has_level": 4,
+      "capability_score": 0.489,
+      "desire_score_us": 0.686,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "19-1029.02",
+      "occupation": "Molecular and Cellular Biologists",
+      "onet_task_text": "Maintain accurate laboratory records and data.",
+      "has_level": 4,
+      "capability_score": 0.487,
+      "desire_score_us": 0.603,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "27-2012.05",
+      "occupation": "Media Technical Directors/Managers",
+      "onet_task_text": "Observe pictures through monitors and direct camera and video staff concerning shading and composition.",
+      "has_level": 4,
+      "capability_score": 0.467,
+      "desire_score_us": 0.464,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    },
+    {
+      "onet_task_code": "27-1011.00",
+      "occupation": "Art Directors",
+      "onet_task_text": "Present final layouts to clients for approval.",
+      "has_level": 4,
+      "capability_score": 0.438,
+      "desire_score_us": 0.566,
+      "zone": "RED_LIGHT",
+      "source": "WORKBank"
+    }
+  ]
+}
