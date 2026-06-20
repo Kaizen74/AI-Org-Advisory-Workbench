@@ -26,6 +26,23 @@ def _write_workbank(tmp_path):
         "task_id,automation_desire\nt1,3\nt2,4\nt3,1\n", encoding="utf-8")
 
 
+def test_converter_finds_csvs_in_nested_hf_layout(tmp_path):
+    """Cloning the HF repo nests the CSVs (task_data/, expert_ratings/, worker_data/) — the converter
+    locates them recursively so `git clone ... workbank` + `--src ./workbank` works as-is."""
+    (tmp_path / "task_data").mkdir()
+    (tmp_path / "expert_ratings").mkdir()
+    (tmp_path / "worker_data").mkdir()
+    (tmp_path / "task_data" / "task_statement_with_metadata.csv").write_text(
+        "task_id,task_statement,onet_soc_code,occupation_title\n"
+        "t1,Develop marketing strategy,11-2021.00,Marketing Managers\n", encoding="utf-8")
+    (tmp_path / "expert_ratings" / "expert_rated_technological_capability.csv").write_text(
+        "task_id,technological_capability,human_agency_level\nt1,4,2\n", encoding="utf-8")
+    (tmp_path / "worker_data" / "domain_worker_desires.csv").write_text(
+        "task_id,automation_desire\nt1,3\n", encoding="utf-8")
+    overlay = build_overlay_from_dir(tmp_path)
+    assert overlay and overlay[0]["onet_task_code"] == "11-2021.00"
+
+
 def test_converter_aggregates_to_soc_with_normalised_scores(tmp_path):
     _write_workbank(tmp_path)
     overlay = build_overlay_from_dir(tmp_path)

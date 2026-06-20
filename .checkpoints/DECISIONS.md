@@ -464,3 +464,24 @@ ingestion path so the data drops in cleanly once HF is allowlisted.
 --src ./workbank_csv` → commit `workbank_overlay.curated.json` (loader auto-picks it up).
 **Verification:** +2 tests (converter aggregation; overlay-bypasses-inference incl. source_mix). Gate green —
 **130 backend tests + clean frontend build**, tsc clean, backend↔frontend aligned, zero regressions.
+
+## 2026-06-16 — D27: WORKBank as a git-ignored build input (clone into ./workbank) — not committed raw
+
+**Source:** Eric — is it better to clone the HF WORKBank dataset into a `workbank/` folder in the project?
+**Answer:** Yes as a LOCAL build input, but it must be git-ignored — never commit the raw dataset (Build
+Spec A4: curated subsets only, ~200MB budget; data-hygiene rule: only the synthetic PAX fixture + taxonomy
+seed are allowed data files). Commit ONLY the curated `workbank_overlay.curated.json` the build script
+produces. (HF clone still 403 in this sandbox — `huggingface.co` not allowlisted; that's an environment
+egress setting.)
+**Changes (additive):**
+- `.gitignore`: added `/workbank/` and `/workbank_csv/` so a clone there is never committed.
+- `workbank_ingest.build_overlay_from_dir`: now locates the three CSVs **recursively** (`_locate` via
+  rglob), so the HF repo's nested layout (`task_data/`, `expert_ratings/`, `worker_data/`) works as-is;
+  clearer FileNotFoundError pointing at the clone command.
+- `scripts/build_workbank_overlay.py`: `--src` defaults to `./workbank`; docstring updated to
+  `git clone https://huggingface.co/datasets/SALT-NLP/WORKBank workbank` then `python scripts/build_workbank_overlay.py`.
+**Workflow to go live:** allowlist huggingface.co → `git clone … workbank` → `python scripts/build_workbank_overlay.py`
+→ commit `workbank_overlay.curated.json` (loader auto-loads it as the authoritative overlay; Benchmark-coverage
+card flips from AI-inferred to Curated/WORKBank).
+**Verification:** +1 test (nested HF layout) + gitignore guard (`git check-ignore`). Gate green — **131 backend
+tests + clean frontend build**, tsc clean, backend↔frontend aligned, zero regressions.

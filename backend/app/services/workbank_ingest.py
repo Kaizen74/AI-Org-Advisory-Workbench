@@ -34,6 +34,16 @@ def _read(path: Path) -> List[dict]:
         return list(csv.DictReader(fh))
 
 
+def _locate(src: Path, filename: str) -> Optional[Path]:
+    """Find a WORKBank CSV under `src`, whether flat or in the HF repo's nested layout
+    (task_data/, expert_ratings/, worker_data/). Returns None if not found."""
+    direct = src / filename
+    if direct.exists():
+        return direct
+    matches = sorted(src.rglob(filename))
+    return matches[0] if matches else None
+
+
 def _num(val) -> Optional[float]:
     try:
         return float(str(val).strip())
@@ -55,9 +65,18 @@ def build_overlay_from_dir(src: Path, limit: Optional[int] = None) -> List[Dict]
     has_level is the modal/mean Human Agency level clamped to 1..5; zone is derived.
     """
     src = Path(src)
-    meta = _read(src / "task_statement_with_metadata.csv")
-    cap = _read(src / "expert_rated_technological_capability.csv")
-    des = _read(src / "domain_worker_desires.csv")
+    meta_path = _locate(src, "task_statement_with_metadata.csv")
+    cap_path = _locate(src, "expert_rated_technological_capability.csv")
+    des_path = _locate(src, "domain_worker_desires.csv")
+    if meta_path is None or cap_path is None:
+        raise FileNotFoundError(
+            f"WORKBank CSVs not found under {src}. Clone the dataset there, e.g. "
+            "`git clone https://huggingface.co/datasets/SALT-NLP/WORKBank workbank` "
+            "(requires huggingface.co in your network allowlist)."
+        )
+    meta = _read(meta_path)
+    cap = _read(cap_path)
+    des = _read(des_path) if des_path else []
     if not meta or not cap:
         raise ValueError("WORKBank CSVs missing or empty (task metadata + expert capability required).")
 

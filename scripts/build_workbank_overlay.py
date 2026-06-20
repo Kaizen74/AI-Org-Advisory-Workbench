@@ -13,9 +13,10 @@ Three CSVs are used:
 
 USAGE
     1. Ensure huggingface.co is reachable (allowlist it in your environment's network egress settings),
-       then download the CSVs into one directory, e.g.:
-         huggingface-cli download SALT-NLP/WORKBank --repo-type dataset --local-dir ./workbank_csv
-    2. python scripts/build_workbank_overlay.py --src ./workbank_csv [--limit 300]
+       then clone the dataset into a (git-ignored) ./workbank folder:
+         git clone https://huggingface.co/datasets/SALT-NLP/WORKBank workbank
+       (the three CSVs are found recursively, so the HF nested layout works as-is)
+    2. python scripts/build_workbank_overlay.py [--src ./workbank] [--limit 300]
     3. Commit the curated subset it writes:
          backend/app/resources/taxonomies/workbank_overlay.curated.json
        The loader (taxonomy_loader.WORKBANK_OVERLAY_PATH) picks it up automatically and it becomes the
@@ -38,8 +39,9 @@ DEFAULT_OUT = REPO_ROOT / "backend" / "app" / "resources" / "taxonomies" / "work
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Build a curated WORKBank overlay.")
-    ap.add_argument("--src", type=Path, default=Path("./workbank_csv"),
-                    help="Directory holding the three WORKBank CSVs downloaded from Hugging Face.")
+    ap.add_argument("--src", type=Path, default=Path("./workbank"),
+                    help="Folder holding the cloned/downloaded WORKBank dataset (CSVs found recursively, "
+                         "so the HF repo's nested layout works as-is).")
     ap.add_argument("--out", type=Path, default=DEFAULT_OUT, help="Output overlay JSON path.")
     ap.add_argument("--limit", type=int, default=None, help="Keep only the top-N occupations by capability.")
     args = ap.parse_args()

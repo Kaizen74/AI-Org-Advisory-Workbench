@@ -537,3 +537,12 @@ wrapper) and verified it offline with synthetic WORKBank-shaped CSVs. Added roll
 inference is measurable. Proved overlay-backed tasks bypass inference (source=WORKBank).
 **Tests:** +2 (converter aggregation, overlay-bypasses-inference + source_mix). **Gate:** PASS — 130 backend
 tests + clean build; tsc clean; aligned.
+
+---
+
+## 2026-06-16 — WORKBank clone as git-ignored build input (D27)
+
+Recommendation: clone the HF dataset into ./workbank as a build input, git-ignored — commit only the
+curated overlay subset (A4). Added /workbank/ + /workbank_csv/ to .gitignore; the converter now finds the
+CSVs recursively (handles the HF nested layout) and --src defaults to ./workbank. HF clone still blocked
+in sandbox (403). **Tests:** +1 (nested layout) + gitignore guard. **Gate:** PASS — 131 backend tests + clean build; tsc clean.
