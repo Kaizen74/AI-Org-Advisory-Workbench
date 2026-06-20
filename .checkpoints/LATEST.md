@@ -16,8 +16,23 @@ P0–P7 built; app is private and now centred on role→task→AI-potential (H0�
 (reversible nav flag; code+tests intact) and made the **WORKBank Human Agency Scale (H0–H5)** the headline
 AI-potential metric (`human_agency_band` + `HUMAN_AGENCY_SCALE` rubric; rollup `agency` breakdown; queue
 ai_score band; Task Intelligence headline chart+legend). L0–L3 kept internally. Gate GREEN (118 tests + build).
-**In-flight micro-task:** none.
-**Refocus follow-ups (optional, await Eric):** confirm H0 def + H1→H5 direction. (Deliverables slimmed — D21 done.)
+**In-flight micro-task:** D28 (BLOCKED on environment) — load the real WORKBank overlay. The ingestion
+path (D25–D27) is complete and green; the ONLY blocker is network egress: `huggingface.co` / `hf.co` /
+`cdn-lfs*.huggingface.co` are not in this container's allowlist (clone returns HTTP 403). Egress rules
+apply at session creation, so a NEW session is required after the allowlist is updated.
+**RESUME HERE (new session) — load WORKBank, exact steps:**
+  1. Confirm HF reachable: `curl -sL -o /dev/null -w "%{http_code}\n" https://huggingface.co` → expect 200.
+     (If 403, the allowlist didn't take effect — needs HF + the LFS CDN hosts, then a fresh session.)
+  2. `cd /home/user/AI-Org-Advisory-Workbench && git clone https://huggingface.co/datasets/SALT-NLP/WORKBank workbank`
+     (`workbank/` is gitignored — build input only, never commit the raw dataset).
+  3. `cd backend && source .venv/bin/activate && cd ..` then
+     `python scripts/build_workbank_overlay.py` (defaults --src ./workbank; finds CSVs recursively).
+     → writes `backend/app/resources/taxonomies/workbank_overlay.curated.json` (commit THIS only).
+  4. Sanity check the output row count + a sample row; consider `--limit` to keep the subset small (A4).
+  5. Run the gate: `bash scripts/gate.sh`. The loader auto-promotes the curated overlay to the
+     authoritative layer; re-running Task Intelligence shows the Benchmark-coverage card shift from
+     "AI-inferred" to "Curated / WORKBank".
+  6. Commit `workbank_overlay.curated.json` + memory updates (DECISIONS/PROGRESS/LATEST/CLAUDE) as D28; push.
 **Next action (be exact):** Two things remain, both needing Eric (cannot be done from this sandbox):
   1. **Live deploy** — follow README §4 to deploy backend→Railway (root `backend`, add Postgres, set
      `DATABASE_URL` with `+asyncpg`, `ANON_SALT`, **`AUTH_SECRET`, `ACCESS_USERS=you@email:passcode`**,
