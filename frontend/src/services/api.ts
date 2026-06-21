@@ -313,6 +313,16 @@ export const api = {
       `/workflows/${processId}/unmap-task`,
       json({ task_id: taskId }),
     ),
+  exportWorkflowCsv: (engagementId: string, datasetId: string) =>
+    downloadBlob(
+      `${BASE}/workflows/export.csv?engagement_id=${encodeURIComponent(engagementId)}&dataset_id=${encodeURIComponent(datasetId)}`,
+      `workflow_map.csv`,
+    ),
+  exportWorkflowPptx: (engagementId: string, datasetId: string) =>
+    downloadBlob(
+      `${BASE}/workflows/export.pptx?engagement_id=${encodeURIComponent(engagementId)}&dataset_id=${encodeURIComponent(datasetId)}`,
+      `workflow_map.pptx`,
+    ),
   deleteProcess: (processId: string) =>
     request<{ deleted: string }>(`/workflows/${processId}`, { method: "DELETE" }),
   deleteStep: (stepId: string) =>

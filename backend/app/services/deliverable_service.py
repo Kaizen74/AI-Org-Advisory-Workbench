@@ -194,6 +194,14 @@ async def _gen_pptx_workflow(session, theme, engagement_id, dataset_id=None, **_
     return save_pptx(prs)
 
 
+async def build_workflow_deck(session, engagement_id: str, dataset_id: Optional[str],
+                              template: str = "minimal") -> bytes:
+    """Public wrapper so the Workflow Mapper can export the finalized-workflow deck directly
+    (same builder as the PPTX_WORKFLOW deliverable). Returns pptx bytes (not persisted)."""
+    return await _gen_pptx_workflow(session, get_theme(template), engagement_id=engagement_id,
+                                    dataset_id=dataset_id)
+
+
 async def _gen_docx_tom(session, theme, dataset_id, **_) -> bytes:
     metrics = await _metric_map(session, dataset_id)
     prov = await provenance_summary(session, dataset_id)

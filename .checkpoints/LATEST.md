@@ -2,7 +2,8 @@
 **Updated:** 2026-06-16T12:50:00 (P7 + D13 + bugfixes D14–D16 + refocus D17; live deploy still pending Eric)
 **Phase:** P7 done + access-control (D13) + D14–D16 fixes + **D17 product refocus**. **All seven phases
 P0–P7 built; app is private and now centred on role→task→AI-potential (H0–H5).**
-**Last completed micro-task:** D31 — inline Validation-Queue manual override of AI opportunity for no-benchmark tasks: a 1–5 'Manual AI rating' dropdown on model-inferred ai_score rows → POST /validation/manual-score → consultant-approved (client-ready) via the shared apply_manual_opportunity mapping (also used by the CSV path). The override shows in the Workflow Mapper board (reads TaskAIScore). Gate GREEN (136 tests + build).
+**Last completed micro-task:** D32 — export the finalized workflow from the Workflow Mapper: '↓ CSV' (every mapped task→step→process: role/H-band/zone/level/source) + '↓ PPTX' (reuses D22's deck via deliverable_service.build_workflow_deck). Backend: workflow_service.export_workflow_csv + GET /workflows/export.csv & /export.pptx; _board_task_payload gains `source`. Frontend toolbar buttons + authed-blob api. Gate GREEN (138 tests + build).
+**Prior micro-task:** D31 — inline Validation-Queue manual override of AI opportunity for no-benchmark tasks: a 1–5 'Manual AI rating' dropdown on model-inferred ai_score rows → POST /validation/manual-score → consultant-approved (client-ready) via the shared apply_manual_opportunity mapping (also used by the CSV path). The override shows in the Workflow Mapper board (reads TaskAIScore). Gate GREEN (136 tests + build).
 **Prior micro-task:** D30 — (1) delete process/step in Workflow Mapper (delete_process/delete_step + DELETE routes; × on process chips & step columns; deleted step's tasks return to the tray). (2) local-desirability manual scoring for no-benchmark tasks: desirability-template.csv (task-id keyed) + POST /task-intel/desirability → consultant-approved AI opportunity from desire_rating (protects WORKBank/SFw/ONET; US desire untouched); Task Intelligence 'Local desirability' card. Gate GREEN (135 tests + build).
 **Prior micro-task:** D29 — confirmed WORKBank coverage is complete (uploaded CSVs = the whole dataset; 104-occupation overlay is full); verified deterministic rebuild + git-ignored raw data; added test_workbank_integration.py (one end-to-end test: overlay + inference + robotics + source_mix + workflow deliverable together, no regressions). Gate GREEN (133 tests + build).
 **Prior micro-task:** D28 — embedded the REAL WORKBank overlay: Eric supplied the 4 CSVs; built backend/app/resources/taxonomies/workbank_overlay.curated.json (104 occupations, 32 KB) via the hardened converter (Automation Capacity Rating, multi-rater averaging, drops un-surveyed occupations→inference). Loader auto-promotes it; tests hermetic via autouse fixture; verified a marketing task now scores from WORKBank (no inference). Raw dataset git-ignored. Gate GREEN (132 tests + build).
@@ -31,7 +32,7 @@ ai_score band; Task Intelligence headline chart+legend). L0–L3 kept internally
      wording corrections (actual Vercel/Railway button names) back into README §4.
   Optional follow-ups (additive): branch merge to `main` (then delete `legacy v1 app.zip` from main);
   expand audit UI; refine activator/L0-L3 rubrics if Eric supplies definitions.
-**Test status:** PASS — gate GREEN, **136 backend tests + clean frontend build**, zero regressions.
+**Test status:** PASS — gate GREEN, **138 backend tests + clean frontend build**, zero regressions.
 **Recovery commands:** `bash scripts/gate.sh`
 **Open questions for Eric:**
   1. **Live cloud deploy** needs your Vercel + Railway accounts connected to the GitHub repo — say

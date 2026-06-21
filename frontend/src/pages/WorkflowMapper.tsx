@@ -332,6 +332,16 @@ export default function WorkflowMapper({
             <div className="flex gap-1.5">
               <Tool onClick={undo} disabled={!history.length} title="Undo your last move this session (⌘Z)">↺ Undo{history.length ? ` (${history.length})` : ""}</Tool>
               <Tool onClick={resetBoard} disabled={!board || (board.mapped_count === 0 && !history.length)} title="Unmap all tasks from this process (clear the board)">Reset board</Tool>
+              <Tool
+                onClick={() => engagementId && datasetId && api.exportWorkflowCsv(engagementId, datasetId).catch((e) => setError(String((e as Error).message ?? e)))}
+                disabled={!engagementId || !datasetId}
+                title="Export every mapped task → step → process (.csv)"
+              >↓ CSV</Tool>
+              <Tool
+                onClick={() => engagementId && datasetId && api.exportWorkflowPptx(engagementId, datasetId).catch((e) => setError(String((e as Error).message ?? e)))}
+                disabled={!engagementId || !datasetId}
+                title="Export a PowerPoint deck of the finalized workflow (.pptx)"
+              >↓ PPTX</Tool>
             </div>
             <div className="flex gap-0.5 rounded-lg bg-slate-100 p-0.5">
               {([["flow", "Flow"], ["landscape", "Landscape"], ["rollup", "Roll-up"]] as [View, string][]).map(([id, label]) => (

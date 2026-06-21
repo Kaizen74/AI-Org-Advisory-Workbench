@@ -563,3 +563,21 @@ override must register and show in the Workflow Mapper.
 **Verification:** +1 test (manual-score → H1/GREEN/approved + shows on board + guards); desirability test
 still green after the refactor. Gate green — **136 backend tests + clean frontend build**, tsc clean,
 backend↔frontend aligned, zero regressions.
+
+## 2026-06-16 — D32: Export the finalized workflow from the Workflow Mapper (CSV + PPTX)
+
+**Source:** Eric — export the finalized workflow mapper as (a) a CSV of all mapped tasks → steps →
+processes and (b) a PowerPoint deck visualizing it, directly from the Workflow Mapper.
+**Changes (additive):**
+- `_board_task_payload` gains `source` (for the CSV; additive — BoardTask consumers ignore extras).
+- `workflow_service.export_workflow_csv(engagement_id, dataset_id)` → CSV bytes: one row per task mapped
+  to a step across all the engagement's processes (process, value_stream, step_seq/name, task_text,
+  role, department, human_agency_level, has_level, zone, ai_opportunity_level, review_state, source).
+- `deliverable_service.build_workflow_deck(...)` — public wrapper over the existing `_gen_pptx_workflow`
+  (D22), so the same deck is exportable without persisting a Deliverable row (DRY, no new PPTX code).
+- Routes `GET /workflows/export.csv` and `GET /workflows/export.pptx` (no API key; engagement+dataset
+  scoped). Frontend: api.exportWorkflowCsv/exportWorkflowPptx (authed blob) + "↓ CSV" / "↓ PPTX" toolbar
+  buttons in the Workflow Mapper header.
+**Verification:** +2 tests (CSV header+rows carry process/step/role/H-band; PPTX is a valid PK file;
+empty-mapping CSV = header only). Gate green — **138 backend tests + clean frontend build**, tsc clean,
+backend↔frontend aligned, zero regressions.

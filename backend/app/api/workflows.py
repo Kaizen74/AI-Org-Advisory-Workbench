@@ -4,12 +4,16 @@ from __future__ import annotations
 from typing import List, Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException
+from fastapi.responses import Response
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models import get_session
+from ..services import deliverable_service
 from ..services import workflow_service as svc
 from ..services.claude_service import claude_service
+
+_PPTX_MEDIA = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
 
 router = APIRouter(prefix="/api/v1/workflows", tags=["workflows"])
 
@@ -131,3 +135,26 @@ async def delete_process(process_id: str, session: AsyncSession = Depends(get_se
     if not await svc.delete_process(session, process_id):
         raise HTTPException(status_code=404, detail="Process not found")
     return {"deleted": process_id}
+
+
+# ── Export the finalized workflow (no API key — reads persisted data) ─────────
+@router.get("/export.csv")
+async def export_csv(engagement_id: str, dataset_id: str,
+                     session: AsyncSession = Depends(get_session)):
+    """CSV of every task mapped to a step/process across the engagement (finalized workflow)."""
+    data = await svc.export_workflow_csv(session, engagement_id, dataset_id)
+    return Response(
+        content=data, media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=workflow_map.csv"},
+    )
+
+
+@router.get("/export.pptx")
+async def export_pptx(engagement_id: str, dataset_id: str,
+                      session: AsyncSession = Depends(get_session)):
+    """PowerPoint deck visualizing the finalized workflow (same builder as PPTX_WORKFLOW)."""
+    data = await deliverable_service.build_workflow_deck(session, engagement_id, dataset_id)
+    return Response(
+        content=data, media_type=_PPTX_MEDIA,
+        headers={"Content-Disposition": "attachment; filename=workflow_map.pptx"},
+    )

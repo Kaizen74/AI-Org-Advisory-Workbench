@@ -7,6 +7,8 @@ adds a priority/complexity narrative. Every payload carries the standard WORKBan
 """
 from __future__ import annotations
 
+import csv
+import io
 from typing import Dict, List, Optional
 
 from sqlalchemy import delete, select
@@ -213,6 +215,7 @@ def _board_task_payload(task: Task, pos: Optional[Position], score: Optional[Tas
         "has_level": has_level,
         "ai_level": (score.ai_opportunity_level if score else None) or "L0",
         "zone": score.zone if score else None,
+        "source": score.source if score else None,
         "capability_score": score.capability_score if score else None,
         "desire_score": desire,
         "confidence": score.confidence if score else None,
@@ -364,3 +367,28 @@ async def reset_board(session: AsyncSession, process_id: str) -> Optional[Dict]:
         await session.delete(tl)
     await session.flush()
     return {"process_id": process_id, "unmapped": len(links)}
+
+
+# ── Export the finalized workflow (CSV: every mapped task → step → process) ──────────────────
+async def export_workflow_csv(session: AsyncSession, engagement_id: str, dataset_id: str) -> bytes:
+    """CSV of the finalized workflow for an engagement: one row per task mapped to a step, across all
+    processes. Real persisted fields only (role = job title, never a name)."""
+    headers = ["process", "value_stream", "step_seq", "step_name", "task_text", "role",
+               "department", "human_agency_level", "has_level", "zone", "ai_opportunity_level",
+               "review_state", "source"]
+    out = io.StringIO()
+    w = csv.writer(out)
+    w.writerow(headers)
+    for proc in await list_processes(session, engagement_id):
+        b = await board(session, proc.id, dataset_id)
+        if b is None:
+            continue
+        for step in b["steps"]:
+            for t in step["tasks"]:
+                w.writerow([
+                    proc.name, proc.value_stream or "", step["seq"], step["name"], t["text"],
+                    t["role"], t.get("department") or "", t["human_agency_level"],
+                    "" if t.get("has_level") is None else t["has_level"], t.get("zone") or "",
+                    t.get("ai_level") or "", t.get("review_state") or "", t.get("source") or "",
+                ])
+    return out.getvalue().encode("utf-8")

@@ -590,3 +590,14 @@ model-inferred ai_score row → POST /validation/manual-score → consultant-app
 apply_manual_opportunity mapping, also used by the CSV path). The Workflow Mapper board reflects it
 immediately (reads TaskAIScore). **Tests:** +1 (override sets H1/GREEN/approved + shows on board).
 **Gate:** PASS — 136 backend tests + clean build; tsc clean; aligned.
+
+---
+
+## 2026-06-16 — Export finalized workflow: CSV + PPTX from the Workflow Mapper (D32)
+
+Added direct exports from the Workflow Mapper header: "↓ CSV" (every mapped task→step→process with
+role/H-band/zone/etc.) and "↓ PPTX" (the finalized-workflow deck, reusing D22's builder via a new
+deliverable_service.build_workflow_deck wrapper). Backend: workflow_service.export_workflow_csv +
+GET /workflows/export.csv & /export.pptx; _board_task_payload gains `source`. Frontend: api
+exportWorkflowCsv/Pptx (authed blob) + toolbar buttons. **Tests:** +2. **Gate:** PASS — 138 backend
+tests + clean build; tsc clean; aligned.
