@@ -244,6 +244,11 @@ export const api = {
       `${BASE}/task-intel/desirability-template.csv?dataset_id=${encodeURIComponent(datasetId)}`,
       `local-desirability-template.csv`,
     ),
+  manualScore: (id: string, rating: number) =>
+    request<{ id: string; human_agency_level: string; zone: string; review_state: string }>(
+      "/validation/manual-score",
+      json({ id, rating }),
+    ),
   applyDesirability: (datasetId: string, file: File) => {
     const form = new FormData();
     form.append("file", file);

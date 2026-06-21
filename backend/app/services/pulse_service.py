@@ -171,8 +171,7 @@ async def apply_local_desirability(session: AsyncSession, dataset_id: str, conte
     set a consultant-approved AI-opportunity derived from the rating (1=keep human → H5/L0,
     5=automate → H1/L3) so it becomes client-ready; for benchmarked tasks, only the local desire is
     updated (the authoritative benchmark is never overwritten). desire_score_us is never touched."""
-    from .task_intelligence_service import derive_ai_level
-    from .workbank_ingest import derive_zone
+    from .task_intelligence_service import apply_manual_opportunity
 
     records = _parse_response_rows(content, filename)
     tasks, scores = await _dataset_tasks_with_scores(session, dataset_id)
@@ -192,23 +191,11 @@ async def apply_local_desirability(session: AsyncSession, dataset_id: str, conte
             score = TaskAIScore(task_id=ref, source="consultant-approved", review_state="approved")
             session.add(score)
             scores[ref] = score
-        score.desire_score_local = round((rating - 1) / 4, 4)  # US score untouched (A4)
         if score.source in _PROTECTED_SOURCES:
-            desire_only += 1  # keep the authoritative benchmark; only local desire updated
+            score.desire_score_local = round((rating - 1) / 4, 4)  # only local desire (keep benchmark)
+            desire_only += 1
             continue
-        has = 6 - rating               # 5=automate → H1; 1=keep human → H5
-        cap = round((rating - 1) / 4, 3)
-        score.has_level = has
-        score.capability_score = cap
-        score.zone = derive_zone(cap, has)
-        score.ai_opportunity_level = derive_ai_level(cap, has)
-        score.source = "consultant-approved"
-        score.review_state = "approved"   # client-ready (human judgment, not export-blocked)
-        score.confidence = 1.0
-        score.rationale = (
-            f"Consultant-set AI opportunity from local desirability rating {rating}/5 "
-            "(no benchmark match)."
-        )
+        apply_manual_opportunity(score, rating)  # consultant-approved, client-ready
         applied += 1
     await session.flush()
     return {"applied": applied, "desire_only": desire_only, "skipped": skipped}

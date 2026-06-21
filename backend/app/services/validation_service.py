@@ -24,7 +24,7 @@ from ..models import (
     TaxonomyCrosswalk,
     TaxonomyTask,
 )
-from .task_intelligence_service import human_agency_band
+from .task_intelligence_service import apply_manual_opportunity, human_agency_band
 
 _ACTION_TO_STATE = {"approve": "approved", "edit": "edited", "reject": "rejected"}
 
@@ -176,6 +176,24 @@ async def review_items(session: AsyncSession, reviews: List[Dict]) -> Dict:
         updated += 1
     await session.flush()
     return {"updated": updated, "crosswalks_created": crosswalks_created}
+
+
+async def set_manual_opportunity(session: AsyncSession, ai_score_id: str, rating: int) -> Optional[Dict]:
+    """Inline Validation-Queue override: set a consultant-approved AI opportunity for one ai_score from
+    a 1-5 rating. Returns the updated headline band (None if the score is missing)."""
+    score = await session.get(TaskAIScore, ai_score_id)
+    if score is None:
+        return None
+    apply_manual_opportunity(score, rating)
+    await session.flush()
+    return {
+        "id": score.id,
+        "human_agency_level": human_agency_band(score.has_level),
+        "ai_opportunity_level": score.ai_opportunity_level,
+        "zone": score.zone,
+        "review_state": score.review_state,
+        "source": score.source,
+    }
 
 
 async def get_stats(session: AsyncSession, dataset_id: Optional[str] = None) -> Dict:

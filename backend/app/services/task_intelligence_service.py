@@ -264,6 +264,25 @@ def human_agency_band(has_level: Optional[int]) -> str:
     return f"H{min(lvl, 5)}"
 
 
+def apply_manual_opportunity(score: "TaskAIScore", rating: int) -> None:
+    """Set a CONSULTANT-APPROVED AI opportunity on a score from a 1-5 desirability rating
+    (1 = keep human → H5/L0, 5 = automate → H1/L3). Client-ready (approved); desire_score_us untouched.
+    Shared by the Validation-Queue inline override and the local-desirability CSV upload."""
+    from .workbank_ingest import derive_zone
+    rating = max(1, min(5, int(rating)))
+    has = 6 - rating
+    cap = round((rating - 1) / 4, 3)
+    score.has_level = has
+    score.capability_score = cap
+    score.desire_score_local = round((rating - 1) / 4, 4)  # local only (A4)
+    score.zone = derive_zone(cap, has)
+    score.ai_opportunity_level = derive_ai_level(cap, has)
+    score.source = "consultant-approved"
+    score.review_state = "approved"
+    score.confidence = 1.0
+    score.rationale = f"Consultant-set AI opportunity (manual rating {rating}/5; no benchmark match)."
+
+
 # ── AI opportunity (HAS/zone/desire/capability/L0-L3 via logical O*NET overlay join) ──
 def derive_ai_level(capability: Optional[float], has_level: Optional[int]) -> str:
     """Deterministic L0-L3 from capability + human-agency (heuristic; caveated). Higher capability

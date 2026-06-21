@@ -44,6 +44,23 @@ async def review(
     return await vs.review_items(session, [r.model_dump() for r in reviews])
 
 
+class ManualScore(BaseModel):
+    id: str  # the ai_score id
+    rating: int  # 1=keep human .. 5=automate
+
+
+@router.post("/manual-score")
+async def manual_score(body: ManualScore, session: AsyncSession = Depends(get_session)):
+    """Inline human override of AI opportunity for a 'no benchmark match' task (1-5 rating)."""
+    from fastapi import HTTPException
+    if not 1 <= body.rating <= 5:
+        raise HTTPException(status_code=400, detail="rating must be 1..5")
+    result = await vs.set_manual_opportunity(session, body.id, body.rating)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Score not found")
+    return result
+
+
 @router.get("/stats")
 async def stats(dataset_id: Optional[str] = None, session: AsyncSession = Depends(get_session)):
     return await vs.get_stats(session, dataset_id=dataset_id)

@@ -53,6 +53,16 @@ export default function ValidationQueue({
     setSelected(next);
   }
 
+  async function setManual(id: string, rating: number) {
+    try {
+      const r = await api.manualScore(id, rating);
+      setNote(`Set manual AI opportunity → ${r.human_agency_level} (${r.zone}); approved.`);
+      await load();
+    } catch (e) {
+      setError(String((e as Error).message ?? e));
+    }
+  }
+
   async function bulk(action: "approve" | "reject") {
     const actions = items
       .filter((i) => selected.has(i.id))
@@ -138,6 +148,7 @@ export default function ValidationQueue({
                   <th>Source</th>
                   <th>Confidence</th>
                   <th>State</th>
+                  <th>Manual AI rating</th>
                 </tr>
               </thead>
               <tbody>
@@ -162,6 +173,25 @@ export default function ValidationQueue({
                     </td>
                     <td>{i.confidence ?? "—"}</td>
                     <td className="text-slate-500">{i.review_state}</td>
+                    <td>
+                      {i.kind === "ai_score" && i.source === "model-inferred" ? (
+                        <select
+                          defaultValue=""
+                          title="Set the AI opportunity by hand (1=keep human .. 5=automate)"
+                          onChange={(e) => e.target.value && setManual(i.id, Number(e.target.value))}
+                          className="rounded border border-slate-300 px-1.5 py-1 text-xs"
+                        >
+                          <option value="">Rate…</option>
+                          <option value="1">1 · keep human (H5)</option>
+                          <option value="2">2 (H4)</option>
+                          <option value="3">3 · partnership (H3)</option>
+                          <option value="4">4 (H2)</option>
+                          <option value="5">5 · automate (H1)</option>
+                        </select>
+                      ) : (
+                        <span className="text-xs text-slate-300">—</span>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>

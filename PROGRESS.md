@@ -580,3 +580,13 @@ apply_local_desirability (consultant-approved AI opportunity from desire_rating;
 benchmarks; US desire untouched); GET/POST endpoints + a Task Intelligence card. The CSV aligns to the
 extracted tasks (via the template), not the raw org structure CSV.
 **Tests:** +2. **Gate:** PASS — 135 backend tests + clean build; tsc clean; aligned.
+
+---
+
+## 2026-06-16 — Inline manual AI-opportunity override in the Validation Queue (D31)
+
+Added a first-class in-queue override for no-benchmark tasks: a 1–5 "Manual AI rating" dropdown on each
+model-inferred ai_score row → POST /validation/manual-score → consultant-approved opportunity (shared
+apply_manual_opportunity mapping, also used by the CSV path). The Workflow Mapper board reflects it
+immediately (reads TaskAIScore). **Tests:** +1 (override sets H1/GREEN/approved + shows on board).
+**Gate:** PASS — 136 backend tests + clean build; tsc clean; aligned.

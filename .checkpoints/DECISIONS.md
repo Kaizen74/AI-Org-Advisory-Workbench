@@ -544,3 +544,22 @@ and a downloadable template so alignment is automatic.
 **Verification:** +2 tests (process/step delete with task re-tray; template→apply sets H1/H5 +
 client-ready). Gate green — **135 backend tests + clean frontend build**, tsc clean, backend↔frontend
 aligned, zero regressions.
+
+## 2026-06-16 — D31: Inline Validation-Queue manual override of AI opportunity (no-benchmark tasks)
+
+**Source:** Eric — make in-queue manual override the FIRST option (CSV is the bulk last resort); the
+override must register and show in the Workflow Mapper.
+**Changes (additive):**
+- Shared mapping `task_intelligence_service.apply_manual_opportunity(score, rating)` (1=keep human→H5/L0 …
+  5=automate→H1/L3; source=consultant-approved/review_state=approved → client-ready; desire_score_local
+  set; desire_score_us untouched). Both the CSV path (`pulse_service.apply_local_desirability`) and the
+  inline path now use it (DRY).
+- `validation_service.set_manual_opportunity(ai_score_id, rating)` + `POST /validation/manual-score`
+  {id, rating} (404 if missing, 400 if rating∉1..5).
+- Frontend: ValidationQueue gains a "Manual AI rating" column — a 1–5 dropdown on each model-inferred
+  ai_score row (the no-benchmark tasks); selecting a rating sets a consultant-approved opportunity and
+  reloads. The Workflow Mapper board reads TaskAIScore, so the override appears there immediately
+  (verified: board task shows H1/GREEN_LIGHT/approved after a rating of 5).
+**Verification:** +1 test (manual-score → H1/GREEN/approved + shows on board + guards); desirability test
+still green after the refactor. Gate green — **136 backend tests + clean frontend build**, tsc clean,
+backend↔frontend aligned, zero regressions.
