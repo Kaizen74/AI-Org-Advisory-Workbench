@@ -43,13 +43,17 @@ async def test_manual_score_sets_consultant_opportunity_and_shows_on_board(
     await api_client.post("/api/v1/task-intel/benchmark", params={"dataset_id": ds})
     await api_client.post("/api/v1/task-intel/ai-opportunity", params={"dataset_id": ds})
 
-    # The queue shows the no-benchmark ai_score row (model-inferred, H0/NO_BENCHMARK_MATCH).
+    # The queue shows the no-benchmark ai_score row AND a benchmark EXTRA row for the same task —
+    # both now carry a task_id so the manual override is reachable from either.
     q = (await api_client.get("/api/v1/validation/queue", params={"dataset_id": ds})).json()
     ai = next(i for i in q["items"] if i["kind"] == "ai_score")
+    bench = next(i for i in q["items"] if i["kind"] == "benchmark")
     assert "NO_BENCHMARK_MATCH" in ai["label"] and ai["review_state"] == "unreviewed"
+    assert ai["task_id"] and bench["task_id"]
 
-    # Inline override: rate 5 (=automate) -> H1/GREEN_LIGHT, consultant-approved (client-ready).
-    r = await api_client.post("/api/v1/validation/manual-score", json={"id": ai["id"], "rating": 5})
+    # Inline override (keyed by task_id): rate 5 (=automate) -> H1/GREEN_LIGHT, consultant-approved.
+    r = await api_client.post("/api/v1/validation/manual-score",
+                              json={"task_id": ai["task_id"], "rating": 5})
     assert r.status_code == 200
     body = r.json()
     assert body["human_agency_level"] == "H1" and body["zone"] == "GREEN_LIGHT"
@@ -65,11 +69,16 @@ async def test_manual_score_sets_consultant_opportunity_and_shows_on_board(
             json={"engagement_id": eng, "name": "P"})).json()
     board = (await api_client.get(f"/api/v1/workflows/{proc['id']}/board",
                                   params={"dataset_id": ds})).json()
-    t = board["unmapped"][0]
+    t = next(x for x in board["unmapped"] if x["id"] == ai["task_id"])
     assert t["human_agency_level"] == "H1" and t["zone"] == "GREEN_LIGHT" and t["review_state"] == "approved"
+
+    # The same override is reachable from the benchmark (EXTRA) row of that task (same task_id).
+    r2 = await api_client.post("/api/v1/validation/manual-score",
+                               json={"task_id": bench["task_id"], "rating": 1})
+    assert r2.status_code == 200 and r2.json()["human_agency_level"] == "H5"
 
     # Guards.
     assert (await api_client.post("/api/v1/validation/manual-score",
-                                  json={"id": "nope", "rating": 3})).status_code == 404
+                                  json={"task_id": "nope", "rating": 3})).status_code == 404
     assert (await api_client.post("/api/v1/validation/manual-score",
-                                  json={"id": ai["id"], "rating": 9})).status_code == 400
+                                  json={"task_id": ai["task_id"], "rating": 9})).status_code == 400

@@ -45,7 +45,7 @@ async def review(
 
 
 class ManualScore(BaseModel):
-    id: str  # the ai_score id
+    task_id: str  # the task to score (works from ai_score OR benchmark/EXTRA rows)
     rating: int  # 1=keep human .. 5=automate
 
 
@@ -55,9 +55,9 @@ async def manual_score(body: ManualScore, session: AsyncSession = Depends(get_se
     from fastapi import HTTPException
     if not 1 <= body.rating <= 5:
         raise HTTPException(status_code=400, detail="rating must be 1..5")
-    result = await vs.set_manual_opportunity(session, body.id, body.rating)
+    result = await vs.set_manual_opportunity(session, body.task_id, body.rating)
     if result is None:
-        raise HTTPException(status_code=404, detail="Score not found")
+        raise HTTPException(status_code=404, detail="Task not found")
     return result
 
 

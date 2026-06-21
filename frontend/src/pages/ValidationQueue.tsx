@@ -53,9 +53,9 @@ export default function ValidationQueue({
     setSelected(next);
   }
 
-  async function setManual(id: string, rating: number) {
+  async function setManual(taskId: string, rating: number) {
     try {
-      const r = await api.manualScore(id, rating);
+      const r = await api.manualScore(taskId, rating);
       setNote(`Set manual AI opportunity → ${r.human_agency_level} (${r.zone}); approved.`);
       await load();
     } catch (e) {
@@ -174,11 +174,11 @@ export default function ValidationQueue({
                     <td>{i.confidence ?? "—"}</td>
                     <td className="text-slate-500">{i.review_state}</td>
                     <td>
-                      {i.kind === "ai_score" && i.source === "model-inferred" ? (
+                      {i.kind !== "crosswalk" && i.source === "model-inferred" && i.task_id ? (
                         <select
                           defaultValue=""
                           title="Set the AI opportunity by hand (1=keep human .. 5=automate)"
-                          onChange={(e) => e.target.value && setManual(i.id, Number(e.target.value))}
+                          onChange={(e) => e.target.value && setManual(i.task_id!, Number(e.target.value))}
                           className="rounded border border-slate-300 px-1.5 py-1 text-xs"
                         >
                           <option value="">Rate…</option>

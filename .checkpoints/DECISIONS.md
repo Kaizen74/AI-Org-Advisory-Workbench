@@ -581,3 +581,24 @@ processes and (b) a PowerPoint deck visualizing it, directly from the Workflow M
 **Verification:** +2 tests (CSV header+rows carry process/step/role/H-band; PPTX is a valid PK file;
 empty-mapping CSV = header only). Gate green — **138 backend tests + clean frontend build**, tsc clean,
 backend↔frontend aligned, zero regressions.
+
+## 2026-06-16 — D33: Manual override from benchmark/EXTRA rows + visual PPTX workflow deck
+
+**Source:** Eric — (1) the manual AI override should also be available on the 'benchmark'/EXTRA rows
+(not only ai_score rows); (2) the PPTX export should look like the Workflow Mapper board (visual
+columns/cards), not bullet lists.
+**Changes:**
+1. Manual override re-keyed to **task_id**: `validation_service.set_manual_opportunity(task_id, rating)`
+   (resolves/creates the task's ai_score); `POST /validation/manual-score` now takes `{task_id, rating}`.
+   Frontend shows the 1–5 dropdown on every model-inferred row with a task_id — both ai_score AND
+   benchmark/EXTRA rows; `api.manualScore(taskId, rating)`. (One task has two queue rows; setting from
+   either updates the same ai_score.)
+2. Visual deck: new `deliverable_builders.workflow_board_slide` draws each process as a board — step
+   header boxes, task cards coloured by Human Agency band (HAS_COLORS mirror the UI), right-arrows
+   between steps, footer summary; paginates at 4 step-columns/slide. `_gen_pptx_workflow` rewritten to
+   use it (replaces the bullet-list version). Both the `PPTX_WORKFLOW` deliverable and the Workflow
+   Mapper `↓ PPTX` export use it (shared builder).
+**Verification:** manual-score test now drives the override from BOTH the ai_score and the benchmark
+row (task_id), confirms it shows on the board; export test opens the pptx and asserts the process/step
+names + footer are rendered as board shapes. Gate green — **138 backend tests + clean frontend build**,
+tsc clean, backend↔frontend aligned, zero regressions.

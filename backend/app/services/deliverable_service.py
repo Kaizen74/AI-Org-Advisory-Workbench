@@ -41,6 +41,7 @@ from .deliverable_builders import (
     section_slide,
     table_slide,
     title_slide,
+    workflow_board_slide,
 )
 from .deliverable_theme import get_theme
 from .task_intelligence_service import STANDARD_CAVEATS
@@ -152,13 +153,14 @@ async def _gen_pptx_ai_roadmap(session, theme, dataset_id, **_) -> bytes:
 
 
 async def _gen_pptx_workflow(session, theme, engagement_id, dataset_id=None, **_) -> bytes:
-    """The 'finalized' workflow map: each process's steps with their mapped tasks and Human Agency
-    (H0–H5) mix — built from the real board data (mapped tasks only; unmapped count disclosed)."""
+    """The 'finalized' workflow map, drawn as a VISUAL board per process (step columns of task cards
+    coloured by Human Agency band, arrows between steps) — the deck mirror of the Workflow Mapper UI."""
     prs = new_presentation()
     title_slide(prs, theme, "Finalized Workflow Map",
-                "Mapped processes, steps & tasks (Human Agency Scale H0–H5)")
+                "Visual workflow — processes, steps & tasks (Human Agency Scale H0–H5)")
     processes = await workflow_service.list_processes(session, engagement_id)
     any_process = False
+    max_cols = 4  # step columns per slide; overflow paginates onto continuation slides
     for proc in processes:
         if not dataset_id:
             break
@@ -166,27 +168,14 @@ async def _gen_pptx_workflow(session, theme, engagement_id, dataset_id=None, **_
         if b is None:
             continue
         any_process = True
-        bullets: list[str] = []
-        if proc.value_stream:
-            bullets.append(f"Value stream: {proc.value_stream}")
-        for step in b["steps"]:
-            tasks = step["tasks"]
-            if not tasks:
-                bullets.append(f"Step {step['seq']} — {step['name']}: (no tasks linked)")
-                continue
-            mix: Dict[str, int] = {}
-            for t in tasks:
-                mix[t["human_agency_level"]] = mix.get(t["human_agency_level"], 0) + 1
-            mixstr = ", ".join(f"{k}×{v}" for k, v in sorted(mix.items()))
-            shown = "; ".join(
-                f"{t['text']} [{t['role']} · {t['human_agency_level']}]" for t in tasks[:6]
+        steps = b["steps"]
+        chunks = [steps[i:i + max_cols] for i in range(0, len(steps), max_cols)] or [[]]
+        for idx, chunk in enumerate(chunks, 1):
+            workflow_board_slide(
+                prs, theme, proc.name, proc.value_stream or "", chunk,
+                b["mapped_count"], b["task_count"], len(b["unmapped"]),
+                page=idx, pages=len(chunks),
             )
-            more = f" (+{len(tasks) - 6} more)" if len(tasks) > 6 else ""
-            bullets.append(f"Step {step['seq']} — {step['name']} ({mixstr}): {shown}{more}")
-        bullets.append(
-            f"Mapped {b['mapped_count']} / {b['task_count']} tasks · {len(b['unmapped'])} unmapped"
-        )
-        section_slide(prs, theme, proc.name, bullets or ["No steps yet."])
     if not any_process:
         section_slide(prs, theme, "Workflows",
                       ["No workflows mapped yet — build them in the Workflow Mapper."])

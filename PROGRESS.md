@@ -601,3 +601,14 @@ deliverable_service.build_workflow_deck wrapper). Backend: workflow_service.expo
 GET /workflows/export.csv & /export.pptx; _board_task_payload gains `source`. Frontend: api
 exportWorkflowCsv/Pptx (authed blob) + toolbar buttons. **Tests:** +2. **Gate:** PASS — 138 backend
 tests + clean build; tsc clean; aligned.
+
+---
+
+## 2026-06-16 — Manual override from EXTRA rows + visual PPTX board (D33)
+
+(1) Manual AI override re-keyed to task_id so it's available on benchmark/EXTRA rows too (not just
+ai_score); POST /validation/manual-score {task_id, rating}; frontend dropdown on every model-inferred
+row with a task_id. (2) The finalized-workflow PPTX is now a VISUAL board (workflow_board_slide: step
+columns, task cards coloured by HAS band, arrows, paginated 4 cols/slide) used by both the deliverable
+and the Workflow Mapper PPTX export. **Tests:** manual-score from both rows + on board; export asserts
+board shapes. **Gate:** PASS — 138 backend tests + clean build; tsc clean; aligned.

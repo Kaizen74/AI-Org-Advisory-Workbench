@@ -178,16 +178,20 @@ async def review_items(session: AsyncSession, reviews: List[Dict]) -> Dict:
     return {"updated": updated, "crosswalks_created": crosswalks_created}
 
 
-async def set_manual_opportunity(session: AsyncSession, ai_score_id: str, rating: int) -> Optional[Dict]:
-    """Inline Validation-Queue override: set a consultant-approved AI opportunity for one ai_score from
-    a 1-5 rating. Returns the updated headline band (None if the score is missing)."""
-    score = await session.get(TaskAIScore, ai_score_id)
-    if score is None:
+async def set_manual_opportunity(session: AsyncSession, task_id: str, rating: int) -> Optional[Dict]:
+    """Inline Validation-Queue override: set a consultant-approved AI opportunity for a TASK from a
+    1-5 rating. Keyed by task_id so it works from either the ai_score or the 'no benchmark match'
+    (EXTRA) benchmark row. Creates the score row if the task was never AI-scored. None if no task."""
+    if await session.get(Task, task_id) is None:
         return None
+    score = await session.scalar(select(TaskAIScore).where(TaskAIScore.task_id == task_id))
+    if score is None:
+        score = TaskAIScore(task_id=task_id, source="consultant-approved", review_state="approved")
+        session.add(score)
     apply_manual_opportunity(score, rating)
     await session.flush()
     return {
-        "id": score.id,
+        "task_id": task_id,
         "human_agency_level": human_agency_band(score.has_level),
         "ai_opportunity_level": score.ai_opportunity_level,
         "zone": score.zone,

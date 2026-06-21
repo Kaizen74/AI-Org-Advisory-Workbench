@@ -32,12 +32,20 @@ async def test_export_csv_and_pptx(api_client, async_session, monkeypatch):
     for col in ("role", "human_agency_level", "zone", "ai_opportunity_level", "review_state", "source"):
         assert col in r0
 
-    # PPTX export: a valid Office/zip file.
+    # PPTX export: a valid Office/zip file that VISUALLY renders the process + step names as shapes.
     ppt = await api_client.get("/api/v1/workflows/export.pptx",
                                params={"engagement_id": eng_id, "dataset_id": ds_id})
     assert ppt.status_code == 200
     assert "presentationml" in ppt.headers["content-type"]
     assert ppt.content[:2] == b"PK"
+    import io as _io
+
+    from pptx import Presentation
+    prs = Presentation(_io.BytesIO(ppt.content))
+    texts = [sh.text_frame.text for s in prs.slides for sh in s.shapes if sh.has_text_frame]
+    blob = "\n".join(texts)
+    assert "Cargo" in blob and "Acceptance" in blob  # process + step drawn as board shapes
+    assert any(t.startswith("Mapped 2 / ") for t in texts)  # board footer summary
 
 
 async def test_export_csv_empty_when_nothing_mapped(api_client, async_session, monkeypatch):

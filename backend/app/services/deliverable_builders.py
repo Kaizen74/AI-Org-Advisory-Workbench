@@ -12,12 +12,19 @@ from docx.shared import Pt as DocxPt
 from docx.shared import RGBColor as DocxRGB
 from pptx import Presentation
 from pptx.dml.color import RGBColor
+from pptx.enum.shapes import MSO_SHAPE
 from pptx.util import Emu, Inches, Pt
 
 from .deliverable_theme import Theme
 
 SLIDE_W = Inches(13.333)  # 16:9
 SLIDE_H = Inches(7.5)
+
+# Human Agency Scale colours — mirror the Workflow Mapper UI so the deck reads the same.
+HAS_COLORS = {
+    "H0": "94A3B8", "H1": "2F8074", "H2": "5FB3A6",
+    "H3": "9FCABF", "H4": "CBD5E1", "H5": "E2E8F0",
+}
 
 
 def _rgb(hexstr: str) -> RGBColor:
@@ -151,6 +158,95 @@ def provenance_slide(prs: Presentation, theme: Theme, summary: dict) -> None:
     # Caveats as a second block on a fresh slide for readability.
     if summary.get("caveats"):
         section_slide(prs, theme, "Caveats", summary["caveats"])
+
+
+def _card_text(shape, theme: Theme, text: str, role: str, band: str) -> None:
+    tf = shape.text_frame
+    tf.word_wrap = True
+    tf.margin_left = Inches(0.08)
+    tf.margin_right = Inches(0.06)
+    tf.margin_top = Inches(0.04)
+    tf.margin_bottom = Inches(0.04)
+    p = tf.paragraphs[0]
+    r = p.add_run()
+    r.text = (text[:60] + "…") if len(text) > 60 else text
+    r.font.size = Pt(8.5)
+    r.font.name = theme.body_font
+    r.font.color.rgb = _rgb(theme.ink)
+    p2 = tf.add_paragraph()
+    r2 = p2.add_run()
+    r2.text = f"{role}  ·  {band}"
+    r2.font.size = Pt(7.5)
+    r2.font.name = theme.body_font
+    r2.font.color.rgb = _rgb(theme.muted)
+
+
+def workflow_board_slide(prs: Presentation, theme: Theme, name: str, value_stream: str,
+                         steps: Sequence[dict], mapped: int, total: int, unmapped: int,
+                         page: int = 1, pages: int = 1) -> None:
+    """Draw a process as a visual board: step columns of task cards (coloured by Human Agency band)
+    with arrows between steps — the deck mirror of the Workflow Mapper UI."""
+    slide = _blank(prs)
+    heading = name + (f"  ·  {value_stream}" if value_stream else "")
+    if pages > 1:
+        heading += f"   (steps {page}/{pages})"
+    _textbox(slide, Inches(0.5), Inches(0.45), Inches(12.3), Inches(0.8), heading,
+             size=24, color=theme.ink, font=theme.title_font)
+    _accent_rule(slide, theme, top=Inches(1.25), left=Inches(0.5), width=Inches(1.4))
+
+    if not steps:
+        _textbox(slide, Inches(0.5), Inches(2.0), Inches(11), Inches(0.6),
+                 "No steps yet — build them in the Workflow Mapper.", size=14, color=theme.muted,
+                 font=theme.body_font)
+        return
+
+    cols = len(steps)
+    left0, top0 = Inches(0.5), Inches(1.7)
+    gap = Inches(0.34)
+    colw = int((Inches(12.3) - gap * (cols - 1)) / cols)
+    header_h = Inches(0.5)
+    card_h, card_gap = Inches(0.66), Inches(0.12)
+    max_cards = 6
+
+    for i, step in enumerate(steps):
+        left = left0 + i * (colw + gap)
+        # step header
+        hdr = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, left, top0, colw, header_h)
+        hdr.fill.solid(); hdr.fill.fore_color.rgb = _rgb(theme.ink)
+        hdr.line.fill.background()
+        htf = hdr.text_frame; htf.word_wrap = True
+        hp = htf.paragraphs[0]; hr = hp.add_run()
+        hr.text = f"{step.get('seq', i + 1)}.  {step.get('name', '')}"
+        hr.font.size = Pt(11); hr.font.bold = True; hr.font.name = theme.title_font
+        hr.font.color.rgb = _rgb(theme.ground)
+        # arrow to the next step
+        if i < cols - 1:
+            arr = slide.shapes.add_shape(MSO_SHAPE.RIGHT_ARROW, left + colw + Emu(20000),
+                                         top0 + Inches(0.12), gap - Emu(40000), Inches(0.26))
+            arr.fill.solid(); arr.fill.fore_color.rgb = _rgb(theme.muted)
+            arr.line.fill.background()
+        # task cards
+        tasks = step.get("tasks", [])
+        y = top0 + header_h + Inches(0.12)
+        for t in tasks[:max_cards]:
+            band = t.get("human_agency_level", "H0")
+            card = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, left, y, colw, card_h)
+            card.fill.solid(); card.fill.fore_color.rgb = _rgb("FFFFFF")
+            card.line.color.rgb = _rgb(HAS_COLORS.get(band, "CBD5E1"))
+            card.line.width = Pt(1.5)
+            _card_text(card, theme, t.get("text", ""), t.get("role", ""), band)
+            y += card_h + card_gap
+        if not tasks:
+            _textbox(slide, left, y, colw, Inches(0.4), "(no tasks linked)",
+                     size=9, color=theme.muted, font=theme.body_font)
+        elif len(tasks) > max_cards:
+            _textbox(slide, left, y, colw, Inches(0.3), f"+{len(tasks) - max_cards} more",
+                     size=8, color=theme.muted, font=theme.body_font)
+
+    _textbox(slide, Inches(0.5), Inches(7.0), Inches(12), Inches(0.4),
+             f"Mapped {mapped} / {total} tasks  ·  {unmapped} unmapped   "
+             "·   colour = Human Agency (H0 robotics → H5 human-led)",
+             size=10, color=theme.muted, font=theme.body_font)
 
 
 def save_pptx(prs: Presentation) -> bytes:
