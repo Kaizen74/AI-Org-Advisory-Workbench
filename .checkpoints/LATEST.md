@@ -2,7 +2,8 @@
 **Updated:** 2026-06-16T12:50:00 (P7 + D13 + bugfixes D14–D16 + refocus D17; live deploy still pending Eric)
 **Phase:** P7 done + access-control (D13) + D14–D16 fixes + **D17 product refocus**. **All seven phases
 P0–P7 built; app is private and now centred on role→task→AI-potential (H0–H5).**
-**Last completed micro-task:** D34 — fixed AI-inference regression where large datasets showed every ai_score at H0/L0/NO_BENCHMARK_MATCH: infer_unmatched_potential sent ALL tasks in one Claude call at 2048 tokens → truncated JSON → 0 scores. Now batched (INFER_BATCH=12, max_tokens=3072, per-batch resilient). Inference test forces multi-batch. Gate GREEN (138 tests + build).
+**Last completed micro-task:** D35 — scalability review for large CSVs: raised max_tokens on extract (8192) and benchmark (4096) batch calls (they used the 2048 default → could silently drop tasks on big batches, like D34); IN-list limits confirmed non-issues (SQLite 250k/PG 65k); sequential-call latency mitigated by idempotent re-runnable steps. New test_pipeline_scale.py (25 tasks, multi-batch, nothing dropped + token budgets verified). Gate GREEN (139 tests + build).
+**Prior micro-task:** D34 — fixed AI-inference regression where large datasets showed every ai_score at H0/L0/NO_BENCHMARK_MATCH: infer_unmatched_potential sent ALL tasks in one Claude call at 2048 tokens → truncated JSON → 0 scores. Now batched (INFER_BATCH=12, max_tokens=3072, per-batch resilient). Inference test forces multi-batch. Gate GREEN (138 tests + build).
 **Prior micro-task:** D33 — (1) manual AI override re-keyed to task_id so it's available on benchmark/EXTRA rows too (POST /validation/manual-score {task_id,rating}; dropdown on every model-inferred row). (2) finalized-workflow PPTX is now a VISUAL board (workflow_board_slide: step columns + HAS-coloured task cards + arrows, 4 cols/slide), used by both the deliverable and the Workflow Mapper ↓PPTX export. Gate GREEN (138 tests + build).
 **Prior micro-task:** D32 — export the finalized workflow from the Workflow Mapper: '↓ CSV' (every mapped task→step→process: role/H-band/zone/level/source) + '↓ PPTX' (reuses D22's deck via deliverable_service.build_workflow_deck). Backend: workflow_service.export_workflow_csv + GET /workflows/export.csv & /export.pptx; _board_task_payload gains `source`. Frontend toolbar buttons + authed-blob api. Gate GREEN (138 tests + build).
 **Prior micro-task:** D31 — inline Validation-Queue manual override of AI opportunity for no-benchmark tasks: a 1–5 'Manual AI rating' dropdown on model-inferred ai_score rows → POST /validation/manual-score → consultant-approved (client-ready) via the shared apply_manual_opportunity mapping (also used by the CSV path). The override shows in the Workflow Mapper board (reads TaskAIScore). Gate GREEN (136 tests + build).
@@ -34,7 +35,7 @@ ai_score band; Task Intelligence headline chart+legend). L0–L3 kept internally
      wording corrections (actual Vercel/Railway button names) back into README §4.
   Optional follow-ups (additive): branch merge to `main` (then delete `legacy v1 app.zip` from main);
   expand audit UI; refine activator/L0-L3 rubrics if Eric supplies definitions.
-**Test status:** PASS — gate GREEN, **138 backend tests + clean frontend build**, zero regressions.
+**Test status:** PASS — gate GREEN, **139 backend tests + clean frontend build**, zero regressions.
 **Recovery commands:** `bash scripts/gate.sh`
 **Open questions for Eric:**
   1. **Live cloud deploy** needs your Vercel + Railway accounts connected to the GitHub repo — say

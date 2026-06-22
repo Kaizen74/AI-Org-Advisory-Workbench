@@ -618,3 +618,24 @@ Backend-only; the validation-queue / board / source-mix all light up again from 
 **Verification:** extended the rubric-inference test to force `INFER_BATCH=1` over 3 tasks (multi-batch)
 and assert all are updated to H2/GREEN_LIGHT; idempotent re-run still 0. Gate green — **138 backend tests
 + clean frontend build**, tsc clean, backend↔frontend aligned, zero regressions.
+
+## 2026-06-16 — D35: Pipeline scalability review for large client org CSVs
+
+**Source:** Eric — ensure the inference fix (and pipeline) scales for larger uploads.
+**Review findings + fixes:**
+- **Silent-truncation (the real risk), now fixed across all LLM steps:** the inference fix (D34) batched
+  + raised tokens, but `extract` and `benchmark` batch calls still used the DEFAULT 2048 max_tokens. With
+  ~40 items/batch their JSON could overflow → silently drop tasks/matches. Raised to `max_tokens=8192`
+  (extract; large per-position output) and `4096` (benchmark; one row/task). Inference stays batched
+  (INFER_BATCH=12 @ 3072, per-batch resilient).
+- **IN-list var limit: not a practical blocker.** Measured SQLite limit on this runtime = 250,000
+  (SQLite 3.45) and Postgres ~65k; realistic org task counts sit well under both, so `.in_(task_ids)`
+  lists are fine. (Noted as a ceiling only for extreme >65k-task datasets.)
+- **Latency ceiling (inherent):** all LLM steps run as sequential Claude calls inside one HTTP request,
+  so a very large org means a long-running request. Mitigation: every step is **idempotent / re-runnable**
+  (extract & score/benchmark delete-and-recreate; infer is rationale-tagged + idempotent), so a timeout
+  mid-run is safely resumed by re-running the pipeline. Documented; no architecture change needed now.
+**Verification:** new `test_pipeline_scale.py` — 25 tasks through multi-batch extract (batch_size=5) +
+inference (INFER_BATCH=5): asserts NOTHING is dropped (candidates==updated==25, all inferred, source_mix
+ai_inferred==25), and that the hardened token budgets are actually passed (extract≥8192, benchmark≥4096,
+infer≥3072). Gate green — **139 backend tests + clean frontend build**, tsc clean, zero regressions.

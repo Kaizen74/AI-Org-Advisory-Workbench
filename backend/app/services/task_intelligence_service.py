@@ -85,7 +85,8 @@ def _extract_batch(batch: List[Position]) -> List[Tuple[str, str]]:
     key_to_id = {p.employee_key: p.id for p in batch}
     prompt = _build_extract_prompt(batch)
     raw = claude_service.complete(
-        model=settings.MODEL_EXTRACT, messages=[{"role": "user", "content": prompt}]
+        model=settings.MODEL_EXTRACT, max_tokens=8192,  # batches of positions → large JSON output
+        messages=[{"role": "user", "content": prompt}],
     )
     data = parse_ai_json(raw)
     out: List[Tuple[str, str]] = []
@@ -189,7 +190,7 @@ def _build_benchmark_prompt(batch: List[Task], grounding: List[Dict]) -> str:
 
 def _benchmark_batch(batch: List[Task], grounding: List[Dict]) -> List[Dict]:
     raw = claude_service.complete(
-        model=settings.MODEL_EXTRACT,
+        model=settings.MODEL_EXTRACT, max_tokens=4096,  # one row per task → keep within the budget
         messages=[{"role": "user", "content": _build_benchmark_prompt(batch, grounding)}],
     )
     return parse_ai_json(raw).get("benchmarks", [])

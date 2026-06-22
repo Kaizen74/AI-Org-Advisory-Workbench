@@ -621,3 +621,14 @@ Regression: large datasets showed all ai_score rows at H0/L0/NO_BENCHMARK_MATCH 
 infer_unmatched_potential made one Claude call at 2048 tokens → truncated JSON → 0 parsed scores.
 Fixed by batching (INFER_BATCH=12, max_tokens=3072, per-batch resilient). Extended the inference test to
 force multi-batch. **Gate:** PASS — 138 backend tests + clean build; tsc clean; aligned.
+
+---
+
+## 2026-06-16 — Pipeline scalability hardening (D35)
+
+Reviewed the pipeline for large org CSVs. Raised max_tokens on the extract (8192) and benchmark (4096)
+batch Claude calls — they previously used the 2048 default and could silently truncate/drop tasks on big
+batches (same class as the D34 inference bug). Confirmed IN-list limits are non-issues (SQLite 250k /
+Postgres 65k). Noted the sequential-call latency ceiling is mitigated by idempotent re-runnable steps.
+**Tests:** test_pipeline_scale.py (25 tasks, multi-batch, nothing dropped + token budgets verified).
+**Gate:** PASS — 139 backend tests + clean build; tsc clean.
