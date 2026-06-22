@@ -643,3 +643,12 @@ band comes solely from benchmark/inference/manual override. De-duplicated the tw
 kept the task-id "Local desire" card in Task Intelligence (covers all tasks), removed the redundant
 "Local desire pulse" card from the Validation Queue (backend kept). **Tests:** test_desirability rewritten
 (desire set, band untouched, shows on board). **Gate:** PASS — 139 backend tests + clean build; tsc clean.
+
+---
+
+## 2026-06-16 — Manual override resolves the whole task (D37)
+
+A no-benchmark task shows as a benchmark (EXTRA) row + an ai_score row. The manual rating only marked the
+ai_score approved, so the benchmark row lingered. set_manual_opportunity now also marks the task's
+benchmark row(s) reviewed, so the whole task leaves the queue. **Test:** manual-score asserts no queue
+rows remain for the task. **Gate:** PASS — 139 backend tests + clean build; tsc clean.

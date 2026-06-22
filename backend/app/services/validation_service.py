@@ -181,7 +181,8 @@ async def review_items(session: AsyncSession, reviews: List[Dict]) -> Dict:
 async def set_manual_opportunity(session: AsyncSession, task_id: str, rating: int) -> Optional[Dict]:
     """Inline Validation-Queue override: set a consultant-approved AI opportunity for a TASK from a
     1-5 rating. Keyed by task_id so it works from either the ai_score or the 'no benchmark match'
-    (EXTRA) benchmark row. Creates the score row if the task was never AI-scored. None if no task."""
+    (EXTRA) benchmark row. Creates the score row if the task was never AI-scored. None if no task.
+    Also resolves the task's benchmark review item(s) so the WHOLE task leaves the queue consistently."""
     if await session.get(Task, task_id) is None:
         return None
     score = await session.scalar(select(TaskAIScore).where(TaskAIScore.task_id == task_id))
@@ -189,6 +190,14 @@ async def set_manual_opportunity(session: AsyncSession, task_id: str, rating: in
         score = TaskAIScore(task_id=task_id, source="consultant-approved", review_state="approved")
         session.add(score)
     apply_manual_opportunity(score, rating)
+    # The task also has a benchmark review row (e.g. EXTRA → no match). The consultant has now resolved
+    # the task's AI opportunity by hand, so mark that benchmark reviewed too — otherwise the same task
+    # lingers in the queue via its benchmark row. (EXTRA/MISSING have no match → no crosswalk learned.)
+    for b in await session.scalars(select(TaskBenchmark).where(TaskBenchmark.task_id == task_id)):
+        if b.review_state == "unreviewed":
+            b.review_state = "edited"
+            if hasattr(b, "reviewed_at"):
+                b.reviewed_at = datetime.utcnow()
     await session.flush()
     return {
         "task_id": task_id,

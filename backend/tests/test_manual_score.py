@@ -77,6 +77,11 @@ async def test_manual_score_sets_consultant_opportunity_and_shows_on_board(
                                json={"task_id": bench["task_id"], "rating": 1})
     assert r2.status_code == 200 and r2.json()["human_agency_level"] == "H5"
 
+    # The WHOLE task now leaves the queue — both its ai_score AND its benchmark (EXTRA) row are
+    # resolved (previously the benchmark row lingered after a manual rating).
+    q2 = (await api_client.get("/api/v1/validation/queue", params={"dataset_id": ds})).json()
+    assert all(i["task_id"] != ai["task_id"] for i in q2["items"])
+
     # Guards.
     assert (await api_client.post("/api/v1/validation/manual-score",
                                   json={"task_id": "nope", "rating": 3})).status_code == 404

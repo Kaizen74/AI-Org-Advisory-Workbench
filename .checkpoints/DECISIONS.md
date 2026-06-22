@@ -663,3 +663,17 @@ AI-opportunity LANDSCAPE.
 the band UNTOUCHED (still NO_BENCHMARK_MATCH/H0/model-inferred/unreviewed), desire shows on the board
 landscape (desire_score) with H0 band; manual-override + pulse backend tests still green. Gate green —
 **139 backend tests + clean frontend build**, tsc clean, zero regressions.
+
+## 2026-06-16 — D37: Manual AI override resolves the whole task (benchmark EXTRA row stops lingering)
+
+**Source:** Eric — setting a manual AI rating on a benchmark/EXTRA row didn't remove it from the queue,
+whereas the ai_score H0/L0 row disappeared. Inconsistent.
+**Cause:** a no-benchmark task appears as TWO queue rows — a `benchmark` (EXTRA, unreviewed) and an
+`ai_score` (unreviewed). `set_manual_opportunity` marked only the ai_score approved (drops out); the
+benchmark row stayed `unreviewed` → lingered.
+**Fix (correct behaviour):** `set_manual_opportunity` now also marks the task's `TaskBenchmark` review
+row(s) `edited` (reviewed_at set) when resolving, so the WHOLE task leaves the "needs review" queue
+consistently. EXTRA/MISSING benchmarks have no taxonomy match → no crosswalk is learned (safe). If a real
+taxonomy is later loaded and re-benchmarked, fresh unreviewed rows reappear as expected.
+**Verification:** manual-score test now asserts no queue rows remain for the task (both ai_score AND
+benchmark resolved). Gate green — **139 backend tests + clean frontend build**, tsc clean, zero regressions.
