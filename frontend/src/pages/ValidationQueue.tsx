@@ -16,10 +16,9 @@ function SourceBadge({ source }: { source?: string | null }) {
 
 export default function ValidationQueue({
   datasetId,
-  engagementId,
 }: {
   datasetId: string | null;
-  engagementId: string | null;
+  engagementId?: string | null;
 }) {
   const [items, setItems] = useState<QueueItem[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -75,16 +74,6 @@ export default function ValidationQueue({
           (r.crosswalks_created ? `, learned ${r.crosswalks_created} crosswalk(s).` : "."),
       );
       await load();
-    } catch (e) {
-      setError(String((e as Error).message ?? e));
-    }
-  }
-
-  async function importPulse(file: File) {
-    if (!engagementId || !datasetId) return;
-    try {
-      const r = await api.pulseImport(engagementId, datasetId, file);
-      setNote(`Imported ${r.responses_stored} responses; updated ${r.scores_updated} local scores.`);
     } catch (e) {
       setError(String((e as Error).message ?? e));
     }
@@ -197,37 +186,6 @@ export default function ValidationQueue({
               </tbody>
             </table>
           </>
-        )}
-      </Card>
-
-      <Card title="Local desire pulse">
-        {!datasetId ? (
-          <Empty message="Open a dataset from Engagements first." />
-        ) : (
-          <div className="space-y-3 text-sm">
-            <button
-              onClick={() =>
-                api.downloadPulseInstrument(datasetId).catch((e) =>
-                  setError(String((e as Error).message ?? e)),
-                )
-              }
-              className="inline-block rounded-md border border-slate-300 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-100"
-            >
-              Download instrument (.xlsx)
-            </button>
-            <label className="block">
-              <span className="text-slate-600">Import filled responses (CSV or xlsx)</span>
-              <input
-                type="file"
-                accept=".csv,.xlsx"
-                onChange={(e) => e.target.files?.[0] && importPulse(e.target.files[0])}
-                className="mt-1 block w-full text-sm"
-              />
-            </label>
-            <p className="text-xs text-slate-400">
-              Local desire is stored separately and never overwrites the WORKBank US score.
-            </p>
-          </div>
         )}
       </Card>
     </div>

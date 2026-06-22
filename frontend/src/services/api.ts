@@ -252,7 +252,7 @@ export const api = {
   applyDesirability: (datasetId: string, file: File) => {
     const form = new FormData();
     form.append("file", file);
-    return request<{ applied: number; desire_only: number; skipped: number }>(
+    return request<{ updated: number; skipped: number }>(
       `/task-intel/desirability?dataset_id=${encodeURIComponent(datasetId)}`,
       { method: "POST", body: form },
     );

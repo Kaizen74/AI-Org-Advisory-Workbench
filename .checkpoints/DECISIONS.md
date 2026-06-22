@@ -639,3 +639,27 @@ and assert all are updated to H2/GREEN_LIGHT; idempotent re-run still 0. Gate gr
 inference (INFER_BATCH=5): asserts NOTHING is dropped (candidates==updated==25, all inferred, source_mix
 ai_inferred==25), and that the hardened token budgets are actually passed (extract≥8192, benchmark≥4096,
 infer≥3072). Gate green — **139 backend tests + clean frontend build**, tsc clean, zero regressions.
+
+## 2026-06-16 — D36: Separate local desire from AI opportunity; de-duplicate the two desire cards
+
+**Source:** Eric — (1) is "Local desirability" a duplicate of "Local desire pulse"? (2) local desire must
+NOT affect the AI-opportunity assessment (benchmark/inferred/manual override) — it should only feed the
+AI-opportunity LANDSCAPE.
+**Findings + fixes:**
+- **Conceptual bug (D30):** `apply_local_desirability` set a CONSULTANT-APPROVED AI-opportunity band from
+  the desire rating — conflating *desire* (preference) with *AI opportunity* (feasibility). Rewritten to
+  set **only `desire_score_local`** (the landscape's desire axis); it no longer touches
+  has_level/zone/L0–L3/source/review_state. The AI-opportunity band now comes solely from the benchmark,
+  Claude inference, or the explicit Validation-Queue manual override. `desire_score_us` still never touched.
+  Return shape `{updated, skipped}` (was `{applied, desire_only, skipped}`). Template now lists ALL tasks
+  (desire applies to any task), default `only_unscored=False`.
+- **Duplicate:** both the Task-Intelligence "Local desirability" card and the Validation-Queue "Local
+  desire pulse" card uploaded local desire. Consolidated to ONE: kept the task-id-keyed "Local desire"
+  card in Task Intelligence (works for ALL tasks incl. no-benchmark — the pulse's task_ref keying missed
+  those), and **removed the redundant pulse card from the Validation Queue** (pulse backend + tests kept).
+  Clean separation now: Task Intelligence = desire capture (landscape); Validation Queue = AI-opportunity
+  review + manual override.
+**Verification:** test_desirability rewritten — apply sets desire_score_local (5→1.0, 1→0.0) and leaves
+the band UNTOUCHED (still NO_BENCHMARK_MATCH/H0/model-inferred/unreviewed), desire shows on the board
+landscape (desire_score) with H0 band; manual-override + pulse backend tests still green. Gate green —
+**139 backend tests + clean frontend build**, tsc clean, zero regressions.

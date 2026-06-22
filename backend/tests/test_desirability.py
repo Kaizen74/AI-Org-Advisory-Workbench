@@ -68,7 +68,7 @@ async def test_template_lists_unbenchmarked_then_apply_sets_consultant_opportuni
 
     res = await api_client.post("/api/v1/task-intel/desirability", params={"dataset_id": ds},
                                 files={"file": ("d.csv", out.getvalue().encode(), "text/csv")})
-    assert res.status_code == 200 and res.json()["applied"] == 2
+    assert res.status_code == 200 and res.json()["updated"] == 2
 
     scores = {(await async_session.get(Task, s.task_id)).task_text: s
               for s in await async_session.scalars(select(TaskAIScore))}
@@ -77,13 +77,20 @@ async def test_template_lists_unbenchmarked_then_apply_sets_consultant_opportuni
               for s in await async_session.scalars(select(TaskAIScore))}
     copy = scores["Write copy for digital content"]
     comms = scores["Oversee internal communications"]
-    assert copy.source == "consultant-approved" and copy.review_state == "approved"
-    assert copy.has_level == 1 and copy.zone == "GREEN_LIGHT"      # 5=automate → H1
-    assert copy.desire_score_local == 1.0
-    assert comms.has_level == 5 and comms.zone == "RED_LIGHT"      # 1=keep human → H5
-    assert comms.desire_score_local == 0.0
+    # Local desire IS set (feeds the landscape's desire axis): 5→1.0, 1→0.0.
+    assert copy.desire_score_local == 1.0 and comms.desire_score_local == 0.0
+    # ...but the AI-opportunity band is UNTOUCHED — still the unscored/no-benchmark state, NOT
+    # consultant-approved (separation of desire from AI opportunity).
+    assert copy.has_level is None and copy.zone == "NO_BENCHMARK_MATCH"
+    assert copy.source == "model-inferred" and copy.review_state == "unreviewed"
+    assert comms.has_level is None and comms.review_state == "unreviewed"
+    assert copy.desire_score_us is None and comms.desire_score_us is None  # US never touched (A4)
 
-    # Now client-ready: the queue no longer shows them as unreviewed model-inferred.
-    q = (await api_client.get("/api/v1/validation/queue", params={"dataset_id": ds})).json()
-    ai = [i for i in q["items"] if i["kind"] == "ai_score"]
-    assert all(i["review_state"] == "approved" for i in ai)
+    # The desire shows on the board (landscape desire axis), band still H0.
+    proc = (await api_client.post("/api/v1/workflows",
+            json={"engagement_id": eng, "name": "P"})).json()
+    board = (await api_client.get(f"/api/v1/workflows/{proc['id']}/board",
+                                  params={"dataset_id": ds})).json()
+    bt = {t["text"]: t for t in board["unmapped"]}
+    assert bt["Write copy for digital content"]["desire_score"] == 1.0
+    assert bt["Write copy for digital content"]["human_agency_level"] == "H0"

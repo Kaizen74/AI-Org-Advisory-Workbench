@@ -632,3 +632,14 @@ batches (same class as the D34 inference bug). Confirmed IN-list limits are non-
 Postgres 65k). Noted the sequential-call latency ceiling is mitigated by idempotent re-runnable steps.
 **Tests:** test_pipeline_scale.py (25 tasks, multi-batch, nothing dropped + token budgets verified).
 **Gate:** PASS — 139 backend tests + clean build; tsc clean.
+
+---
+
+## 2026-06-16 — Separate local desire from AI opportunity; de-dup desire cards (D36)
+
+Fixed a conceptual conflation: apply_local_desirability (D30) had set a consultant-approved AI band from
+the desire rating. Now it sets ONLY desire_score_local (the landscape desire axis); the AI-opportunity
+band comes solely from benchmark/inference/manual override. De-duplicated the two desire uploads:
+kept the task-id "Local desire" card in Task Intelligence (covers all tasks), removed the redundant
+"Local desire pulse" card from the Validation Queue (backend kept). **Tests:** test_desirability rewritten
+(desire set, band untouched, shows on board). **Gate:** PASS — 139 backend tests + clean build; tsc clean.

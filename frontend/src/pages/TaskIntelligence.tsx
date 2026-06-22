@@ -104,11 +104,13 @@ export default function TaskIntelligence({
         )}
       </Card>
 
-      <Card title="Local desirability (manual scoring for tasks with no benchmark)">
+      <Card title="Local desire (worker preference — feeds the AI-opportunity landscape)">
         <p className="mb-3 text-xs text-slate-500">
-          When a task has no valid benchmark, score it by hand. Download the template (it lists those
+          Capture how much the workforce wants each task automated. Download the template (it lists the
           tasks, pre-keyed by id — no need to match the org CSV), fill <b>desire_rating</b> (1 = keep
-          human … 5 = automate), and re-upload. These become consultant-approved (client-ready) H-bands.
+          human … 5 = automate), and re-upload. This only sets the <b>desire axis of the AI-opportunity
+          landscape</b>; it does <b>not</b> change the AI-opportunity band — that comes from the
+          benchmark, AI inference, or the manual override in the Validation Queue.
         </p>
         <div className="flex flex-wrap items-center gap-2">
           <Button
@@ -138,7 +140,7 @@ export default function TaskIntelligence({
                 setError("");
                 try {
                   const r = await api.applyDesirability(datasetId, file);
-                  setNote(`Applied ${r.applied} manual score(s); ${r.desire_only} desire-only; ${r.skipped} skipped.`);
+                  setNote(`Set local desire on ${r.updated} task(s); ${r.skipped} skipped.`);
                   setRollup(await api.rollup(datasetId));
                 } catch (err) {
                   setError(String((err as Error).message ?? err));
