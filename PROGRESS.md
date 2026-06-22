@@ -652,3 +652,13 @@ A no-benchmark task shows as a benchmark (EXTRA) row + an ai_score row. The manu
 ai_score approved, so the benchmark row lingered. set_manual_opportunity now also marks the task's
 benchmark row(s) reviewed, so the whole task leaves the queue. **Test:** manual-score asserts no queue
 rows remain for the task. **Gate:** PASS — 139 backend tests + clean build; tsc clean.
+
+---
+
+## 2026-06-16 — Hide non-actionable EXTRA benchmark rows from the queue (D38)
+
+A no-benchmark task showed two rows (EXTRA benchmark + ai_score); EXTRA rows aren't approvable and
+lingered confusingly. get_queue now lists only MATCHED benchmark rows; each no-benchmark task shows a
+single ai_score row (with the rating) that disappears when rated. "No benchmark match" is still shown via
+the ai_score zone + Benchmark-coverage card. **Test:** test_manual_score asserts no EXTRA rows listed +
+task resolves. **Gate:** PASS — 139 backend tests + clean build; tsc clean.

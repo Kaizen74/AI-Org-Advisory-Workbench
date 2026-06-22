@@ -54,13 +54,17 @@ async def get_queue(
     items: List[Dict] = []
     task_ids = await _dataset_task_ids(session, dataset_id) if dataset_id else None
 
-    # Benchmarks
+    # Benchmarks — only MATCHED ones are actionable review items (approving one curates a crosswalk).
+    # EXTRA/MISSING ("no benchmark match") aren't approvable and would otherwise double every
+    # no-benchmark task with a noisy, non-resolvable row — the task's ai_score row already carries the
+    # reviewable AI opportunity (+ the manual-rating override). So they are not listed here.
     bstmt = select(TaskBenchmark)
     if task_ids is not None:
         bstmt = bstmt.where(TaskBenchmark.task_id.in_(task_ids))
     benchmarks = [
         b for b in await session.scalars(bstmt)
-        if (include_reviewed or b.review_state == "unreviewed") and _below(b.confidence, max_confidence)
+        if b.status == "MATCHED"
+        and (include_reviewed or b.review_state == "unreviewed") and _below(b.confidence, max_confidence)
     ]
 
     # AI scores

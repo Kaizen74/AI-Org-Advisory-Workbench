@@ -677,3 +677,21 @@ consistently. EXTRA/MISSING benchmarks have no taxonomy match → no crosswalk i
 taxonomy is later loaded and re-benchmarked, fresh unreviewed rows reappear as expected.
 **Verification:** manual-score test now asserts no queue rows remain for the task (both ai_score AND
 benchmark resolved). Gate green — **139 backend tests + clean frontend build**, tsc clean, zero regressions.
+
+## 2026-06-16 — D38: Stop listing non-actionable EXTRA benchmark rows in the validation queue
+
+**Source:** Eric (repeat) — rating a benchmark/EXTRA row doesn't remove it, unlike the H0/L0 ai_score row.
+**Diagnosis:** Two layers. (a) D37 already makes a manual rating resolve the task's benchmark row too
+(verified green). (b) The deeper issue is the **double-row presentation**: a no-benchmark task showed both
+a `benchmark` (EXTRA) row and an `ai_score` row, and EXTRA/MISSING benchmarks aren't actionable review
+items (approving a non-match curates no crosswalk) — so they were confusing noise.
+**Fix:** `get_queue` now lists only **MATCHED** benchmark rows (the approvable ones that curate a
+crosswalk). EXTRA/MISSING are excluded, so each no-benchmark task shows a SINGLE reviewable `ai_score`
+row carrying the manual-rating dropdown, which disappears when rated. The "no benchmark match" signal is
+still surfaced by the ai_score zone (NO_BENCHMARK_MATCH) and the Task-Intelligence Benchmark-coverage
+card. Kept D37 (resolve-together) as belt-and-suspenders. Frontend unchanged (the dropdown condition
+already targets model-inferred ai_score rows; MATCHED benchmarks use the approve checkbox).
+**Verification:** test_manual_score updated — asserts NO benchmark rows are listed for an all-EXTRA
+dataset, the single ai_score row resolves on rating, and the task leaves the queue. Validation/pulse
+tests (MATCHED benchmarks) still green. Gate green — **139 backend tests + clean frontend build**, tsc
+clean, zero regressions.

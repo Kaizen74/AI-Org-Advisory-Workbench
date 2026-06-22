@@ -43,13 +43,12 @@ async def test_manual_score_sets_consultant_opportunity_and_shows_on_board(
     await api_client.post("/api/v1/task-intel/benchmark", params={"dataset_id": ds})
     await api_client.post("/api/v1/task-intel/ai-opportunity", params={"dataset_id": ds})
 
-    # The queue shows the no-benchmark ai_score row AND a benchmark EXTRA row for the same task —
-    # both now carry a task_id so the manual override is reachable from either.
+    # A no-benchmark task shows as a SINGLE reviewable ai_score row — the non-actionable EXTRA
+    # benchmark row is no longer listed (it can't be approved into a crosswalk).
     q = (await api_client.get("/api/v1/validation/queue", params={"dataset_id": ds})).json()
     ai = next(i for i in q["items"] if i["kind"] == "ai_score")
-    bench = next(i for i in q["items"] if i["kind"] == "benchmark")
-    assert "NO_BENCHMARK_MATCH" in ai["label"] and ai["review_state"] == "unreviewed"
-    assert ai["task_id"] and bench["task_id"]
+    assert not any(i["kind"] == "benchmark" for i in q["items"])  # EXTRA rows hidden
+    assert "NO_BENCHMARK_MATCH" in ai["label"] and ai["review_state"] == "unreviewed" and ai["task_id"]
 
     # Inline override (keyed by task_id): rate 5 (=automate) -> H1/GREEN_LIGHT, consultant-approved.
     r = await api_client.post("/api/v1/validation/manual-score",
@@ -59,7 +58,6 @@ async def test_manual_score_sets_consultant_opportunity_and_shows_on_board(
     assert body["human_agency_level"] == "H1" and body["zone"] == "GREEN_LIGHT"
     assert body["review_state"] == "approved" and body["source"] == "consultant-approved"
 
-    score = await async_session.get(TaskAIScore, ai["id"])
     async_session.expire_all()
     score = await async_session.get(TaskAIScore, ai["id"])
     assert score.has_level == 1 and score.review_state == "approved"
@@ -72,13 +70,7 @@ async def test_manual_score_sets_consultant_opportunity_and_shows_on_board(
     t = next(x for x in board["unmapped"] if x["id"] == ai["task_id"])
     assert t["human_agency_level"] == "H1" and t["zone"] == "GREEN_LIGHT" and t["review_state"] == "approved"
 
-    # The same override is reachable from the benchmark (EXTRA) row of that task (same task_id).
-    r2 = await api_client.post("/api/v1/validation/manual-score",
-                               json={"task_id": bench["task_id"], "rating": 1})
-    assert r2.status_code == 200 and r2.json()["human_agency_level"] == "H5"
-
-    # The WHOLE task now leaves the queue — both its ai_score AND its benchmark (EXTRA) row are
-    # resolved (previously the benchmark row lingered after a manual rating).
+    # The task is fully resolved — it (and its hidden benchmark row) leave the queue.
     q2 = (await api_client.get("/api/v1/validation/queue", params={"dataset_id": ds})).json()
     assert all(i["task_id"] != ai["task_id"] for i in q2["items"])
 
