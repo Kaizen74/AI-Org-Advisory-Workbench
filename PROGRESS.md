@@ -612,3 +612,12 @@ row with a task_id. (2) The finalized-workflow PPTX is now a VISUAL board (workf
 columns, task cards coloured by HAS band, arrows, paginated 4 cols/slide) used by both the deliverable
 and the Workflow Mapper PPTX export. **Tests:** manual-score from both rows + on board; export asserts
 board shapes. **Gate:** PASS — 138 backend tests + clean build; tsc clean; aligned.
+
+---
+
+## 2026-06-16 — Fix AI-inference truncation on large datasets (D34)
+
+Regression: large datasets showed all ai_score rows at H0/L0/NO_BENCHMARK_MATCH because
+infer_unmatched_potential made one Claude call at 2048 tokens → truncated JSON → 0 parsed scores.
+Fixed by batching (INFER_BATCH=12, max_tokens=3072, per-batch resilient). Extended the inference test to
+force multi-batch. **Gate:** PASS — 138 backend tests + clean build; tsc clean; aligned.

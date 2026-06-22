@@ -408,6 +408,7 @@ async def score_ai_opportunity(session: AsyncSession, dataset_id: str) -> Dict:
 # AI potential. The curated overlay always takes precedence; these inferred scores are tagged
 # `model-inferred` + `unreviewed`, so they are export-blocked until a consultant approves them (M6).
 _HAS_INFERENCE_MARKER = "HUMAN AGENCY SCALE BENCHMARK"
+INFER_BATCH = 12  # tasks per Claude inference call — keeps the JSON response within max_tokens
 
 
 def _build_inference_prompt(payload: List[Dict]) -> str:
@@ -460,10 +461,20 @@ async def infer_unmatched_potential(session: AsyncSession, dataset_id: str) -> D
         return {"dataset_id": dataset_id, "candidates": 0, "updated": 0, "caveats": STANDARD_CAVEATS}
 
     payload = [{"task_id": tid, "task_text": by_task[tid].task_text} for tid in scores]
-    raw = claude_service.complete(
-        model=settings.MODEL_SYNTH, messages=[{"role": "user", "content": _build_inference_prompt(payload)}]
-    )
-    results = parse_ai_json(raw).get("scores", [])
+    # Batch the inference: one Claude call over ALL tasks overflows max_tokens for large datasets,
+    # truncating the JSON so nothing parses (every row would stay H0/L0). Chunk it and be resilient —
+    # a single bad batch must not zero the rest.
+    results: List[Dict] = []
+    for i in range(0, len(payload), INFER_BATCH):
+        chunk = payload[i:i + INFER_BATCH]
+        try:
+            raw = claude_service.complete(
+                model=settings.MODEL_SYNTH, max_tokens=3072,
+                messages=[{"role": "user", "content": _build_inference_prompt(chunk)}],
+            )
+            results.extend(parse_ai_json(raw).get("scores", []) or [])
+        except Exception:  # noqa: BLE001 — a malformed batch shouldn't abort the others
+            continue
 
     updated = 0
     for item in results:

@@ -602,3 +602,19 @@ columns/cards), not bullet lists.
 row (task_id), confirms it shows on the board; export test opens the pptx and asserts the process/step
 names + footer are rendered as board shapes. Gate green — **138 backend tests + clean frontend build**,
 tsc clean, backend↔frontend aligned, zero regressions.
+
+## 2026-06-16 — D34: Fix AI-inference regression on large datasets (batch the HAS inference)
+
+**Source:** Eric — every ai_score row now shows H0/L0/NO_BENCHMARK_MATCH (conf 0) instead of the
+model-inferred HAS bands with confidence the previous version produced.
+**Root cause:** `infer_unmatched_potential` sent ALL unmatched tasks in ONE Claude call at the default
+2048 max_tokens. For a large marketing dataset (~30+ unmatched tasks) the JSON response overflowed and
+truncated, so `parse_ai_json` returned no `scores` → 0 updates → every row stayed at the raw
+`score_ai_opportunity` output (H0/L0/NO_BENCHMARK_MATCH). Worked before only because earlier datasets
+were small enough to fit one response.
+**Fix:** batch the inference — `INFER_BATCH = 12` tasks per call at `max_tokens=3072`, accumulate results
+across batches, and wrap each batch in try/except so a single malformed batch can't zero the rest.
+Backend-only; the validation-queue / board / source-mix all light up again from the inferred scores.
+**Verification:** extended the rubric-inference test to force `INFER_BATCH=1` over 3 tasks (multi-batch)
+and assert all are updated to H2/GREEN_LIGHT; idempotent re-run still 0. Gate green — **138 backend tests
++ clean frontend build**, tsc clean, backend↔frontend aligned, zero regressions.

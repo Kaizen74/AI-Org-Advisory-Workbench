@@ -95,8 +95,10 @@ def _infer_ai(*, model, max_tokens=2048, messages):  # noqa: ARG001
 async def test_infer_unmatched_potential_via_rubric(api_client, async_session, monkeypatch):
     """Robust benchmarking: tasks with no curated match are scored via the WORKBank HAS rubric,
     tagged model-inferred + unreviewed (export-blocked). Idempotent + needs a key."""
+    from app.services import task_intelligence_service as _tis
     monkeypatch.setattr(type(claude_service), "has_api_key", property(lambda self: True))
     monkeypatch.setattr(claude_service, "complete", _infer_ai)
+    monkeypatch.setattr(_tis, "INFER_BATCH", 1)  # force multiple batches (regression: D34 truncation)
     await load_taxonomies(async_session)
     c = await api_client.post("/api/v1/engagements/clients", json={"name": "GM"})
     e = await api_client.post("/api/v1/engagements",
@@ -104,7 +106,7 @@ async def test_infer_unmatched_potential_via_rubric(api_client, async_session, m
     eng = e.json()["id"]
     csv = (
         "Name,Job Title,Grade,Department,Level,Line Manager,Salary,Employee ID,Work Activities\n"
-        "Ann,Head of Content,H5,Marketing,1,Top,300000,E1,Develop content strategy; Oversee press releases\n"
+        "Ann,Head of Content,H5,Marketing,1,Top,300000,E1,Develop content strategy; Oversee press releases; Write copy\n"
     )
     ds = (await api_client.post(f"/api/v1/engagements/{eng}/datasets",
           files={"file": ("o.csv", csv.encode(), "text/csv")})).json()["id"]
