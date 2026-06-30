@@ -87,6 +87,40 @@ inspector) over new additive endpoints `GET /workflows/{id}/board`, `POST .../mo
 persisted fields + headline `human_agency_level` (H0–H5, L0–L3 secondary) + the HAS rubric. **Gate
 GREEN: 121 backend tests + clean frontend build, zero regressions.**
 
+**Deliverables + robust benchmarking + real WORKBank + Mapper polish (2026-06-16 — D21–D42):**
+a large additive run, all on branch `claude/compassionate-knuth-wx5bjq`. Highlights: (D21) dropped the
+scenario deck — `SHOW_SIMULATION` centralized in `src/config.ts` (currently **false**). (D22/D32/D33)
+the **Finalized-Workflow deliverable** (`PPTX_WORKFLOW`) + Workflow-Mapper `↓CSV`/`↓PPTX` export
+(`/workflows/export.csv|.pptx`, `build_workflow_deck`, `export_workflow_csv`); the deck is now a VISUAL
+board (step columns, HAS-coloured task cards, arrows). (D23/D30) delete client/engagement/dataset and
+process/step (cascade), reset-board, and a new `NO_BENCHMARK_MATCH` zone distinct from
+`ROBOTICS_GSE_LEVER` (stop mislabelling unmatched knowledge work as robotics). (D24–D29) **robust AI
+benchmarking** — unmatched tasks scored by Claude grounded in the WORKBank HAS rubric
+(`infer_unmatched_potential`, `POST /task-intel/infer-potential`; model-inferred → export-blocked) +
+benchmark `source_mix` transparency. (D26–D29) the **real WORKBank overlay** embedded
+(`workbank_overlay.curated.json`, 104 occupations, built via the hardened `workbank_ingest` converter;
+raw dataset git-ignored). (D31/D33/D36–D38) Validation-Queue **inline manual AI override** (1–5 →
+`consultant-approved`, keyed by `task_id`, resolves the whole task; local desire feeds only the
+landscape, never the AI band; queue lists only actionable MATCHED rows). (D34–D35) **scalability fixes**
+— batched HAS inference (`INFER_BATCH=12`) + raised token budgets so large CSVs aren't truncated to
+H0/L0. (D39–D42) Mapper UX — optimistic queue removal + "Show reviewed" audit view, a Refresh button,
+a **"Reviewed only" filter** that drives the analysis, the Landscape plots capability-scored tasks even
+without desire, an explicit AI-Opportunity-Index formula, and a **role-based Roll-up** (impacted roles
++ cumulative org implications). All additive; PAX baseline still **LOCKED (D9): 64 / 34 / 53.1% /
+6,620,000 / 6.** **Gate GREEN: 140 backend tests + clean frontend build, zero regressions.**
+
+**Full-build verification + alignment pass (2026-06-30):** ran the complete regression gate from a
+clean environment (fresh `.venv` + `npm install`) — **140/140 backend tests pass, frontend builds with
+zero TypeScript errors.** PAX baseline parity re-confirmed (64 / 34 / 53.1% / $6,620,000 / 6 layers);
+app boots with lifespan + the D13 auth gate active (401 without token). **Backend↔frontend API
+alignment audited:** every `services/api.ts` call maps to a real backend route with matching method and
+response shape (`{count,items}`, `{steps}`, `{deliverables}`, `ProcessInfo[]`, etc.); frontend `types`
+mirror the schemas. Backend routes intentionally **not** surfaced in the UI (no misalignment, all known
+/ optional): `GET /deliverables/types`, `GET /validation/stats`, `GET /transition/register`,
+`GET /engagements/{id}`, `DELETE /engagements/{id}/real-names` (UI exposes full purge only), and
+`GET /audit` (audit UI is the documented optional follow-up). No code changes this session — pure
+verification + this summary reconciliation.
+
 ---
 
 # PART A — OPERATING PROTOCOL FOR CLAUDE CODE (MANDATORY)
