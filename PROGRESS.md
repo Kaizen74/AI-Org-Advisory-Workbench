@@ -690,3 +690,13 @@ Replaced the lone 'Unreviewed only' toggle with a 3-way Review filter (All/Revie
 that now drives the analysis: the AI Opportunity Index, AI-amenable count, Landscape, and per-step Human
 Agency mix compute over the filtered set (Flow still dims rather than hides; Mapped/Reviewed% stay
 structural). **Gate:** PASS — 140 backend tests + clean build; tsc clean.
+
+---
+
+## 2026-06-16 — Landscape/index/roll-up rework (D42)
+
+(1) Landscape plots capability-scored tasks even without desire (hollow at neutral) so reviewed items
+appear. (2) AI Opportunity Index card shows the explicit formula (mean weight ×100; H1 1.0…H5/H0 0).
+(3) Roll-up rebuilt around impacted ROLES + cumulative org implications (per-role index/amenable/H-mix,
+ranked; org-structure stat cards) instead of process steps; honours Reviewed-only. Frontend-only; board
+test guards role/capability/desire fields. **Gate:** PASS — 140 backend tests + clean build; tsc clean.

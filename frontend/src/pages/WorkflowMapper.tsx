@@ -452,7 +452,7 @@ export default function WorkflowMapper({
           ) : view === "landscape" ? (
             <LandscapeView tasks={analysisTasks} dimOf={dimOf} onSelectTask={(id) => { setSelKind("task"); setSelId(id); }} onHoverRole={setHoverRole} />
           ) : (
-            <RollupView board={board} allTasks={allTasks} pass={pass} reviewFilter={reviewFilter} assessment={assessment} assessing={assessing} runAssessment={runAssessment} onSelectStep={(id) => { setSelKind("step"); setSelId(id); }} />
+            <RollupView allTasks={allTasks} pass={pass} reviewFilter={reviewFilter} assessment={assessment} assessing={assessing} runAssessment={runAssessment} onHoverRole={setHoverRole} />
           )}
         </main>
 
@@ -609,16 +609,19 @@ function FlowView({ board, dimOf, hoverRole, dragOver, setDragOver, setDragId, o
 function LandscapeView({ tasks, dimOf, onSelectTask, onHoverRole }: {
   tasks: BoardTask[]; dimOf: (t: BoardTask) => number; onSelectTask: (id: string) => void; onHoverRole: (r: string | null) => void;
 }) {
-  const scored = tasks.filter((t) => t.capability_score != null && t.desire_score != null);
-  const unscored = tasks.length - scored.length;
+  // Plot any task with a capability score (X axis). Desire (Y) is used when captured; otherwise the
+  // task is placed at a neutral desire (0.5) and drawn hollow so reviewed/inferred tasks still appear.
+  const placeable = tasks.filter((t) => t.capability_score != null);
+  const noDesire = placeable.filter((t) => t.desire_score == null).length;
+  const unscored = tasks.length - placeable.length;
   return (
     <div className="max-w-[820px]">
       <div className="mb-4 flex items-center gap-2.5">
         <h3 className="text-sm font-semibold text-slate-800">AI opportunity landscape</h3>
         <span className="text-xs text-slate-400">automation capability × local desire · dot colour = Human Agency (H0–H5)</span>
       </div>
-      {scored.length === 0 ? (
-        <Empty message="No capability/desire scores yet. Run Task Intelligence → AI opportunity (and the desire pulse) to populate the landscape." />
+      {placeable.length === 0 ? (
+        <Empty message="No capability scores yet. Run Task Intelligence → AI opportunity (and rate/benchmark tasks) to populate the landscape." />
       ) : (
         <>
           <div className="flex gap-3">
@@ -632,46 +635,81 @@ function LandscapeView({ tasks, dimOf, onSelectTask, onHoverRole }: {
                   <div className="border-r border-slate-100 p-2 text-[10px] font-semibold uppercase tracking-wide text-slate-300">Deprioritize</div>
                   <div className="p-2 text-right text-[10px] font-semibold uppercase tracking-wide text-[#3d8273]">Automate ↗</div>
                 </div>
-                {scored.map((t) => (
-                  <button
-                    key={t.id}
-                    onClick={() => onSelectTask(t.id)}
-                    onMouseEnter={() => onHoverRole(t.role)}
-                    onMouseLeave={() => onHoverRole(null)}
-                    title={`${t.text} — ${t.role} · ${t.human_agency_level}`}
-                    style={{ left: `${(t.capability_score as number) * 100}%`, bottom: `${(t.desire_score as number) * 100}%`, opacity: dimOf(t), background: HAS[t.human_agency_level].bar, transform: "translate(-50%, 50%)" }}
-                    className="absolute h-3.5 w-3.5 rounded-full border-2 border-white shadow ring-1 ring-black/5"
-                  />
-                ))}
+                {placeable.map((t) => {
+                  const hasDesire = t.desire_score != null;
+                  const y = hasDesire ? (t.desire_score as number) : 0.5;
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => onSelectTask(t.id)}
+                      onMouseEnter={() => onHoverRole(t.role)}
+                      onMouseLeave={() => onHoverRole(null)}
+                      title={`${t.text} — ${t.role} · ${t.human_agency_level}${hasDesire ? "" : " · desire not captured"}`}
+                      style={{
+                        left: `${(t.capability_score as number) * 100}%`, bottom: `${y * 100}%`,
+                        opacity: dimOf(t),
+                        background: hasDesire ? HAS[t.human_agency_level].bar : "#ffffff",
+                        borderColor: hasDesire ? "#ffffff" : HAS[t.human_agency_level].bar,
+                        transform: "translate(-50%, 50%)",
+                      }}
+                      className="absolute h-3.5 w-3.5 rounded-full border-2 shadow ring-1 ring-black/5"
+                    />
+                  );
+                })}
               </div>
               <div className="mt-1.5 text-center text-[10.5px] font-semibold uppercase tracking-wider text-slate-400">Automation capability →</div>
             </div>
           </div>
-          {unscored > 0 && <p className="mt-3 text-[11px] text-slate-400">{unscored} task{unscored === 1 ? "" : "s"} not yet scored on capability/desire — shown in Flow only.</p>}
+          {noDesire > 0 && <p className="mt-3 text-[11px] text-slate-400">{noDesire} hollow dot{noDesire === 1 ? "" : "s"}: desire not captured — placed at neutral height. Capture it via Task Intelligence → Local desire for exact placement.</p>}
+          {unscored > 0 && <p className="mt-1 text-[11px] text-slate-400">{unscored} task{unscored === 1 ? "" : "s"} not yet scored on AI capability — shown in Flow only.</p>}
         </>
       )}
     </div>
   );
 }
 
-// ── ROLLUP ───────────────────────────────────────────────────────────────────
-function RollupView({ board, allTasks, pass, reviewFilter, assessment, assessing, runAssessment, onSelectStep }: {
-  board: WorkflowBoard; allTasks: BoardTask[]; pass: (t: BoardTask) => boolean;
+// ── ROLLUP (by impacted role + cumulative org implications) ───────────────────
+function RollupView({ allTasks, pass, reviewFilter, assessment, assessing, runAssessment, onHoverRole }: {
+  allTasks: BoardTask[]; pass: (t: BoardTask) => boolean;
   reviewFilter: "all" | "reviewed" | "unreviewed"; assessment: OpportunityMatrix | null;
-  assessing: boolean; runAssessment: () => void; onSelectStep: (id: string) => void;
+  assessing: boolean; runAssessment: () => void; onHoverRole: (r: string | null) => void;
 }) {
-  const visible = allTasks.filter(pass);                       // filtered analysis set
-  const amenable = visible.filter((t) => AI_AMENABLE.includes(t.human_agency_level)).length;
-  const reviewed = allTasks.filter((t) => t.review_state === "approved").length;  // coverage over all
-  const reviewedPct = Math.round((reviewed / (allTasks.length || 1)) * 100);
+  const visible = allTasks.filter(pass);  // filtered analysis set (org-wide: mapped + unmapped)
+
+  // Aggregate by impacted ROLE (job title) — the org-structure rollup.
+  const byRole = new Map<string, BoardTask[]>();
+  for (const t of visible) {
+    const arr = byRole.get(t.role) || [];
+    arr.push(t);
+    byRole.set(t.role, arr);
+  }
+  const roles = [...byRole.entries()]
+    .map(([role, ts]) => ({
+      role,
+      n: ts.length,
+      amenable: ts.filter((t) => AI_AMENABLE.includes(t.human_agency_level)).length,
+      index: aiIndex(ts),
+      bars: bandBars(ts),
+    }))
+    .sort((a, b) => b.index - a.index || b.amenable - a.amenable);
+
+  // Cumulative implications to the org structure.
+  const HIGH = 50; // index ≥ 50 ⇒ this role's work is, on average, mostly AI-doable (H1–H2)
+  const highRoles = roles.filter((r) => r.index >= HIGH).length;
+  const amenableTasks = visible.filter((t) => AI_AMENABLE.includes(t.human_agency_level)).length;
+  const reviewedPct = Math.round(
+    (allTasks.filter((t) => t.review_state === "approved").length / (allTasks.length || 1)) * 100,
+  );
   const stats: [string, string][] = [
-    ["Mapped", `${board.mapped_count}/${board.task_count}`],
-    ["AI-amenable", String(amenable)],
-    ["Unmapped", String(board.unmapped.length)],
+    ["Roles impacted", String(roles.length)],
+    ["High-AI roles (≥50)", String(highRoles)],
+    ["AI-amenable tasks", String(amenableTasks)],
     ["Reviewed", `${reviewedPct}%`],
   ];
+  const suffix = reviewFilter !== "all" ? ` · ${reviewFilter} only` : "";
+
   return (
-    <div className="max-w-[760px]">
+    <div className="max-w-[820px]">
       <div className="mb-5 grid grid-cols-4 gap-3">
         {stats.map(([label, value]) => (
           <div key={label} className="rounded-xl border border-slate-200 bg-white p-3.5">
@@ -681,24 +719,34 @@ function RollupView({ board, allTasks, pass, reviewFilter, assessment, assessing
         ))}
       </div>
 
+      <div className="mb-4 rounded-xl border border-[#d9ece4] bg-[#f3faf7] p-3 text-[11px] leading-snug text-[#5f8d80]">
+        <b>Cumulative org implication{suffix}:</b> across {roles.length} impacted role
+        {roles.length === 1 ? "" : "s"}, {highRoles} {highRoles === 1 ? "is" : "are"} high-AI
+        (index ≥ {HIGH} — most of their work is AI-doable), and {amenableTasks} task
+        {amenableTasks === 1 ? "" : "s"} are AI-amenable (H1–H2). Roles are ranked by AI-opportunity
+        index so the most AI-exposed parts of the org surface first.
+      </div>
+
       <div className="rounded-xl border border-slate-200 bg-white px-4">
         <div className="flex items-center justify-between border-b border-slate-100 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-          <span>Step</span><span>Human Agency mix (H0 → H5){reviewFilter !== "all" ? ` · ${reviewFilter} only` : ""}</span>
+          <span>Role</span><span>AI-opportunity index · Human Agency mix (H0 → H5){suffix}</span>
         </div>
-        {board.steps.map((s) => {
-          const bars = bandBars(s.tasks.filter(pass));
-          return (
-            <button key={s.id} onClick={() => onSelectStep(s.id)} className="flex w-full items-center gap-4 border-b border-slate-50 py-3 text-left">
-              <span className="flex h-5 w-5 flex-none items-center justify-center rounded-md bg-slate-800 text-[11px] font-semibold tabular-nums text-white">{s.seq}</span>
-              <span className="flex-1 truncate text-[13px] font-medium text-slate-700">{s.name}</span>
-              <span className="w-16 flex-none text-right text-[11px] tabular-nums text-slate-400">{s.tasks.length} tasks</span>
-              <span className="flex h-2.5 w-[230px] flex-none gap-0.5 overflow-hidden rounded-full bg-slate-100">
-                {bars.map((x) => <span key={x.b} title={`${x.b} · ${x.c}`} style={{ width: `${x.pct}%`, background: HAS[x.b].bar }} />)}
-              </span>
-            </button>
-          );
-        })}
-        {board.steps.length === 0 && <div className="py-5 text-center text-xs text-slate-400">Add steps to see the roll-up.</div>}
+        {roles.map((r) => (
+          <div
+            key={r.role}
+            onMouseEnter={() => onHoverRole(r.role)}
+            onMouseLeave={() => onHoverRole(null)}
+            className="flex w-full items-center gap-3 border-b border-slate-50 py-3 text-left"
+          >
+            <span className="flex-1 truncate text-[13px] font-medium text-slate-700" title={r.role}>{r.role}</span>
+            <span className="w-12 flex-none text-right text-[11px] tabular-nums text-slate-400">{r.n} task{r.n === 1 ? "" : "s"}</span>
+            <span className="w-9 flex-none text-right text-[12px] font-semibold tabular-nums text-[#16604f]">{r.index}</span>
+            <span className="flex h-2.5 w-[200px] flex-none gap-0.5 overflow-hidden rounded-full bg-slate-100">
+              {r.bars.map((x) => <span key={x.b} title={`${x.b} · ${x.c}`} style={{ width: `${x.pct}%`, background: HAS[x.b].bar }} />)}
+            </span>
+          </div>
+        ))}
+        {roles.length === 0 && <div className="py-5 text-center text-xs text-slate-400">No tasks in scope (adjust the filters).</div>}
       </div>
 
       <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
@@ -736,7 +784,12 @@ function OverviewInspector({ proc, board, index, reviewFilter }: {
         <div className="text-[11px] font-semibold uppercase tracking-wide text-[#3d8273]">AI opportunity index{reviewFilter !== "all" ? ` · ${reviewFilter} only` : ""}</div>
         <div className="mt-0.5 flex items-end gap-2"><span className="text-3xl font-bold tabular-nums tracking-tight text-[#16604f]">{index}</span><span className="mb-1.5 text-sm text-[#5f8d80]">/ 100</span></div>
         <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[#dcebe4]"><div className="h-full rounded-full bg-gradient-to-r from-[#5fb3a6] to-[#2f8074]" style={{ width: `${index}%` }} /></div>
-        <p className="mt-2 text-[11px] leading-snug text-[#5f8d80]">Weighted Human-Agency AI potential across this process's mapped + unmapped tasks (lower H ⇒ higher potential; H0 = robotics lever, off the software-agent scale).</p>
+        <p className="mt-2 text-[11px] leading-snug text-[#5f8d80]">Weighted Human-Agency AI potential across this process's {reviewFilter !== "all" ? `${reviewFilter} ` : ""}tasks (lower H ⇒ higher potential; H0 = robotics lever, off the software-agent scale).</p>
+        <div className="mt-2 rounded-md bg-white/70 p-2 text-[10.5px] leading-snug text-[#5f8d80]">
+          <span className="font-semibold">How it's computed:</span> index = mean(weight) × 100, per task
+          weight = <b>H1 1.0 · H2 0.75 · H3 0.5 · H4 0.25 · H5 0 · H0 0</b>. So 100 = every task fully
+          AI-automatable (H1); 0 = all human-led / robotics.
+        </div>
       </div>
 
       <div className="mt-5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Legend — Human Agency Scale</div>

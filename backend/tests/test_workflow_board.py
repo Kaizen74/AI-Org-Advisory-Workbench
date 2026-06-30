@@ -72,7 +72,9 @@ async def test_board_lists_unmapped_then_mapped(api_client, async_session, monke
     assert len(board["unmapped"]) == board["task_count"]
     # Real per-task fields are present and carry the role (job_title), not a name.
     t0 = board["unmapped"][0]
-    for key in ("id", "text", "role", "human_agency_level", "ai_level", "review_state", "step_id"):
+    # role drives the role-rollup; capability_score/desire_score drive the landscape axes (D42).
+    for key in ("id", "text", "role", "human_agency_level", "ai_level", "review_state", "step_id",
+                "capability_score", "desire_score"):
         assert key in t0
     assert t0["role"] in {"Director", "Cargo Officer", "Unassigned"}
     assert t0["step_id"] is None

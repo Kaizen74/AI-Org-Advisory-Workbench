@@ -746,3 +746,22 @@ focus on client-ready/approved scores).
 **Verification:** tsc clean; gate green — **140 backend tests + clean frontend build**, zero regressions.
 (The board's review_state/H-band data the filter operates on is proven correct by D40's
 test_queue_board_handoff.)
+
+## 2026-06-16 — D42: Landscape shows reviewed/capability-scored tasks; explicit index formula; role-based roll-up
+
+**Source:** Eric — (1) reviewed items didn't appear on the Landscape; (2) make the index calculation
+explicit; (3) change the Roll-up to assess AI opportunity by impacted ROLES + cumulative org implications
+instead of processes/steps. (Frontend-only; board already carries role/capability/desire.)
+1. **Landscape:** plotted set relaxed from "capability AND desire" to **capability only** (the X axis all
+   scored tasks have). Tasks with no captured desire are placed at neutral desire (0.5) and drawn HOLLOW
+   (HAS-coloured outline) with a footnote, so reviewed/inferred tasks now appear instead of vanishing.
+   (Inferred/approved tasks have a capability score but no desire — that's why they were missing.)
+2. **Explicit formula:** the AI Opportunity Index card now shows "index = mean(weight) × 100; per task
+   weight = H1 1.0 · H2 0.75 · H3 0.5 · H4 0.25 · H5 0 · H0 0", so the logic is transparent/meaningful.
+3. **Role roll-up:** replaced the per-step Human-Agency table with a per-ROLE rollup over the filtered,
+   org-wide task set (mapped + unmapped): each role's task count, AI-amenable count, AI-opportunity index,
+   and H-mix bar, ranked by index (most AI-exposed roles first). Stat cards became org-structure-oriented
+   (Roles impacted / High-AI roles ≥50 / AI-amenable tasks / Reviewed%), plus a cumulative-implication
+   sentence. Honours the Reviewed-only filter. Process AI assessment retained.
+**Verification:** board test now guards role/capability_score/desire_score in the payload. Gate green —
+**140 backend tests + clean frontend build**, tsc clean, zero regressions.
