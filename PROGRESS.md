@@ -662,3 +662,12 @@ lingered confusingly. get_queue now lists only MATCHED benchmark rows; each no-b
 single ai_score row (with the rating) that disappears when rated. "No benchmark match" is still shown via
 the ai_score zone + Benchmark-coverage card. **Test:** test_manual_score asserts no EXTRA rows listed +
 task resolves. **Gate:** PASS — 139 backend tests + clean build; tsc clean.
+
+---
+
+## 2026-06-16 — Validation-queue rating UX: instant removal + Show-reviewed audit (D39)
+
+Rated rows now vanish immediately (optimistic removal) with a clearer banner; added a "Show reviewed"
+toggle (include_reviewed) so consultants can see/re-rate what they've already rated. The rating dropdown
+now shows on all ai_score rows so reviewed rows are re-ratable. **Test:** rated task absent from default
+queue, present+approved under include_reviewed. **Gate:** PASS — 139 backend tests + clean build; tsc clean.

@@ -23,6 +23,7 @@ export default function ValidationQueue({
   const [items, setItems] = useState<QueueItem[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [maxConfidence, setMaxConfidence] = useState<number>(0.7);
+  const [showReviewed, setShowReviewed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [note, setNote] = useState("");
@@ -31,7 +32,7 @@ export default function ValidationQueue({
     setLoading(true);
     setError("");
     try {
-      const q = await api.validationQueue(datasetId ?? undefined, maxConfidence);
+      const q = await api.validationQueue(datasetId ?? undefined, maxConfidence, showReviewed);
       setItems(q.items);
       setSelected(new Set());
     } catch (e) {
@@ -44,7 +45,7 @@ export default function ValidationQueue({
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [datasetId]);
+  }, [datasetId, showReviewed]);
 
   function toggle(id: string) {
     const next = new Set(selected);
@@ -55,8 +56,13 @@ export default function ValidationQueue({
   async function setManual(taskId: string, rating: number) {
     try {
       const r = await api.manualScore(taskId, rating);
-      setNote(`Set manual AI opportunity → ${r.human_agency_level} (${r.zone}); approved.`);
-      await load();
+      setNote(`Rated → ${r.human_agency_level} (${r.zone}), approved. ${showReviewed ? "" : "Removed from the review list."}`);
+      if (showReviewed) {
+        await load(); // reviewing rated items — refresh to show the new state
+      } else {
+        // Optimistic: the whole task is resolved, so drop its rows immediately (instant feedback).
+        setItems((prev) => prev.filter((i) => i.task_id !== taskId));
+      }
     } catch (e) {
       setError(String((e as Error).message ?? e));
     }
@@ -92,6 +98,14 @@ export default function ValidationQueue({
         title="Validation queue"
         actions={
           <div className="flex items-center gap-2">
+            <label className="flex items-center gap-1 text-xs text-slate-500">
+              <input
+                type="checkbox"
+                checked={showReviewed}
+                onChange={(e) => setShowReviewed(e.target.checked)}
+              />
+              Show reviewed
+            </label>
             <label className="text-xs text-slate-500">max confidence</label>
             <input
               type="number"
@@ -163,7 +177,9 @@ export default function ValidationQueue({
                     <td>{i.confidence ?? "—"}</td>
                     <td className="text-slate-500">{i.review_state}</td>
                     <td>
-                      {i.kind !== "crosswalk" && i.source === "model-inferred" && i.task_id ? (
+                      {i.task_id &&
+                      (i.kind === "ai_score" ||
+                        (i.kind === "benchmark" && i.source === "model-inferred")) ? (
                         <select
                           defaultValue=""
                           title="Set the AI opportunity by hand (1=keep human .. 5=automate)"

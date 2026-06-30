@@ -695,3 +695,21 @@ already targets model-inferred ai_score rows; MATCHED benchmarks use the approve
 dataset, the single ai_score row resolves on rating, and the task leaves the queue. Validation/pulse
 tests (MATCHED benchmarks) still green. Gate green — **139 backend tests + clean frontend build**, tsc
 clean, zero regressions.
+
+## 2026-06-16 — D39: Validation-queue UX — instant feedback on rating + "Show reviewed" audit view
+
+**Source:** Eric — rated an item, got the "approved" banner, but the row stayed (confusing); also hard
+to remember what was already rated. (Screenshot is the pre-D37/D38 build — those fixes aren't deployed
+to his live app yet — but the interaction can still be improved.)
+**Frontend improvements (no backend change; get_queue.include_reviewed already existed + tested):**
+- **Optimistic removal:** on a manual rating, the rated task's rows are dropped from the list immediately
+  (instant, unambiguous feedback) instead of relying on a re-fetch. Banner now reads "Rated → H#; removed
+  from the review list."
+- **"Show reviewed" toggle:** a header checkbox loads the queue with include_reviewed=true so the
+  consultant can audit (and re-rate) everything already rated; in that view a rating updates and reloads.
+- The manual-rating dropdown now appears on ALL ai_score rows (any source) + EXTRA benchmark rows, so
+  reviewed (consultant-approved) rows can be re-rated from the Show-reviewed view.
+**Verification:** test_manual_score now also asserts a rated task is absent from the default queue but
+PRESENT (review_state=approved) in the include_reviewed view. Gate green — **139 backend tests + clean
+frontend build**, tsc clean, zero regressions. (Combined with D38's hiding of non-actionable EXTRA rows,
+each task is a single row that vanishes on rating; D37 resolve-together retained.)

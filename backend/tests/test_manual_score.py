@@ -70,9 +70,14 @@ async def test_manual_score_sets_consultant_opportunity_and_shows_on_board(
     t = next(x for x in board["unmapped"] if x["id"] == ai["task_id"])
     assert t["human_agency_level"] == "H1" and t["zone"] == "GREEN_LIGHT" and t["review_state"] == "approved"
 
-    # The task is fully resolved — it (and its hidden benchmark row) leave the queue.
+    # The task is fully resolved — it (and its hidden benchmark row) leave the default queue...
     q2 = (await api_client.get("/api/v1/validation/queue", params={"dataset_id": ds})).json()
     assert all(i["task_id"] != ai["task_id"] for i in q2["items"])
+    # ...but the 'Show reviewed' view surfaces it so the consultant can audit/re-rate what they rated.
+    q3 = (await api_client.get("/api/v1/validation/queue",
+                               params={"dataset_id": ds, "include_reviewed": True})).json()
+    rated = [i for i in q3["items"] if i["task_id"] == ai["task_id"] and i["kind"] == "ai_score"]
+    assert rated and rated[0]["review_state"] == "approved"
 
     # Guards.
     assert (await api_client.post("/api/v1/validation/manual-score",
