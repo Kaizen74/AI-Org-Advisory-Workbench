@@ -713,3 +713,19 @@ to his live app yet — but the interaction can still be improved.)
 PRESENT (review_state=approved) in the include_reviewed view. Gate green — **139 backend tests + clean
 frontend build**, tsc clean, zero regressions. (Combined with D38's hiding of non-actionable EXTRA rows,
 each task is a single row that vanishes on rating; D37 resolve-together retained.)
+
+## 2026-06-16 — D40: Validation-queue ↔ Workflow-Mapper handoff verified; board Refresh for staleness
+
+**Source:** Eric — manually rated a task; it left the queue but the board still showed it `unreviewed`.
+**Diagnosis:** The BACKEND handoff is correct (proven by a new integration test): a queue manual override
+sets the task's ai_score consultant-approved + the rated H-band, and approve-as-suggested sets it
+approved keeping the inferred band — and the board (`board()` reads `TaskAIScore`) + the opportunity
+matrix both reflect these on a FRESH load (`get_session` commits). The user saw stale data because the
+Workflow Mapper board, already loaded, doesn't auto-refresh when scores change in the separate Validation
+Queue tab.
+**Fix (frontend):** added a **↻ Refresh** button to the Workflow Mapper toolbar (reloads the active
+board) so the consultant can pull the latest reviewed scores after editing in the queue. (Board already
+reloads on tab remount; Refresh makes it explicit/immediate.)
+**Verification:** new `test_queue_board_handoff.py` — maps two tasks, then (1) manual override → board
+`approved`/H1/GREEN_LIGHT, (2) approve-as-suggested → board `approved`/H3; the opportunity-matrix shows
+H1+H3. Gate green — **140 backend tests + clean frontend build**, tsc clean, zero regressions.

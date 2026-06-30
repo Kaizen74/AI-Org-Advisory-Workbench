@@ -2,7 +2,8 @@
 **Updated:** 2026-06-16T12:50:00 (P7 + D13 + bugfixes D14–D16 + refocus D17; live deploy still pending Eric)
 **Phase:** P7 done + access-control (D13) + D14–D16 fixes + **D17 product refocus**. **All seven phases
 P0–P7 built; app is private and now centred on role→task→AI-potential (H0–H5).**
-**Last completed micro-task:** D39 — validation-queue rating UX: optimistic removal (rated rows vanish instantly, clearer banner) + 'Show reviewed' toggle (include_reviewed) to audit/re-rate already-rated items; rating dropdown now on all ai_score rows. test_manual_score asserts rated task absent from default queue but present+approved under include_reviewed. Gate GREEN (139 tests + build).
+**Last completed micro-task:** D40 — verified the Validation-Queue↔Workflow-Mapper handoff is correct (new test_queue_board_handoff: manual override → board approved/rated-H-band; approve-as-suggested → approved/inferred band; opportunity-matrix reflects both). The user's 'board shows unreviewed' was frontend staleness (board loaded before the queue edit) — added a ↻ Refresh button to the Workflow Mapper to pull latest reviewed scores. Gate GREEN (140 tests + build).
+**Prior micro-task:** D39 — validation-queue rating UX: optimistic removal (rated rows vanish instantly, clearer banner) + 'Show reviewed' toggle (include_reviewed) to audit/re-rate already-rated items; rating dropdown now on all ai_score rows. test_manual_score asserts rated task absent from default queue but present+approved under include_reviewed. Gate GREEN (139 tests + build).
 **Prior micro-task:** D38 — stop listing non-actionable EXTRA/MISSING benchmark rows in the validation queue (get_queue → MATCHED benchmarks only). Root of the 'EXTRA row lingers after rating' confusion: a no-benchmark task showed two rows; EXTRA isn't approvable. Now each no-benchmark task shows a single ai_score row with the rating dropdown that disappears when rated ('no match' still shown via the zone + Benchmark-coverage card). D37 (resolve-together) kept. test_manual_score updated. Gate GREEN (139 tests + build).
 **Prior micro-task:** D37 — manual AI override now resolves the WHOLE task: a no-benchmark task had two queue rows (benchmark EXTRA + ai_score); the rating only resolved the ai_score, so the benchmark row lingered. set_manual_opportunity now also marks the task's benchmark row(s) reviewed (edited) so the whole task leaves the queue. Test asserts no rows remain. Gate GREEN (139 tests + build).
 **Prior micro-task:** D36 — separated local desire from AI opportunity: apply_local_desirability now sets ONLY desire_score_local (feeds the landscape desire axis), NOT the AI band (band = benchmark/inference/manual override only); return {updated,skipped}; template lists all tasks. De-duplicated the two desire uploads — kept the task-id 'Local desire' card in Task Intelligence, removed the redundant 'Local desire pulse' card from the Validation Queue (pulse backend kept). Gate GREEN (139 tests + build).
@@ -39,7 +40,7 @@ ai_score band; Task Intelligence headline chart+legend). L0–L3 kept internally
      wording corrections (actual Vercel/Railway button names) back into README §4.
   Optional follow-ups (additive): branch merge to `main` (then delete `legacy v1 app.zip` from main);
   expand audit UI; refine activator/L0-L3 rubrics if Eric supplies definitions.
-**Test status:** PASS — gate GREEN, **139 backend tests + clean frontend build**, zero regressions.
+**Test status:** PASS — gate GREEN, **140 backend tests + clean frontend build**, zero regressions.
 **Recovery commands:** `bash scripts/gate.sh`
 **Open questions for Eric:**
   1. **Live cloud deploy** needs your Vercel + Railway accounts connected to the GitHub repo — say

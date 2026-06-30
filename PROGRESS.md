@@ -671,3 +671,13 @@ Rated rows now vanish immediately (optimistic removal) with a clearer banner; ad
 toggle (include_reviewed) so consultants can see/re-rate what they've already rated. The rating dropdown
 now shows on all ai_score rows so reviewed rows are re-ratable. **Test:** rated task absent from default
 queue, present+approved under include_reviewed. **Gate:** PASS — 139 backend tests + clean build; tsc clean.
+
+---
+
+## 2026-06-16 — Queue↔board handoff verified + board Refresh (D40)
+
+Confirmed (new integration test) the backend handoff is correct: queue manual-override → board
+approved+rated H-band; approve-as-suggested → board approved+inferred band; opportunity-matrix reflects
+both. The user's "board shows unreviewed" was frontend staleness (board loaded before the queue edit).
+Added a ↻ Refresh button to the Workflow Mapper to pull latest reviewed scores on demand.
+**Test:** test_queue_board_handoff.py. **Gate:** PASS — 140 backend tests + clean build; tsc clean.

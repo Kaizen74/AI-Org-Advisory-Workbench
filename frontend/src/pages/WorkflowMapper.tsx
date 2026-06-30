@@ -330,6 +330,7 @@ export default function WorkflowMapper({
           </div>
           <div className="flex items-center gap-3">
             <div className="flex gap-1.5">
+              <Tool onClick={() => activeProc && loadBoard(activeProc)} disabled={!activeProc || loading} title="Reload the board to pull the latest reviewed scores from the Validation Queue">↻ Refresh</Tool>
               <Tool onClick={undo} disabled={!history.length} title="Undo your last move this session (⌘Z)">↺ Undo{history.length ? ` (${history.length})` : ""}</Tool>
               <Tool onClick={resetBoard} disabled={!board || (board.mapped_count === 0 && !history.length)} title="Unmap all tasks from this process (clear the board)">Reset board</Tool>
               <Tool
