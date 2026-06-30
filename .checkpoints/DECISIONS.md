@@ -729,3 +729,20 @@ reloads on tab remount; Refresh makes it explicit/immediate.)
 **Verification:** new `test_queue_board_handoff.py` — maps two tasks, then (1) manual override → board
 `approved`/H1/GREEN_LIGHT, (2) approve-as-suggested → board `approved`/H3; the opportunity-matrix shows
 H1+H3. Gate green — **140 backend tests + clean frontend build**, tsc clean, zero regressions.
+
+## 2026-06-16 — D41: 'Reviewed only' filter drives the board analysis
+
+**Source:** Eric — add a 'reviewed only' filter into the board analysis (so the AI-opportunity read can
+focus on client-ready/approved scores).
+**Change (frontend-only; backend handoff already verified D40):**
+- Replaced the single 'Unreviewed only' toggle with a 3-way **Review** segmented control
+  (All / Reviewed only / Unreviewed only); `reviewFilter` state + `reviewMatch()` predicate.
+- The filter now drives the ANALYSIS (not just card dimming): `analysisTasks = allTasks.filter(pass)`
+  feeds the **AI Opportunity Index**, the header **AI-amenable** count, the **Landscape** points, and the
+  Roll-up's per-step **Human Agency mix** + AI-amenable stat. Flow still shows all cards (filtered ones
+  dimmed) for drag context. Mapped/Unmapped/Reviewed% stay structural (over the full board) so
+  'Reviewed only' doesn't make Reviewed% read a meaningless 100%.
+- Index + roll-up headers show a "· reviewed only / unreviewed only" suffix when a filter is active.
+**Verification:** tsc clean; gate green — **140 backend tests + clean frontend build**, zero regressions.
+(The board's review_state/H-band data the filter operates on is proven correct by D40's
+test_queue_board_handoff.)

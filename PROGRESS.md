@@ -681,3 +681,12 @@ approved+rated H-band; approve-as-suggested → board approved+inferred band; op
 both. The user's "board shows unreviewed" was frontend staleness (board loaded before the queue edit).
 Added a ↻ Refresh button to the Workflow Mapper to pull latest reviewed scores on demand.
 **Test:** test_queue_board_handoff.py. **Gate:** PASS — 140 backend tests + clean build; tsc clean.
+
+---
+
+## 2026-06-16 — 'Reviewed only' filter in the board analysis (D41)
+
+Replaced the lone 'Unreviewed only' toggle with a 3-way Review filter (All/Reviewed only/Unreviewed only)
+that now drives the analysis: the AI Opportunity Index, AI-amenable count, Landscape, and per-step Human
+Agency mix compute over the filtered set (Flow still dims rather than hides; Mapped/Reviewed% stay
+structural). **Gate:** PASS — 140 backend tests + clean build; tsc clean.

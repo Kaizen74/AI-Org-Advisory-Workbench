@@ -118,7 +118,7 @@ export default function WorkflowMapper({
   const allOn = (): Record<AgencyBand, boolean> =>
     Object.fromEntries(BANDS.map((b) => [b, true])) as Record<AgencyBand, boolean>;
   const [aiOn, setAiOn] = useState<Record<AgencyBand, boolean>>(allOn);
-  const [unreviewedOnly, setUnreviewedOnly] = useState(false);
+  const [reviewFilter, setReviewFilter] = useState<"all" | "reviewed" | "unreviewed">("all");
 
   const [selKind, setSelKind] = useState<"task" | "step" | null>(null);
   const [selId, setSelId] = useState<string | null>(null);
@@ -287,8 +287,13 @@ export default function WorkflowMapper({
     () => (board ? [...board.steps.flatMap((s) => s.tasks), ...board.unmapped] : []),
     [board],
   );
-  const pass = (t: BoardTask) =>
-    aiOn[t.human_agency_level] && (!unreviewedOnly || t.review_state !== "approved");
+  const reviewMatch = (t: BoardTask) =>
+    reviewFilter === "all" ||
+    (reviewFilter === "reviewed" ? t.review_state === "approved" : t.review_state !== "approved");
+  const pass = (t: BoardTask) => aiOn[t.human_agency_level] && reviewMatch(t);
+  // Analysis (index, roll-up, landscape) computes over the filtered set so 'Reviewed only' focuses
+  // the AI-opportunity read on client-ready scores. (Flow keeps all cards, dimming filtered ones.)
+  const analysisTasks = allTasks.filter(pass);
   const dimOf = (t: BoardTask) => {
     if (!pass(t)) return 0.25;
     if (hoverRole && t.role !== hoverRole) return 0.4;
@@ -305,7 +310,7 @@ export default function WorkflowMapper({
   }
 
   const proc = processes.find((p) => p.id === activeProc);
-  const filtersActive = BANDS.some((b) => !aiOn[b]) || unreviewedOnly;
+  const filtersActive = BANDS.some((b) => !aiOn[b]) || reviewFilter !== "all";
   const amenable = (ts: BoardTask[]) => ts.filter((t) => AI_AMENABLE.includes(t.human_agency_level)).length;
 
   return (
@@ -324,7 +329,7 @@ export default function WorkflowMapper({
                 <span><b className="tabular-nums text-slate-700">{board.steps.length}</b> steps</span>
                 <span><b className="tabular-nums text-slate-700">{board.task_count}</b> tasks</span>
                 <span><b className="tabular-nums text-slate-700">{board.unmapped.length}</b> unmapped</span>
-                <span><b className="tabular-nums text-[#1d564d]">{amenable(allTasks)}</b> AI-amenable (H1–H2)</span>
+                <span><b className="tabular-nums text-[#1d564d]">{amenable(analysisTasks)}</b> AI-amenable (H1–H2)</span>
               </div>
             )}
           </div>
@@ -396,12 +401,24 @@ export default function WorkflowMapper({
                 >{b}</button>
               ))}
             </div>
-            <button
-              onClick={() => setUnreviewedOnly((v) => !v)}
-              className={`rounded-md px-2.5 py-1 text-[11px] font-semibold ${unreviewedOnly ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-500"}`}
-            >Unreviewed only</button>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Review</span>
+              <div className="flex gap-0.5 rounded-md bg-slate-100 p-0.5">
+                {([["all", "All"], ["reviewed", "Reviewed only"], ["unreviewed", "Unreviewed only"]] as
+                  [typeof reviewFilter, string][]).map(([id, label]) => (
+                  <button
+                    key={id}
+                    onClick={() => setReviewFilter(id)}
+                    title={id === "reviewed"
+                      ? "Analyse only consultant-approved (client-ready) scores"
+                      : id === "unreviewed" ? "Show only unreviewed scores" : "Show all scores"}
+                    className={`rounded px-2 py-0.5 text-[11px] font-semibold ${reviewFilter === id ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                  >{label}</button>
+                ))}
+              </div>
+            </div>
             {filtersActive && (
-              <button onClick={() => { setAiOn(allOn()); setUnreviewedOnly(false); }} className="text-[11px] text-slate-400 underline underline-offset-2">Clear filters</button>
+              <button onClick={() => { setAiOn(allOn()); setReviewFilter("all"); }} className="text-[11px] text-slate-400 underline underline-offset-2">Clear filters</button>
             )}
           </div>
         </div>
@@ -433,9 +450,9 @@ export default function WorkflowMapper({
               addStep={addStep}
             />
           ) : view === "landscape" ? (
-            <LandscapeView tasks={allTasks} dimOf={dimOf} onSelectTask={(id) => { setSelKind("task"); setSelId(id); }} onHoverRole={setHoverRole} />
+            <LandscapeView tasks={analysisTasks} dimOf={dimOf} onSelectTask={(id) => { setSelKind("task"); setSelId(id); }} onHoverRole={setHoverRole} />
           ) : (
-            <RollupView board={board} allTasks={allTasks} assessment={assessment} assessing={assessing} runAssessment={runAssessment} onSelectStep={(id) => { setSelKind("step"); setSelId(id); }} />
+            <RollupView board={board} allTasks={allTasks} pass={pass} reviewFilter={reviewFilter} assessment={assessment} assessing={assessing} runAssessment={runAssessment} onSelectStep={(id) => { setSelKind("step"); setSelId(id); }} />
           )}
         </main>
 
@@ -469,7 +486,7 @@ export default function WorkflowMapper({
               onSelectTask={(id) => { setSelKind("task"); setSelId(id); }}
             />
           ) : (
-            <OverviewInspector proc={proc} board={board} index={aiIndex(allTasks)} />
+            <OverviewInspector proc={proc} board={board} index={aiIndex(analysisTasks)} reviewFilter={reviewFilter} />
           )}
         </aside>
       </div>
@@ -638,11 +655,14 @@ function LandscapeView({ tasks, dimOf, onSelectTask, onHoverRole }: {
 }
 
 // ── ROLLUP ───────────────────────────────────────────────────────────────────
-function RollupView({ board, allTasks, assessment, assessing, runAssessment, onSelectStep }: {
-  board: WorkflowBoard; allTasks: BoardTask[]; assessment: OpportunityMatrix | null; assessing: boolean; runAssessment: () => void; onSelectStep: (id: string) => void;
+function RollupView({ board, allTasks, pass, reviewFilter, assessment, assessing, runAssessment, onSelectStep }: {
+  board: WorkflowBoard; allTasks: BoardTask[]; pass: (t: BoardTask) => boolean;
+  reviewFilter: "all" | "reviewed" | "unreviewed"; assessment: OpportunityMatrix | null;
+  assessing: boolean; runAssessment: () => void; onSelectStep: (id: string) => void;
 }) {
-  const amenable = allTasks.filter((t) => AI_AMENABLE.includes(t.human_agency_level)).length;
-  const reviewed = allTasks.filter((t) => t.review_state === "approved").length;
+  const visible = allTasks.filter(pass);                       // filtered analysis set
+  const amenable = visible.filter((t) => AI_AMENABLE.includes(t.human_agency_level)).length;
+  const reviewed = allTasks.filter((t) => t.review_state === "approved").length;  // coverage over all
   const reviewedPct = Math.round((reviewed / (allTasks.length || 1)) * 100);
   const stats: [string, string][] = [
     ["Mapped", `${board.mapped_count}/${board.task_count}`],
@@ -663,10 +683,10 @@ function RollupView({ board, allTasks, assessment, assessing, runAssessment, onS
 
       <div className="rounded-xl border border-slate-200 bg-white px-4">
         <div className="flex items-center justify-between border-b border-slate-100 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-          <span>Step</span><span>Human Agency mix (H0 → H5)</span>
+          <span>Step</span><span>Human Agency mix (H0 → H5){reviewFilter !== "all" ? ` · ${reviewFilter} only` : ""}</span>
         </div>
         {board.steps.map((s) => {
-          const bars = bandBars(s.tasks);
+          const bars = bandBars(s.tasks.filter(pass));
           return (
             <button key={s.id} onClick={() => onSelectStep(s.id)} className="flex w-full items-center gap-4 border-b border-slate-50 py-3 text-left">
               <span className="flex h-5 w-5 flex-none items-center justify-center rounded-md bg-slate-800 text-[11px] font-semibold tabular-nums text-white">{s.seq}</span>
@@ -702,7 +722,10 @@ function RollupView({ board, allTasks, assessment, assessing, runAssessment, onS
 }
 
 // ── INSPECTORS ────────────────────────────────────────────────────────────────
-function OverviewInspector({ proc, board, index }: { proc?: ProcessInfo; board: WorkflowBoard | null; index: number }) {
+function OverviewInspector({ proc, board, index, reviewFilter }: {
+  proc?: ProcessInfo; board: WorkflowBoard | null; index: number;
+  reviewFilter: "all" | "reviewed" | "unreviewed";
+}) {
   return (
     <div>
       <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Process overview</div>
@@ -710,7 +733,7 @@ function OverviewInspector({ proc, board, index }: { proc?: ProcessInfo; board: 
       <p className="mt-1 text-xs leading-relaxed text-slate-500">{proc?.value_stream ? `Value stream: ${proc.value_stream}.` : "Drag tasks from the Unmapped tray onto steps to follow the work across the org."}</p>
 
       <div className="mt-5 rounded-xl border border-[#d9ece4] bg-gradient-to-b from-[#f3faf7] to-[#eef6f3] p-4">
-        <div className="text-[11px] font-semibold uppercase tracking-wide text-[#3d8273]">AI opportunity index</div>
+        <div className="text-[11px] font-semibold uppercase tracking-wide text-[#3d8273]">AI opportunity index{reviewFilter !== "all" ? ` · ${reviewFilter} only` : ""}</div>
         <div className="mt-0.5 flex items-end gap-2"><span className="text-3xl font-bold tabular-nums tracking-tight text-[#16604f]">{index}</span><span className="mb-1.5 text-sm text-[#5f8d80]">/ 100</span></div>
         <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[#dcebe4]"><div className="h-full rounded-full bg-gradient-to-r from-[#5fb3a6] to-[#2f8074]" style={{ width: `${index}%` }} /></div>
         <p className="mt-2 text-[11px] leading-snug text-[#5f8d80]">Weighted Human-Agency AI potential across this process's mapped + unmapped tasks (lower H ⇒ higher potential; H0 = robotics lever, off the software-agent scale).</p>
