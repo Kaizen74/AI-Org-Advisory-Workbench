@@ -19,6 +19,7 @@ import type {
   ReviewResult,
   DeliverableInfo,
   OpportunityMatrix,
+  OrgRollup,
   ProcessInfo,
   StepInfo,
   RollupResult,
@@ -207,6 +208,8 @@ export const api = {
     ),
   rollup: (datasetId: string) =>
     request<RollupResult>(`/task-intel/rollup?dataset_id=${encodeURIComponent(datasetId)}`),
+  orgRollup: (datasetId: string) =>
+    request<OrgRollup>(`/task-intel/org-rollup?dataset_id=${encodeURIComponent(datasetId)}`),
 
   // Validation
   validationQueue: (datasetId?: string, maxConfidence?: number, includeReviewed = false) => {

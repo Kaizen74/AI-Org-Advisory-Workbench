@@ -765,3 +765,32 @@ instead of processes/steps. (Frontend-only; board already carries role/capabilit
    sentence. Honours the Reviewed-only filter. Process AI assessment retained.
 **Verification:** board test now guards role/capability_score/desire_score in the payload. Gate green —
 **140 backend tests + clean frontend build**, tsc clean, zero regressions.
+
+## 2026-06-30 — D43: queue reachability fix + org-hierarchy roll-up
+
+**Source:** Eric — (1) tasks reviewed/rated in the Validation Queue still showed "Unreviewed" on the
+Workflow Mapper board even after Refresh; (2) the Roll-up should mirror the uploaded org chart
+(hierarchy / layers / reporting lines), rolling AI exposure UP to the department heads, not a flat
+role list.
+
+1. **Root cause (issue 1):** persistence was fine (`get_session` commits; manual-score/review write
+   `review_state="approved"` which the board reads). The bug was **queue reachability** — the frontend
+   defaulted `max confidence = 0.7`, a HARD filter. Model-inferred AI scores with confidence ≥ 0.7 are
+   still export-blocked and still flag the board "unreviewed", yet they never appeared in the queue, so
+   they could never be approved. **Fix (frontend-only):** confidence is now an OPTIONAL priority filter
+   (blank = show every item needing review); added a Select-all header checkbox so a consultant can
+   Approve-all in one pass; clarified the helper text. Backend already supported `max_confidence=None`.
+   Verified end-to-end on Eric's real CSV: 7/19 tasks were hidden by the old cap; after Approve-all the
+   board shows 0 stuck-unreviewed.
+2. **Org-hierarchy roll-up (issue 2):** added an ADDITIVE, dataset-scoped endpoint
+   `GET /api/v1/task-intel/org-rollup` (+ `task_intelligence_service.org_rollup`) returning one node per
+   position with `self_*` and CUMULATIVE `rollup_*` H-band counts/tasks/reviewed, `direct/total_reports`
+   and the `manager_key` edge — AI exposure aggregated up the reporting tree (ID-keyed graph, cycle-
+   guarded, anonymization-aware via `display_label`). The Workflow Mapper **Roll-up** view was rewritten
+   from the flat role list into an **org-chart hierarchy tree** (reporting lines, layers, per-node rolled-
+   up index + H-mix + reports + reviewed%, collapsible), org-wide stat cards, and the org-wide index.
+   The index uses the same H-weights as the rest of the UI. Process AI assessment retained.
+**Why additive:** no existing route/schema/migration changed; the role-list roll-up was a frontend view
+and is superseded by the requested org chart. **Verification:** 4 new backend tests (org_rollup service
++ API), full gate green — **144 backend tests + clean frontend build, zero regressions** — plus an
+end-to-end run on the real 25-row CSV.

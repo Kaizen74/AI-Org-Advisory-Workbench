@@ -198,6 +198,34 @@ async def test_infer_corrects_spurious_robotics_keeps_physical(api_client, async
     assert again["candidates"] == 0
 
 
+async def test_org_rollup_endpoint_returns_reporting_hierarchy(api_client, async_session, monkeypatch):
+    """GET /task-intel/org-rollup returns the reporting hierarchy with AI rolled up to the head (the
+    shape the Workflow Mapper Roll-up org chart consumes). No API key needed for the read itself."""
+    monkeypatch.setattr(type(claude_service), "has_api_key", property(lambda self: True))
+    monkeypatch.setattr(claude_service, "complete", _pipeline_ai)
+    await load_taxonomies(async_session)
+    dataset_id = await _make_dataset(api_client)
+    for ep in ("extract", "benchmark", "ai-opportunity"):
+        await api_client.post(f"/api/v1/task-intel/{ep}", params={"dataset_id": dataset_id})
+
+    r = await api_client.get("/api/v1/task-intel/org-rollup", params={"dataset_id": dataset_id})
+    assert r.status_code == 200
+    body = r.json()
+    nodes = {n["employee_key"]: n for n in body["nodes"]}
+    # Boss (E1) is the only root; Cargo (E2) and Pax (E3) report to it.
+    assert body["roots"] == ["E1"]
+    assert nodes["E2"]["manager_key"] == "E1" and nodes["E3"]["manager_key"] == "E1"
+    # The head rolls up the whole org: 4 tasks (1 + 2 + 1) with 2 direct reports.
+    assert nodes["E1"]["rollup_tasks"] == 4
+    assert nodes["E1"]["direct_reports"] == 2 and nodes["E1"]["total_reports"] == 2
+    # Names present (not anonymized) and the HAS scale ships for the legend.
+    assert nodes["E1"]["name"] == "Boss" and nodes["E1"]["job_title"] == "CEO"
+    assert set(body["human_agency_scale"]) == {"H0", "H1", "H2", "H3", "H4", "H5"}
+
+    miss = await api_client.get("/api/v1/task-intel/org-rollup", params={"dataset_id": "ghost"})
+    assert miss.status_code == 404  # unknown dataset → 404 (guarded by _positions)
+
+
 async def test_quick_works_without_api_key(api_client):
     dataset_id = await _make_dataset(api_client)
     r = await api_client.get("/api/v1/task-intel/quick", params={"dataset_id": dataset_id})

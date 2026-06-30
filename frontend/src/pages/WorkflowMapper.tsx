@@ -19,6 +19,8 @@ import type {
   BoardStep,
   BoardTask,
   OpportunityMatrix,
+  OrgRollup,
+  OrgRollupNode,
   ProcessInfo,
   WorkflowBoard,
 } from "../types";
@@ -83,6 +85,25 @@ function bandBars(tasks: BoardTask[]) {
     const c = tasks.filter((t) => t.human_agency_level === b).length;
     return { b, c, pct: (c / tot) * 100 };
   }).filter((x) => x.c > 0);
+}
+
+// Same formulas as aiIndex/bandBars but over a band-count map (used by the org-hierarchy roll-up).
+function indexFromBands(bands: Record<AgencyBand, number>): number {
+  const total = BANDS.reduce((n, b) => n + (bands[b] || 0), 0);
+  if (!total) return 0;
+  const score = BANDS.reduce((n, b) => n + (bands[b] || 0) * HAS[b].potential, 0);
+  return Math.round((score / total) * 100);
+}
+function barsFromBands(bands: Record<AgencyBand, number>) {
+  const tot = BANDS.reduce((n, b) => n + (bands[b] || 0), 0) || 1;
+  return BANDS.map((b) => ({ b, c: bands[b] || 0, pct: ((bands[b] || 0) / tot) * 100 })).filter((x) => x.c > 0);
+}
+function sortByOpportunity(a: OrgRollupNode, b: OrgRollupNode): number {
+  return (
+    indexFromBands(b.rollup_bands) - indexFromBands(a.rollup_bands) ||
+    b.rollup_tasks - a.rollup_tasks ||
+    a.name.localeCompare(b.name)
+  );
 }
 
 // ── small UI atoms ───────────────────────────────────────────────────────────
@@ -452,7 +473,7 @@ export default function WorkflowMapper({
           ) : view === "landscape" ? (
             <LandscapeView tasks={analysisTasks} dimOf={dimOf} onSelectTask={(id) => { setSelKind("task"); setSelId(id); }} onHoverRole={setHoverRole} />
           ) : (
-            <RollupView allTasks={allTasks} pass={pass} reviewFilter={reviewFilter} assessment={assessment} assessing={assessing} runAssessment={runAssessment} onHoverRole={setHoverRole} />
+            <RollupView datasetId={datasetId} assessment={assessment} assessing={assessing} runAssessment={runAssessment} onHoverRole={setHoverRole} />
           )}
         </main>
 
@@ -668,48 +689,138 @@ function LandscapeView({ tasks, dimOf, onSelectTask, onHoverRole }: {
   );
 }
 
-// ── ROLLUP (by impacted role + cumulative org implications) ───────────────────
-function RollupView({ allTasks, pass, reviewFilter, assessment, assessing, runAssessment, onHoverRole }: {
-  allTasks: BoardTask[]; pass: (t: BoardTask) => boolean;
-  reviewFilter: "all" | "reviewed" | "unreviewed"; assessment: OpportunityMatrix | null;
+// ── ROLLUP (org-chart hierarchy: AI exposure aggregated up the reporting lines) ──
+// One node per position from the uploaded org CSV, arranged by reporting lines (manager → report).
+// Each node shows the AI opportunity ROLLED UP through everyone beneath it, so exposure accumulates
+// to the respective department heads — the org chart, read for AI.
+function OrgNode({ node, childrenOf, collapsed, toggle, onHoverRole }: {
+  node: OrgRollupNode; childrenOf: Map<string, OrgRollupNode[]>;
+  collapsed: Set<string>; toggle: (k: string) => void; onHoverRole: (r: string | null) => void;
+}) {
+  const kids = (childrenOf.get(node.employee_key) || []).slice().sort(sortByOpportunity);
+  const idx = indexFromBands(node.rollup_bands);
+  const bars = barsFromBands(node.rollup_bands);
+  const reviewedPct = node.rollup_tasks ? Math.round((node.rollup_reviewed / node.rollup_tasks) * 100) : 0;
+  const isOpen = !collapsed.has(node.employee_key);
+  return (
+    <div>
+      <div
+        onMouseEnter={() => onHoverRole(node.job_title)}
+        onMouseLeave={() => onHoverRole(null)}
+        className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 shadow-sm"
+      >
+        <button
+          onClick={() => kids.length && toggle(node.employee_key)}
+          className={`flex h-5 w-5 flex-none items-center justify-center rounded-md text-[11px] font-bold ${kids.length ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "text-transparent"}`}
+          title={kids.length ? (isOpen ? "Collapse reports" : "Expand reports") : ""}
+        >{kids.length ? (isOpen ? "−" : "+") : "·"}</button>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="truncate text-[13px] font-semibold text-slate-800" title={node.job_title}>{node.job_title}</span>
+            <span className="flex-none rounded bg-slate-100 px-1.5 py-0.5 text-[9.5px] font-semibold tabular-nums text-slate-400">L{node.level}</span>
+          </div>
+          <div className="truncate text-[11px] text-slate-400">
+            {node.name}{node.department ? ` · ${node.department}` : ""}
+            {node.total_reports > 0 && ` · ${node.direct_reports} direct / ${node.total_reports} total reports`}
+          </div>
+        </div>
+        <div className="flex flex-none items-center gap-2.5">
+          <div className="text-right">
+            <div className="text-[14px] font-bold tabular-nums leading-none text-[#16604f]">{idx}</div>
+            <div className="text-[8.5px] font-semibold uppercase tracking-wide text-slate-300">index</div>
+          </div>
+          <span className="flex h-2.5 w-[160px] flex-none gap-0.5 overflow-hidden rounded-full bg-slate-100" title="Rolled-up Human Agency mix (H0 → H5)">
+            {bars.length
+              ? bars.map((x) => <span key={x.b} title={`${x.b} · ${x.c}`} style={{ width: `${x.pct}%`, background: HAS[x.b].bar }} />)
+              : <span className="w-full" />}
+          </span>
+          <span className="w-16 flex-none text-right text-[10px] tabular-nums text-slate-400" title="Tasks rolled up · % reviewed">
+            {node.rollup_tasks} task{node.rollup_tasks === 1 ? "" : "s"}<br />{reviewedPct}% rev.
+          </span>
+        </div>
+      </div>
+      {isOpen && kids.length > 0 && (
+        <div className="ml-[18px] mt-2 space-y-2 border-l border-slate-200 pl-4">
+          {kids.map((k) => (
+            <OrgNode key={k.employee_key} node={k} childrenOf={childrenOf} collapsed={collapsed} toggle={toggle} onHoverRole={onHoverRole} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RollupView({ datasetId, assessment, assessing, runAssessment, onHoverRole }: {
+  datasetId: string; assessment: OpportunityMatrix | null;
   assessing: boolean; runAssessment: () => void; onHoverRole: (r: string | null) => void;
 }) {
-  const visible = allTasks.filter(pass);  // filtered analysis set (org-wide: mapped + unmapped)
+  const [org, setOrg] = useState<OrgRollup | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
-  // Aggregate by impacted ROLE (job title) — the org-structure rollup.
-  const byRole = new Map<string, BoardTask[]>();
-  for (const t of visible) {
-    const arr = byRole.get(t.role) || [];
-    arr.push(t);
-    byRole.set(t.role, arr);
+  useEffect(() => {
+    let live = true;
+    setLoading(true);
+    setError("");
+    api.orgRollup(datasetId)
+      .then((o) => { if (live) setOrg(o); })
+      .catch((e) => { if (live) setError(String((e as Error).message ?? e)); })
+      .finally(() => { if (live) setLoading(false); });
+    return () => { live = false; };
+  }, [datasetId]);
+
+  const toggle = (k: string) =>
+    setCollapsed((s) => { const n = new Set(s); n.has(k) ? n.delete(k) : n.add(k); return n; });
+
+  // Build the reporting tree + org-wide stats from the node list.
+  const { roots, childrenOf, stats, orgIndex } = useMemo(() => {
+    const nodes = org?.nodes ?? [];
+    const byKey = new Map(nodes.map((n) => [n.employee_key, n]));
+    const childrenOf = new Map<string, OrgRollupNode[]>();
+    for (const n of nodes) {
+      if (n.manager_key && byKey.has(n.manager_key)) {
+        const arr = childrenOf.get(n.manager_key) || [];
+        arr.push(n);
+        childrenOf.set(n.manager_key, arr);
+      }
+    }
+    const roots = (org?.roots ?? [])
+      .map((k) => byKey.get(k))
+      .filter((n): n is OrgRollupNode => n !== undefined)
+      .sort(sortByOpportunity);
+
+    // Org-wide totals = each position's OWN tasks summed once (avoids double counting up the tree).
+    const orgBands = Object.fromEntries(BANDS.map((b) => [b, 0])) as Record<AgencyBand, number>;
+    let orgTasks = 0, orgReviewed = 0;
+    const depts = new Set<string>();
+    let layers = 0;
+    for (const n of nodes) {
+      for (const b of BANDS) orgBands[b] += n.self_bands[b] || 0;
+      orgTasks += n.self_tasks;
+      orgReviewed += n.self_reviewed;
+      if (n.department) depts.add(n.department);
+      if (n.level > layers) layers = n.level;
+    }
+    const amenable = BANDS.filter((b) => AI_AMENABLE.includes(b)).reduce((s, b) => s + (orgBands[b] || 0), 0);
+    const reviewedPct = orgTasks ? Math.round((orgReviewed / orgTasks) * 100) : 0;
+    const stats: [string, string][] = [
+      ["People", String(nodes.length)],
+      ["Reporting layers", String(layers)],
+      ["AI-amenable tasks", String(amenable)],
+      ["Reviewed", `${reviewedPct}%`],
+    ];
+    return { roots, childrenOf, stats, orgIndex: indexFromBands(orgBands) };
+  }, [org]);
+
+  if (loading) return <Spinner label="Building the org-hierarchy roll-up…" />;
+  if (error) return <ErrorNote message={error} />;
+  if (!org || org.nodes.length === 0) {
+    return <Empty message="No org structure yet. Upload an org CSV and run Task Intelligence to populate the hierarchy roll-up." />;
   }
-  const roles = [...byRole.entries()]
-    .map(([role, ts]) => ({
-      role,
-      n: ts.length,
-      amenable: ts.filter((t) => AI_AMENABLE.includes(t.human_agency_level)).length,
-      index: aiIndex(ts),
-      bars: bandBars(ts),
-    }))
-    .sort((a, b) => b.index - a.index || b.amenable - a.amenable);
-
-  // Cumulative implications to the org structure.
-  const HIGH = 50; // index ≥ 50 ⇒ this role's work is, on average, mostly AI-doable (H1–H2)
-  const highRoles = roles.filter((r) => r.index >= HIGH).length;
-  const amenableTasks = visible.filter((t) => AI_AMENABLE.includes(t.human_agency_level)).length;
-  const reviewedPct = Math.round(
-    (allTasks.filter((t) => t.review_state === "approved").length / (allTasks.length || 1)) * 100,
-  );
-  const stats: [string, string][] = [
-    ["Roles impacted", String(roles.length)],
-    ["High-AI roles (≥50)", String(highRoles)],
-    ["AI-amenable tasks", String(amenableTasks)],
-    ["Reviewed", `${reviewedPct}%`],
-  ];
-  const suffix = reviewFilter !== "all" ? ` · ${reviewFilter} only` : "";
 
   return (
-    <div className="max-w-[820px]">
+    <div className="max-w-[900px]">
       <div className="mb-5 grid grid-cols-4 gap-3">
         {stats.map(([label, value]) => (
           <div key={label} className="rounded-xl border border-slate-200 bg-white p-3.5">
@@ -719,34 +830,19 @@ function RollupView({ allTasks, pass, reviewFilter, assessment, assessing, runAs
         ))}
       </div>
 
-      <div className="mb-4 rounded-xl border border-[#d9ece4] bg-[#f3faf7] p-3 text-[11px] leading-snug text-[#5f8d80]">
-        <b>Cumulative org implication{suffix}:</b> across {roles.length} impacted role
-        {roles.length === 1 ? "" : "s"}, {highRoles} {highRoles === 1 ? "is" : "are"} high-AI
-        (index ≥ {HIGH} — most of their work is AI-doable), and {amenableTasks} task
-        {amenableTasks === 1 ? "" : "s"} are AI-amenable (H1–H2). Roles are ranked by AI-opportunity
-        index so the most AI-exposed parts of the org surface first.
+      <div className="mb-4 flex items-center justify-between rounded-xl border border-[#d9ece4] bg-[#f3faf7] p-3 text-[11px] leading-snug text-[#5f8d80]">
+        <span>
+          <b>Org-hierarchy roll-up:</b> every role's AI opportunity is aggregated <b>up its reporting
+          line</b> to the department heads — so each manager's index and Human-Agency mix reflect their
+          whole team. Shows the full org structure (the Agency / Review filters apply to the Flow &
+          Landscape views). Org-wide AI-opportunity index: <b className="text-[#16604f]">{orgIndex}/100</b>.
+        </span>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white px-4">
-        <div className="flex items-center justify-between border-b border-slate-100 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-          <span>Role</span><span>AI-opportunity index · Human Agency mix (H0 → H5){suffix}</span>
-        </div>
-        {roles.map((r) => (
-          <div
-            key={r.role}
-            onMouseEnter={() => onHoverRole(r.role)}
-            onMouseLeave={() => onHoverRole(null)}
-            className="flex w-full items-center gap-3 border-b border-slate-50 py-3 text-left"
-          >
-            <span className="flex-1 truncate text-[13px] font-medium text-slate-700" title={r.role}>{r.role}</span>
-            <span className="w-12 flex-none text-right text-[11px] tabular-nums text-slate-400">{r.n} task{r.n === 1 ? "" : "s"}</span>
-            <span className="w-9 flex-none text-right text-[12px] font-semibold tabular-nums text-[#16604f]">{r.index}</span>
-            <span className="flex h-2.5 w-[200px] flex-none gap-0.5 overflow-hidden rounded-full bg-slate-100">
-              {r.bars.map((x) => <span key={x.b} title={`${x.b} · ${x.c}`} style={{ width: `${x.pct}%`, background: HAS[x.b].bar }} />)}
-            </span>
-          </div>
+      <div className="space-y-2">
+        {roots.map((r) => (
+          <OrgNode key={r.employee_key} node={r} childrenOf={childrenOf} collapsed={collapsed} toggle={toggle} onHoverRole={onHoverRole} />
         ))}
-        {roles.length === 0 && <div className="py-5 text-center text-xs text-slate-400">No tasks in scope (adjust the filters).</div>}
       </div>
 
       <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
@@ -762,9 +858,11 @@ function RollupView({ allTasks, pass, reviewFilter, assessment, assessing, runAs
             {assessment.caveats?.[0] && <p className="mt-2 text-[11px] italic text-amber-600">{assessment.caveats[0]}</p>}
           </div>
         ) : (
-          <p className="mt-2 text-xs text-slate-400">Generate a priority / complexity narrative for this process from its Human Agency (H0–H5) distribution.</p>
+          <p className="mt-2 text-xs text-slate-400">Generate a priority / complexity narrative for the active process from its Human Agency (H0–H5) distribution.</p>
         )}
       </div>
+
+      {org.caveats?.[0] && <p className="mt-4 text-[11px] italic leading-snug text-amber-600">{org.caveats[0]}</p>}
     </div>
   );
 }

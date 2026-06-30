@@ -87,6 +87,14 @@ async def get_rollup(dataset_id: str, session: AsyncSession = Depends(get_sessio
     return await tis.rollup(session, dataset_id)
 
 
+@router.get("/org-rollup")
+async def org_rollup(dataset_id: str, session: AsyncSession = Depends(get_session)):
+    """Org-hierarchy AI roll-up (no API key): per-position AI-band mix + the cumulative mix rolled up
+    through the reporting line to department heads. Powers the Workflow Mapper Roll-up org chart."""
+    await _positions(session, dataset_id)
+    return await tis.org_rollup(session, dataset_id)
+
+
 @router.get("/quick")
 async def quick(dataset_id: str, session: AsyncSession = Depends(get_session)):
     """No-AI preview (work-activities coverage) — no API key required."""

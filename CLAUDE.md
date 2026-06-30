@@ -121,6 +121,23 @@ mirror the schemas. Backend routes intentionally **not** surfaced in the UI (no 
 `GET /audit` (audit UI is the documented optional follow-up). No code changes this session — pure
 verification + this summary reconciliation.
 
+**Queue reachability fix + org-hierarchy roll-up (2026-06-30 — D43):** two reported issues fixed.
+**(1)** Tasks reviewed/rated in the Validation Queue still showed **"Unreviewed"** on the Workflow
+Mapper board (even after Refresh). Persistence was fine — root cause was **queue reachability**: the
+frontend defaulted `max confidence = 0.7` as a HARD filter, so model-inferred AI scores with confidence
+≥ 0.7 (still export-blocked, still board-flagged "unreviewed") never appeared in the queue and could
+never be approved. Fix (frontend-only): confidence is now an **optional priority filter** (blank = show
+every item needing review) + a **Select-all** header checkbox for one-pass Approve-all; helper text
+clarified. Backend already accepted `max_confidence=None`. **(2)** The Workflow Mapper **Roll-up** now
+mirrors the uploaded **org chart**: new additive `GET /api/v1/task-intel/org-rollup` (+
+`task_intelligence_service.org_rollup`) returns one node per position with own + **cumulative** H-band
+counts rolled UP the reporting line (`manager_key`→`employee_key`, cycle-guarded, anonymization-aware) to
+the department heads; the view was rewritten from a flat role list into a **collapsible org-chart tree**
+(reporting lines, layers, per-node rolled-up index + H-mix + reports + reviewed%), org-wide stat cards
+and index. No existing route/schema/migration changed. Verified end-to-end on Eric's real 25-row CSV (old
+cap hid 7/19 tasks; post Approve-all the board shows 0 stuck-unreviewed; tree renders CCO → Global Heads
+→ teams). **Gate GREEN: 144 backend tests + clean frontend build, zero regressions.**
+
 ---
 
 # PART A — OPERATING PROTOCOL FOR CLAUDE CODE (MANDATORY)

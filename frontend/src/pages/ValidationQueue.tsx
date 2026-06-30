@@ -22,7 +22,11 @@ export default function ValidationQueue({
 }) {
   const [items, setItems] = useState<QueueItem[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [maxConfidence, setMaxConfidence] = useState<number>(0.7);
+  // Confidence is an OPTIONAL priority filter ("" = show every item that needs review). It must not
+  // default to a hard cap: model-inferred scores ABOVE the cap are still export-blocked and still flag
+  // the Workflow Mapper board as "unreviewed", yet a hard cap would hide them so they could never be
+  // approved here — leaving the board stuck on "unreviewed" (the reported bug).
+  const [maxConfidence, setMaxConfidence] = useState<string>("");
   const [showReviewed, setShowReviewed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -32,7 +36,8 @@ export default function ValidationQueue({
     setLoading(true);
     setError("");
     try {
-      const q = await api.validationQueue(datasetId ?? undefined, maxConfidence, showReviewed);
+      const mc = maxConfidence.trim() === "" ? undefined : Number(maxConfidence);
+      const q = await api.validationQueue(datasetId ?? undefined, mc, showReviewed);
       setItems(q.items);
       setSelected(new Set());
     } catch (e) {
@@ -51,6 +56,11 @@ export default function ValidationQueue({
     const next = new Set(selected);
     next.has(id) ? next.delete(id) : next.add(id);
     setSelected(next);
+  }
+
+  const allSelected = items.length > 0 && items.every((i) => selected.has(i.id));
+  function toggleAll() {
+    setSelected(allSelected ? new Set() : new Set(items.map((i) => i.id)));
   }
 
   async function setManual(taskId: string, rating: number) {
@@ -112,8 +122,10 @@ export default function ValidationQueue({
               step="0.05"
               min="0"
               max="1"
+              placeholder="all"
+              title="Optional: only show items below this confidence (leave blank to show every item that needs review)"
               value={maxConfidence}
-              onChange={(e) => setMaxConfidence(Number(e.target.value))}
+              onChange={(e) => setMaxConfidence(e.target.value)}
               className="w-20 rounded border border-slate-300 px-2 py-1 text-sm"
             />
             <Button variant="ghost" onClick={load}>
@@ -123,9 +135,11 @@ export default function ValidationQueue({
         }
       >
         <p className="mb-3 text-xs text-slate-500">
-          Items below the confidence threshold need review. Approving a benchmark feeds a
-          consultant-curated crosswalk back into the system. Crosswalk rows (including the seed's
-          0.40 row) appear here too.
+          Every item here needs review before it is client-ready and before the Workflow Mapper marks
+          it reviewed — approve or rate them to clear them. <b>Max confidence</b> is an optional
+          priority filter (blank = show all); set it to focus on the least-confident items first.
+          Approving a benchmark feeds a consultant-curated crosswalk back into the system; crosswalk
+          rows (including the seed's 0.40 row) appear here too.
         </p>
 
         {loading ? (
@@ -145,7 +159,14 @@ export default function ValidationQueue({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-left text-xs uppercase text-slate-500">
-                  <th className="py-2"></th>
+                  <th className="py-2">
+                    <input
+                      type="checkbox"
+                      checked={allSelected}
+                      onChange={toggleAll}
+                      title="Select all shown"
+                    />
+                  </th>
                   <th>Kind</th>
                   <th>Item</th>
                   <th>Source</th>

@@ -1,5 +1,11 @@
 # LATEST CHECKPOINT
-**Updated:** 2026-06-16T12:50:00 (P7 + D13 + bugfixes D14–D16 + refocus D17; live deploy still pending Eric)
+**Updated:** 2026-06-30 (D43 — Validation-Queue reachability fix + org-hierarchy roll-up; live deploy still pending Eric)
+**Latest micro-task:** D43 — (1) fixed reviewed/rated tasks still showing "Unreviewed" on the Workflow
+Mapper board: the Validation Queue's default `max confidence = 0.7` HARD-filtered model-inferred scores
+≥ 0.7 out of the queue so they could never be approved (frontend-only fix: optional confidence filter,
+blank = show all needing review, + Select-all). (2) Rebuilt the Roll-up as an ORG-CHART hierarchy tree
+(new additive `GET /task-intel/org-rollup` + `org_rollup` service; AI exposure rolled up reporting lines
+to department heads). Verified end-to-end on the real 25-row CSV. Gate GREEN: 144 tests + clean build.
 **Phase:** P7 done + access-control (D13) + D14–D16 fixes + **D17 product refocus**. **All seven phases
 P0–P7 built; app is private and now centred on role→task→AI-potential (H0–H5).**
 **Last completed micro-task:** D42 — (1) Landscape now plots capability-scored tasks even without desire (hollow at neutral) so reviewed items appear; (2) AI Opportunity Index shows the explicit formula (mean weight ×100; H1 1.0·H2 .75·H3 .5·H4 .25·H5/H0 0); (3) Roll-up rebuilt by IMPACTED ROLES + cumulative org implications (per-role index/amenable/H-mix ranked, org-structure stat cards) instead of process/steps; honours Reviewed-only. Frontend-only; board test guards role/capability/desire. Gate GREEN (140 tests + build).
@@ -42,7 +48,7 @@ ai_score band; Task Intelligence headline chart+legend). L0–L3 kept internally
      wording corrections (actual Vercel/Railway button names) back into README §4.
   Optional follow-ups (additive): branch merge to `main` (then delete `legacy v1 app.zip` from main);
   expand audit UI; refine activator/L0-L3 rubrics if Eric supplies definitions.
-**Test status:** PASS — gate GREEN, **140 backend tests + clean frontend build**, zero regressions.
+**Test status:** PASS — gate GREEN, **144 backend tests + clean frontend build**, zero regressions.
 **Recovery commands:** `bash scripts/gate.sh`
 **Open questions for Eric:**
   1. **Live cloud deploy** needs your Vercel + Railway accounts connected to the GitHub repo — say

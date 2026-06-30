@@ -700,3 +700,17 @@ appear. (2) AI Opportunity Index card shows the explicit formula (mean weight ×
 (3) Roll-up rebuilt around impacted ROLES + cumulative org implications (per-role index/amenable/H-mix,
 ranked; org-structure stat cards) instead of process steps; honours Reviewed-only. Frontend-only; board
 test guards role/capability/desire fields. **Gate:** PASS — 140 backend tests + clean build; tsc clean.
+
+## 2026-06-30 — Queue reachability fix + org-hierarchy roll-up (D43)
+
+Two reported issues fixed. **(1)** Reviewed/rated tasks still showed "Unreviewed" on the Workflow
+Mapper board: root cause was the Validation Queue's default `max confidence = 0.7` HARD-filtering out
+model-inferred scores ≥ 0.7 — they're export-blocked + board-flagged "unreviewed" but never surfaced to
+be approved. Fix (frontend-only): confidence is now an optional priority filter (blank = show all that
+need review) + a Select-all checkbox for one-pass Approve-all; helper text clarified. **(2)** Roll-up now
+mirrors the org chart: new additive `GET /task-intel/org-rollup` (+ `org_rollup` service) returns the
+reporting hierarchy with AI exposure rolled UP to department heads; the Roll-up view was rewritten into a
+collapsible org-chart tree (reporting lines, layers, per-node rolled-up index/H-mix/reports/reviewed%).
+Verified end-to-end on the real Global-Mktg-&-Comms CSV (25 positions): old cap hid 7/19 tasks; after
+Approve-all the board shows 0 stuck-unreviewed; the tree renders CCO → Global Heads → teams correctly.
+**Gate:** PASS — **144 backend tests + clean frontend build**, tsc clean, zero regressions.

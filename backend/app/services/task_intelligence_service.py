@@ -18,6 +18,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import settings
 from ..models import (
+    Dataset,
+    Engagement,
     Position,
     Task,
     TaskAIOverlay,
@@ -27,6 +29,7 @@ from ..models import (
     TaxonomyTask,
 )
 from ._json_utils import parse_ai_json
+from .anonymization import display_label
 from .claude_service import claude_service
 
 DEFAULT_BATCH_SIZE = 40
@@ -579,6 +582,120 @@ async def rollup(session: AsyncSession, dataset_id: str) -> Dict:
         "by_department": by_department,
         "by_layer": by_layer,
         "source_mix": source_mix,
+        "human_agency_scale": HUMAN_AGENCY_SCALE,
+        "caveats": STANDARD_CAVEATS,
+    }
+
+
+# ── Org-hierarchy roll-up (AI exposure aggregated UP the reporting lines) ─────
+# Mirrors the uploaded org chart: every position carries its OWN task AI-band mix AND a CUMULATIVE
+# mix rolled up through its reporting line (self + all reports), so AI exposure accumulates up to the
+# respective department heads. Reporting edges come from `manager_key → employee_key` within the
+# dataset (the same ID-keyed graph the metrics engine uses; names are never the key — PRD M1).
+ORG_BANDS = ["H0", "H1", "H2", "H3", "H4", "H5"]
+
+
+def _band_of(score: Optional[TaskAIScore]) -> str:
+    """A task's headline H-band: from its score's HAS level, or H0 when unscored (matches the board)."""
+    return human_agency_band(score.has_level) if score is not None else "H0"
+
+
+async def org_rollup(session: AsyncSession, dataset_id: str) -> Dict:
+    """Per-position AI-band mix + the cumulative mix rolled up through the reporting hierarchy.
+
+    Returns one node per position with `self_*` (own tasks) and `rollup_*` (self + every report
+    beneath it) band counts / task totals / reviewed counts, plus `direct_reports`/`total_reports`
+    and the `manager_key` edge. `roots` are the top-of-org / unattached positions. Names honour the
+    engagement's anonymization (pseudonym when anonymized — M7). No AI; deterministic.
+    """
+    ds = await session.get(Dataset, dataset_id)
+    anonymized = False
+    if ds is not None:
+        eng = await session.get(Engagement, ds.engagement_id)
+        anonymized = bool(eng.anonymized) if eng else False
+
+    positions = list(
+        await session.scalars(select(Position).where(Position.dataset_id == dataset_id))
+    )
+    if not positions:
+        return {"dataset_id": dataset_id, "nodes": [], "roots": [],
+                "human_agency_scale": HUMAN_AGENCY_SCALE, "caveats": STANDARD_CAVEATS}
+
+    tasks = await _load_dataset_tasks(session, dataset_id)
+    task_ids = [t.id for t in tasks]
+    scores = {
+        s.task_id: s
+        for s in await session.scalars(select(TaskAIScore).where(TaskAIScore.task_id.in_(task_ids)))
+    } if task_ids else {}
+    tasks_by_pos: Dict[str, List[Task]] = {}
+    for t in tasks:
+        tasks_by_pos.setdefault(t.position_id, []).append(t)
+
+    # Self metrics per position, keyed by employee_key; build the reporting tree.
+    keys = {p.employee_key for p in positions}
+    self_by_key: Dict[str, Dict] = {}
+    children: Dict[str, List[Position]] = {}
+    roots: List[Position] = []
+    for p in positions:
+        bands = {b: 0 for b in ORG_BANDS}
+        reviewed = 0
+        for t in tasks_by_pos.get(p.id, []):
+            s = scores.get(t.id)
+            bands[_band_of(s)] += 1
+            if s is not None and s.review_state == "approved":
+                reviewed += 1
+        n = sum(bands.values())
+        self_by_key[p.employee_key] = {"bands": bands, "tasks": n, "reviewed": reviewed}
+        mk = p.manager_key
+        if mk and mk in keys and mk != p.employee_key:
+            children.setdefault(mk, []).append(p)
+        else:
+            roots.append(p)
+
+    # Cumulative roll-up via memoized DFS (cycle-guarded — a malformed CSV could loop).
+    cache: Dict[str, Dict] = {}
+
+    def rollup_of(key: str, seen: frozenset) -> Dict:
+        if key in cache:
+            return cache[key]
+        base = self_by_key[key]
+        bands = dict(base["bands"])
+        total, reviewed, descendants = base["tasks"], base["reviewed"], 0
+        if key not in seen:  # skip recursing into a cycle, but still count this node once
+            for child in children.get(key, []):
+                cr = rollup_of(child.employee_key, seen | {key})
+                for b in ORG_BANDS:
+                    bands[b] += cr["bands"][b]
+                total += cr["tasks"]
+                reviewed += cr["reviewed"]
+                descendants += 1 + cr["descendants"]
+        res = {"bands": bands, "tasks": total, "reviewed": reviewed,
+               "reports": len(children.get(key, [])), "descendants": descendants}
+        cache[key] = res
+        return res
+
+    nodes = []
+    for p in positions:
+        r = rollup_of(p.employee_key, frozenset())
+        s = self_by_key[p.employee_key]
+        mk = p.manager_key if (p.manager_key in keys and p.manager_key != p.employee_key) else None
+        nodes.append({
+            "employee_key": p.employee_key,
+            "name": display_label(anonymized=anonymized, display_name=p.display_name,
+                                  pseudonym=p.pseudonym, employee_key=p.employee_key),
+            "job_title": p.job_title or "—",
+            "department": p.department,
+            "level": p.level if p.level is not None else 0,
+            "manager_key": mk,
+            "self_bands": s["bands"], "self_tasks": s["tasks"], "self_reviewed": s["reviewed"],
+            "rollup_bands": r["bands"], "rollup_tasks": r["tasks"], "rollup_reviewed": r["reviewed"],
+            "direct_reports": r["reports"], "total_reports": r["descendants"],
+        })
+
+    return {
+        "dataset_id": dataset_id,
+        "nodes": nodes,
+        "roots": [p.employee_key for p in roots],
         "human_agency_scale": HUMAN_AGENCY_SCALE,
         "caveats": STANDARD_CAVEATS,
     }

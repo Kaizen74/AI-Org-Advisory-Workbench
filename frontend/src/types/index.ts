@@ -324,3 +324,31 @@ export interface WorkflowBoard {
   human_agency_scale: Record<string, string>;
   caveats: string[];
 }
+
+// ── Org-hierarchy AI roll-up (Roll-up org chart) ─────────────────────────────
+/** One position in the reporting hierarchy with its own AI-band mix and the cumulative mix rolled
+ *  up through everyone beneath it (self + all reports), so AI exposure aggregates to dept heads. */
+export interface OrgRollupNode {
+  employee_key: string;
+  name: string;                 // pseudonym when the engagement is anonymized
+  job_title: string;
+  department?: string | null;
+  level: number;
+  manager_key?: string | null;  // null => a root (top of org / unattached)
+  self_bands: Record<AgencyBand, number>;
+  self_tasks: number;
+  self_reviewed: number;
+  rollup_bands: Record<AgencyBand, number>;
+  rollup_tasks: number;
+  rollup_reviewed: number;
+  direct_reports: number;
+  total_reports: number;        // all descendants
+}
+
+export interface OrgRollup {
+  dataset_id: string;
+  nodes: OrgRollupNode[];
+  roots: string[];
+  human_agency_scale: Record<string, string>;
+  caveats: string[];
+}
