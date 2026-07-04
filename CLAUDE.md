@@ -140,6 +140,26 @@ cap hid 7/19 tasks; post Approve-all the board shows 0 stuck-unreviewed; tree re
 
 ---
 
+## RESILIENT-BUILD SKILL — FILE MAPPING (do NOT create parallel files)
+
+The `resilient-build` skill governs this project, but its generic state files are **mapped onto this
+repo's existing files** — never create the skill's default filenames alongside them:
+
+| resilient-build concept        | THIS repo's file (use this)                                   |
+|--------------------------------|---------------------------------------------------------------|
+| `PROJECT_STATE.md` (resume)    | `.checkpoints/LATEST.md` (+ the one-paragraph summary above)   |
+| `DECISIONS.md`                 | `.checkpoints/DECISIONS.md`                                    |
+| build journal                  | `PROGRESS.md` (append-only)                                    |
+| `GUIDE.md` (owner's manual)    | `README.md` (B7 run/deploy/usage guide)                       |
+| `API_CONTRACT.md`              | `backend/app/api/schemas.py` ⇄ `frontend/src/types/index.ts` + `frontend/src/services/api.ts` (enforced by the test suite) |
+| `run_checks.sh`                | `scripts/gate.sh` (a.k.a. `make gate`)                         |
+| baseline / golden snapshots    | `.checkpoints/BASELINE.md` + `backend/tests/baseline/`        |
+
+The skill's session loop, scope-lock, anti-hallucination, and "full gate after every change" rules are
+the SAME discipline already written into Part A below — follow Part A; the skill reinforces it.
+
+---
+
 # PART A — OPERATING PROTOCOL FOR CLAUDE CODE (MANDATORY)
 
 This is a greenfield build executed by a non-technical product owner (Eric) across many short
