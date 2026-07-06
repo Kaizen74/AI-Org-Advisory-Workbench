@@ -737,3 +737,12 @@ physical). All three paths + the Validation-Queue label + the Workflow-Mapper bo
 ⇔ H1–H2. Frontend (WorkflowMapper): plain-language zone labels + meaning + a go/no-go legend so GREEN vs
 RED is explained. Regression test + E2E prove the screenshot's H3 task now reads RED_LIGHT in both the
 queue and the board. **Gate:** PASS — **150 backend tests + clean frontend build**, tsc clean, zero regressions.
+
+## 2026-07-06 — Roll-up own-vs-team coherence + per-role linked-task detail (D46)
+
+The Roll-up node's "N tasks" was the rolled-up total (self + all reports), so a head's count looked like
+their own ("CCO has 49 tasks?"). Backend `org_rollup` now returns each role's OWN tasks with band/zone/
+review + workflow placement (process→step via TaskLink); the Roll-up view shows own vs team distinctly
+and expands each role (click) to list its own tasks and where each is mapped — tying the org chart back
+to Flow. Verified on the real CSV (CCO own=1, team=19=org total; Head Global Marketing own=1<team=14).
+2 new/extended tests. **Gate:** PASS — **151 backend tests + clean frontend build**, tsc clean, zero regressions.

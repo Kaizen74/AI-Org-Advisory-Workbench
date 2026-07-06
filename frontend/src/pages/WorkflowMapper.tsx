@@ -715,15 +715,19 @@ function LandscapeView({ tasks, dimOf, onSelectTask, onHoverRole }: {
 // One node per position from the uploaded org CSV, arranged by reporting lines (manager → report).
 // Each node shows the AI opportunity ROLLED UP through everyone beneath it, so exposure accumulates
 // to the respective department heads — the org chart, read for AI.
-function OrgNode({ node, childrenOf, collapsed, toggle, onHoverRole }: {
+function OrgNode({ node, childrenOf, collapsed, toggle, openTasks, toggleTasks, onHoverRole }: {
   node: OrgRollupNode; childrenOf: Map<string, OrgRollupNode[]>;
-  collapsed: Set<string>; toggle: (k: string) => void; onHoverRole: (r: string | null) => void;
+  collapsed: Set<string>; toggle: (k: string) => void;
+  openTasks: Set<string>; toggleTasks: (k: string) => void;
+  onHoverRole: (r: string | null) => void;
 }) {
   const kids = (childrenOf.get(node.employee_key) || []).slice().sort(sortByOpportunity);
   const idx = indexFromBands(node.rollup_bands);
   const bars = barsFromBands(node.rollup_bands);
   const reviewedPct = node.rollup_tasks ? Math.round((node.rollup_reviewed / node.rollup_tasks) * 100) : 0;
   const isOpen = !collapsed.has(node.employee_key);
+  const tasksOpen = openTasks.has(node.employee_key);
+  const hasOwn = node.tasks.length > 0;
   return (
     <div>
       <div
@@ -736,8 +740,15 @@ function OrgNode({ node, childrenOf, collapsed, toggle, onHoverRole }: {
           className={`flex h-5 w-5 flex-none items-center justify-center rounded-md text-[11px] font-bold ${kids.length ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "text-transparent"}`}
           title={kids.length ? (isOpen ? "Collapse reports" : "Expand reports") : ""}
         >{kids.length ? (isOpen ? "−" : "+") : "·"}</button>
-        <div className="min-w-0 flex-1">
+        {/* role identity — click to reveal this role's own linked tasks */}
+        <button
+          onClick={() => hasOwn && toggleTasks(node.employee_key)}
+          disabled={!hasOwn}
+          title={hasOwn ? "Show this role's own linked tasks and where they're mapped" : "This role has no own tasks"}
+          className="min-w-0 flex-1 text-left disabled:cursor-default"
+        >
           <div className="flex items-center gap-2">
+            {hasOwn && <span className="flex-none text-[10px] text-slate-400">{tasksOpen ? "▾" : "▸"}</span>}
             <span className="truncate text-[13px] font-semibold text-slate-800" title={node.job_title}>{node.job_title}</span>
             <span className="flex-none rounded bg-slate-100 px-1.5 py-0.5 text-[9.5px] font-semibold tabular-nums text-slate-400">L{node.level}</span>
           </div>
@@ -745,26 +756,52 @@ function OrgNode({ node, childrenOf, collapsed, toggle, onHoverRole }: {
             {node.name}{node.department ? ` · ${node.department}` : ""}
             {node.total_reports > 0 && ` · ${node.direct_reports} direct / ${node.total_reports} total reports`}
           </div>
-        </div>
+        </button>
         <div className="flex flex-none items-center gap-2.5">
-          <div className="text-right">
+          <div className="text-right" title="Rolled-up AI-opportunity index (this role + all its reports)">
             <div className="text-[14px] font-bold tabular-nums leading-none text-[#16604f]">{idx}</div>
             <div className="text-[8.5px] font-semibold uppercase tracking-wide text-slate-300">index</div>
           </div>
-          <span className="flex h-2.5 w-[160px] flex-none gap-0.5 overflow-hidden rounded-full bg-slate-100" title="Rolled-up Human Agency mix (H0 → H5)">
+          <span className="flex h-2.5 w-[160px] flex-none gap-0.5 overflow-hidden rounded-full bg-slate-100" title="Rolled-up Human Agency mix (H0 → H5) — this role + all reports">
             {bars.length
               ? bars.map((x) => <span key={x.b} title={`${x.b} · ${x.c}`} style={{ width: `${x.pct}%`, background: HAS[x.b].bar }} />)
               : <span className="w-full" />}
           </span>
-          <span className="w-16 flex-none text-right text-[10px] tabular-nums text-slate-400" title="Tasks rolled up · % reviewed">
-            {node.rollup_tasks} task{node.rollup_tasks === 1 ? "" : "s"}<br />{reviewedPct}% rev.
+          {/* own vs rolled-up — disambiguates "does this role have N tasks?" */}
+          <span className="w-[86px] flex-none text-right text-[10px] leading-tight tabular-nums text-slate-400">
+            <span className="text-slate-600" title="This role's OWN tasks">{node.self_tasks} own</span>
+            <br />
+            <span title="Tasks rolled up from this role + all reports">{node.rollup_tasks} team</span> · {reviewedPct}%
           </span>
         </div>
       </div>
+
+      {/* This role's OWN tasks + where each sits in the finalized workflow */}
+      {tasksOpen && hasOwn && (
+        <div className="ml-[26px] mt-1.5 space-y-1.5 rounded-lg border border-slate-100 bg-slate-50/70 p-3">
+          <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+            {node.job_title} — own tasks ({node.tasks.length})
+          </div>
+          {node.tasks.map((t) => (
+            <div key={t.id} className="flex items-start gap-2 text-[11px]">
+              <span className={`mt-px flex-none rounded px-1.5 py-0.5 text-[9.5px] font-bold tabular-nums ${HAS[t.human_agency_level].chip}`} title={HAS[t.human_agency_level].name}>{t.human_agency_level}</span>
+              {t.zone && <span className="mt-1 h-1.5 w-1.5 flex-none rounded-full" style={{ background: zoneMeta(t.zone).dot }} title={`${zoneMeta(t.zone).label} — ${zoneMeta(t.zone).help}`} />}
+              <span className="min-w-0 flex-1 leading-snug text-slate-600">{t.text}</span>
+              <span className={`flex-none text-right text-[10px] leading-snug ${t.mapped.length ? "text-[#2f6e64]" : "text-slate-300"}`}
+                title={t.mapped.length ? "Mapped in the finalized workflow" : "Not yet placed on a process step (Flow view)"}>
+                {t.mapped.length
+                  ? t.mapped.map((m) => `${m.process ?? "—"} · ${m.step_seq}. ${m.step}`).join("; ")
+                  : "Unmapped"}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {isOpen && kids.length > 0 && (
         <div className="ml-[18px] mt-2 space-y-2 border-l border-slate-200 pl-4">
           {kids.map((k) => (
-            <OrgNode key={k.employee_key} node={k} childrenOf={childrenOf} collapsed={collapsed} toggle={toggle} onHoverRole={onHoverRole} />
+            <OrgNode key={k.employee_key} node={k} childrenOf={childrenOf} collapsed={collapsed} toggle={toggle} openTasks={openTasks} toggleTasks={toggleTasks} onHoverRole={onHoverRole} />
           ))}
         </div>
       )}
@@ -780,6 +817,7 @@ function RollupView({ datasetId, assessment, assessing, runAssessment, onHoverRo
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [openTasks, setOpenTasks] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     let live = true;
@@ -794,6 +832,8 @@ function RollupView({ datasetId, assessment, assessing, runAssessment, onHoverRo
 
   const toggle = (k: string) =>
     setCollapsed((s) => { const n = new Set(s); n.has(k) ? n.delete(k) : n.add(k); return n; });
+  const toggleTasks = (k: string) =>
+    setOpenTasks((s) => { const n = new Set(s); n.has(k) ? n.delete(k) : n.add(k); return n; });
 
   // Build the reporting tree + org-wide stats from the node list.
   const { roots, childrenOf, stats, orgIndex } = useMemo(() => {
@@ -856,14 +896,17 @@ function RollupView({ datasetId, assessment, assessing, runAssessment, onHoverRo
         <span>
           <b>Org-hierarchy roll-up:</b> every role's AI opportunity is aggregated <b>up its reporting
           line</b> to the department heads — so each manager's index and Human-Agency mix reflect their
-          whole team. Shows the full org structure (the Agency / Review filters apply to the Flow &
-          Landscape views). Org-wide AI-opportunity index: <b className="text-[#16604f]">{orgIndex}/100</b>.
+          whole team. Each row shows <b>own</b> (this role's own tasks) vs <b>team</b> (rolled up from
+          all reports) — so a head's "team" count is their whole org, not tasks they personally do.
+          <b> Click a role</b> to see its own tasks and where each sits in the workflow. Shows the full
+          org structure (the Agency / Review filters apply to the Flow & Landscape views). Org-wide
+          AI-opportunity index: <b className="text-[#16604f]">{orgIndex}/100</b>.
         </span>
       </div>
 
       <div className="space-y-2">
         {roots.map((r) => (
-          <OrgNode key={r.employee_key} node={r} childrenOf={childrenOf} collapsed={collapsed} toggle={toggle} onHoverRole={onHoverRole} />
+          <OrgNode key={r.employee_key} node={r} childrenOf={childrenOf} collapsed={collapsed} toggle={toggle} openTasks={openTasks} toggleTasks={toggleTasks} onHoverRole={onHoverRole} />
         ))}
       </div>
 

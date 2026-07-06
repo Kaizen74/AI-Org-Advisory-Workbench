@@ -1,6 +1,12 @@
 # LATEST CHECKPOINT
-**Updated:** 2026-07-06 (D45 — GREEN/RED zone coherence + UI clarification; live deploy still pending Eric)
-**Latest micro-task:** D45 — fixed GREEN/RED zone incoherence: the inference path stored the model's
+**Updated:** 2026-07-06 (D46 — Roll-up own-vs-team coherence + per-role linked-task detail; live deploy still pending Eric)
+**Latest micro-task:** D46 — Workflow-Mapper Roll-up: the node count was the rolled-up total (self +
+all reports), so a head's number read as tasks they personally own ("CCO has 49 tasks?"), and a role's
+tasks weren't visible. `org_rollup` now returns per node the role's OWN tasks (band/zone/review + the
+process→step placement via TaskLink); the Roll-up view shows own vs team distinctly and each role
+expands (click) to list its own tasks + where each is mapped — tied back to Flow. Verified on the real
+CSV (CCO own=1/team=19=org total; Head Global Mktg own=1<team=14). Gate GREEN: 151 tests + clean build.
+**Prior micro-task:** D45 — fixed GREEN/RED zone incoherence: the inference path stored the model's
 own GREEN/RED label (assigned separately from the H-band), so the board showed one H-band in two
 colours. Now `infer_unmatched_potential` derives the zone via `derive_zone(cap, has)` — matching the
 overlay + manual paths + queue label + board; GREEN ⇔ AI-amenable H1–H2 (ROBOTICS preserved). Frontend:

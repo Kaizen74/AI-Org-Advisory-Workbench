@@ -861,3 +861,36 @@ model returns H3+GREEN / H4+GREEN / H2+GREEN / physical; stored zones are RED / 
 E2E on the screenshot scenario: "Develop social media content strategy" (H3) → RED_LIGHT in BOTH the
 Validation Queue label and the Workflow Mapper board (aligned). Gate GREEN: **150 backend tests +
 clean frontend build, zero regressions.**
+
+## 2026-07-06 — D46: Roll-up own-vs-team coherence + per-role linked-task detail
+
+**Source:** Eric — in the Workflow-Mapper Roll-up he couldn't see a role's linked tasks, and the node
+count read as if the role owned them ("Chief Commercial Officer has 49 tasks mapped under this role?").
+Wanted to click a role to expand its linked tasks + which process/step each sits under, and to check the
+roll-up is coherent and aligned with Flow/Landscape.
+
+**Root cause (coherence):** the node's "N tasks" was `rollup_tasks` — the CUMULATIVE total (self + every
+report), which for the CCO (root) equals the whole org. That is correct for the rolled-up INDEX and
+H-mix (a manager's number should reflect their whole team), but the single "N tasks" label made it read
+as the role's own count. And there was no way to drill into a role's actual tasks.
+
+**Fix (backend, additive):** `org_rollup` now returns per node a `tasks[]` list of that role's OWN
+tasks — each `{id, text, human_agency_level, zone, review_state, mapped[]}` — where `mapped` is the
+task's placement in the finalized workflow (`process → step`, via TaskLink→ProcessStep→Process; `[]` =
+unmapped). Same `TaskAIScore` fields Flow/Landscape use + the same mapping the Flow board shows, so the
+roll-up is now tied back to Flow. No route/schema/migration change (org_rollup already existed).
+
+**Fix (frontend, WorkflowMapper Roll-up only):** each role row now shows **own** (self_tasks) vs
+**team** (rollup_tasks · reviewed%) distinctly (the INDEX + bar remain the rolled-up team view, with
+clarifying tooltips). **Clicking a role expands its OWN tasks** — H-band chip, zone dot (with the D45
+meaning), task text, and the `Process · seq. Step` placement (or "Unmapped"). The −/+ chevron still
+controls the hierarchy (reports); the role name toggles the task detail. Banner explains own-vs-team and
+the click-to-expand.
+
+**Alignment checks:** a role's own-task band/zone == the same task in Flow/Landscape (one TaskAIScore);
+its placement string == where it sits on the Flow board; roll-up `rollup_tasks` at the root == Σ own
+tasks across the org (root rolls up everyone). Verified on Eric's real CSV: CCO own=1 ("Head of the
+organization"), team=19 (=org total), reports 2/24; Head Global Marketing own=1 < team=14.
+
+**Verification:** 2 new/extended backend tests (own≠rollup coherence + task carries process→step
+placement). Gate GREEN: **151 backend tests + clean frontend build, zero regressions.**

@@ -20,10 +20,13 @@ from ..models import (
     Dataset,
     Engagement,
     Position,
+    Process,
+    ProcessStep,
     Task,
     TaskAIOverlay,
     TaskAIScore,
     TaskBenchmark,
+    TaskLink,
     TaxonomyCrosswalk,
     TaxonomyTask,
 )
@@ -640,6 +643,41 @@ async def org_rollup(session: AsyncSession, dataset_id: str) -> Dict:
     for t in tasks:
         tasks_by_pos.setdefault(t.position_id, []).append(t)
 
+    # Where is each task mapped in the finalized workflow? (process → step). A task may be linked to
+    # steps in more than one process. Lets the roll-up show each role's OWN tasks + their placement,
+    # tying the org chart back to the Flow board.
+    mapping_by_task: Dict[str, List[Dict]] = {}
+    if task_ids:
+        links = list(await session.scalars(select(TaskLink).where(TaskLink.task_id.in_(task_ids))))
+        step_ids = {tl.process_step_id for tl in links}
+        steps = {s.id: s for s in await session.scalars(
+            select(ProcessStep).where(ProcessStep.id.in_(step_ids)))} if step_ids else {}
+        proc_ids = {s.process_id for s in steps.values()}
+        procs = {p.id: p for p in await session.scalars(
+            select(Process).where(Process.id.in_(proc_ids)))} if proc_ids else {}
+        for tl in links:
+            st = steps.get(tl.process_step_id)
+            if st is None:
+                continue
+            pr = procs.get(st.process_id)
+            mapping_by_task.setdefault(tl.task_id, []).append(
+                {"process": pr.name if pr else None, "step": st.name, "step_seq": st.seq})
+
+    def _node_tasks(pos: Position) -> List[Dict]:
+        """This position's OWN tasks with headline band, zone, review state, and workflow placement."""
+        out: List[Dict] = []
+        for t in sorted(tasks_by_pos.get(pos.id, []), key=lambda x: x.id):
+            sc = scores.get(t.id)
+            out.append({
+                "id": t.id,
+                "text": t.task_text,
+                "human_agency_level": _band_of(sc),
+                "zone": sc.zone if sc else None,
+                "review_state": (sc.review_state if sc else "unreviewed") or "unreviewed",
+                "mapped": mapping_by_task.get(t.id, []),  # [] → unmapped
+            })
+        return out
+
     # Self metrics per position, keyed by employee_key; build the reporting tree.
     keys = {p.employee_key for p in positions}
     self_by_key: Dict[str, Dict] = {}
@@ -699,6 +737,7 @@ async def org_rollup(session: AsyncSession, dataset_id: str) -> Dict:
             "self_bands": s["bands"], "self_tasks": s["tasks"], "self_reviewed": s["reviewed"],
             "rollup_bands": r["bands"], "rollup_tasks": r["tasks"], "rollup_reviewed": r["reviewed"],
             "direct_reports": r["reports"], "total_reports": r["descendants"],
+            "tasks": _node_tasks(p),  # this role's OWN tasks + where each is mapped (process → step)
         })
 
     return {

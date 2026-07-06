@@ -166,6 +166,19 @@ test (`test_inferred_zone_is_derived_from_has_not_model_label`) + E2E: the scree
 social media content strategy" now reads RED_LIGHT in BOTH the queue and the board. No
 schema/route/API change. **Gate GREEN: 150 backend tests + clean frontend build, zero regressions.**
 
+**Roll-up own-vs-team coherence + per-role linked-task detail (2026-07-06 — D46):** the Workflow-Mapper
+Roll-up node showed one "N tasks" number = `rollup_tasks` (self + every report), so a head's count read
+as tasks they personally own ("CCO has 49 tasks?") and a role's actual tasks weren't visible. Fix
+(additive): `org_rollup` now returns per node a `tasks[]` of that role's OWN tasks — each with
+`human_agency_level`, `zone`, `review_state`, and `mapped[]` (its `process → step` placement via
+TaskLink→ProcessStep→Process; `[]`=unmapped), reusing the same TaskAIScore + mapping Flow/Landscape use.
+Frontend (Roll-up only): each row now shows **own** (self_tasks) vs **team** (rollup_tasks · reviewed%)
+distinctly (INDEX + bar stay the rolled-up view); **clicking a role expands its own tasks** — H-band
+chip, zone dot, text, and `Process · seq. Step` (or "Unmapped"). Alignment verified on Eric's real CSV:
+CCO own=1 / team=19 (=org total) / reports 2-24; Head Global Marketing own=1 < team=14; a role's own-task
+band/zone/placement matches the Flow board. 2 new/extended tests. No route/schema/migration change.
+**Gate GREEN: 151 backend tests + clean frontend build, zero regressions.**
+
 ---
 
 ## RESILIENT-BUILD SKILL — FILE MAPPING (do NOT create parallel files)

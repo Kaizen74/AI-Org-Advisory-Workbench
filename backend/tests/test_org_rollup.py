@@ -75,6 +75,43 @@ async def test_org_rollup_aggregates_up_reporting_lines(async_session):
     # Second head is independent (own H5 task, no reports).
     assert nodes["E4"]["rollup_tasks"] == 1 and nodes["E4"]["total_reports"] == 0
 
+    # COHERENCE: a manager's OWN task count is NOT the rolled-up total ("does the head have 3 tasks?").
+    assert nodes["E1"]["self_tasks"] == 0 and nodes["E1"]["rollup_tasks"] == 3
+    # Each node carries its OWN tasks (D46) with band/zone/review + workflow placement.
+    e3_tasks = nodes["E3"]["tasks"]
+    assert len(e3_tasks) == 2
+    assert {t["human_agency_level"] for t in e3_tasks} == {"H1", "H4"}
+    assert all(t["mapped"] == [] for t in e3_tasks)  # nothing mapped to a step yet
+    assert nodes["E1"]["tasks"] == []  # head has no own tasks (only rolled-up ones)
+
+
+@pytest.mark.asyncio
+async def test_org_rollup_tasks_carry_workflow_placement(async_session):
+    """D46: a role's own tasks show WHERE they are mapped (process → step) — the tie back to Flow."""
+    from app.models import Process, ProcessStep, TaskLink
+    ds_id = await _seed(async_session)
+    # Map the analyst's first task to a process step.
+    out0 = await tis.org_rollup(async_session, ds_id)
+    analyst = {n["employee_key"]: n for n in out0["nodes"]}["E3"]
+    tid = analyst["tasks"][0]["id"]
+    eng_id = (await async_session.get(Dataset, ds_id)).engagement_id
+
+    proc = Process(engagement_id=eng_id, name="Content Ops", value_stream="Marketing")
+    async_session.add(proc)
+    await async_session.flush()
+    step = ProcessStep(process_id=proc.id, seq=2, name="Draft")
+    async_session.add(step)
+    await async_session.flush()
+    async_session.add(TaskLink(process_step_id=step.id, task_id=tid))
+    await async_session.flush()
+
+    out = await tis.org_rollup(async_session, ds_id)
+    tasks = {n["employee_key"]: n for n in out["nodes"]}["E3"]["tasks"]
+    mapped = next(t for t in tasks if t["id"] == tid)
+    assert mapped["mapped"] == [{"process": "Content Ops", "step": "Draft", "step_seq": 2}]
+    # The other task stays unmapped.
+    assert any(t["mapped"] == [] for t in tasks if t["id"] != tid)
+
 
 @pytest.mark.asyncio
 async def test_org_rollup_respects_anonymization(async_session):

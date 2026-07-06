@@ -326,6 +326,23 @@ export interface WorkflowBoard {
 }
 
 // ── Org-hierarchy AI roll-up (Roll-up org chart) ─────────────────────────────
+/** Where a task sits in the finalized workflow (a task may be mapped in more than one process). */
+export interface OrgTaskPlacement {
+  process?: string | null;
+  step: string;
+  step_seq: number;
+}
+
+/** One of a role's OWN tasks, as shown when a role is expanded in the roll-up. */
+export interface OrgRollupTask {
+  id: string;
+  text: string;
+  human_agency_level: AgencyBand;
+  zone?: string | null;
+  review_state: string;
+  mapped: OrgTaskPlacement[]; // [] => not yet mapped to any process step
+}
+
 /** One position in the reporting hierarchy with its own AI-band mix and the cumulative mix rolled
  *  up through everyone beneath it (self + all reports), so AI exposure aggregates to dept heads. */
 export interface OrgRollupNode {
@@ -343,6 +360,7 @@ export interface OrgRollupNode {
   rollup_reviewed: number;
   direct_reports: number;
   total_reports: number;        // all descendants
+  tasks: OrgRollupTask[];       // this role's OWN tasks (not the rolled-up ones)
 }
 
 export interface OrgRollup {
