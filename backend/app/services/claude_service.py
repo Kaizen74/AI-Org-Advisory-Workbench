@@ -49,11 +49,35 @@ class ClaudeService:
         return resp.json()
 
     # ── public API ────────────────────────────────────────────────────────────
-    def complete(self, *, model: str, max_tokens: int = 2048, messages: list[dict]) -> str:
-        """Send a chat/messages request and return the first text block (raw string)."""
+    def complete(self, *, model: str, max_tokens: int = 4096, messages: list[dict]) -> str:
+        """Send a chat/messages request and return the response TEXT (thinking blocks skipped)."""
         if settings_service.llm_provider() == "local":
             return self._complete_local(messages=messages, max_tokens=max_tokens)
         return self._complete_anthropic(model=model, max_tokens=max_tokens, messages=messages)
+
+    @staticmethod
+    def _response_text(response) -> str:
+        """Extract the text from a Messages API response, robust across model generations (D44).
+
+        Claude 5-family models (e.g. claude-sonnet-5, which runs adaptive thinking by default)
+        return `thinking` blocks BEFORE the `text` block, so `response.content[0].text` raises
+        AttributeError ('ThinkingBlock' object has no attribute 'text'). Per the Claude API docs,
+        content must be walked and filtered by `block.type == "text"`. Blocks without a `type`
+        but with `.text` are accepted for back-compat with older duck-typed fixtures.
+        """
+        texts: list[str] = []
+        for block in getattr(response, "content", []) or []:
+            btype = getattr(block, "type", None)
+            if btype == "text" or (btype is None and hasattr(block, "text")):
+                texts.append(block.text)
+        if not texts:
+            stop = getattr(response, "stop_reason", None)
+            raise RuntimeError(
+                f"LLM returned no text content (stop_reason={stop}). "
+                "If stop_reason is 'max_tokens', raise the call's max_tokens; if 'refusal', "
+                "rephrase the request or switch models in Settings."
+            )
+        return "".join(texts)
 
     def _complete_anthropic(self, *, model: str, max_tokens: int, messages: list[dict]) -> str:
         key = self._anthropic_key()
@@ -66,7 +90,7 @@ class ClaudeService:
         response = self._anthropic_client.messages.create(
             model=model, max_tokens=max_tokens, messages=messages
         )
-        return response.content[0].text
+        return self._response_text(response)
 
     def _complete_local(self, *, messages: list[dict], max_tokens: int) -> str:
         cfg = settings_service.local_config()

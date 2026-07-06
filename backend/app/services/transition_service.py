@@ -15,8 +15,8 @@ from openpyxl import Workbook
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..config import settings
 from ..models import DesignMove, Engagement, Position, Scenario
+from . import settings_service
 from ._json_utils import parse_ai_json
 from .anonymization import display_label
 from .claude_service import claude_service
@@ -84,7 +84,7 @@ def _suggest_pathways(impacted: List[Dict]) -> List[Dict]:
         + json.dumps(impacted, ensure_ascii=False) + "\n```"
     )
     raw = claude_service.complete(
-        model=settings.MODEL_SYNTH, messages=[{"role": "user", "content": prompt}]
+        model=settings_service.model_synth(), messages=[{"role": "user", "content": prompt}]
     )
     return parse_ai_json(raw).get("pathways", [])
 

@@ -794,3 +794,34 @@ role list.
 and is superseded by the requested org chart. **Verification:** 4 new backend tests (org_rollup service
 + API), full gate green — **144 backend tests + clean frontend build, zero regressions** — plus an
 end-to-end run on the real 25-row CSV.
+
+## 2026-07-06 — D44: ThinkingBlock 500 fix + Claude Sonnet 5 extraction + Settings-model coherence
+
+**Source:** Eric — live 500 on `POST /task-intel/extract`: `AttributeError: 'ThinkingBlock' object has
+no attribute 'text'` at `claude_service.py:69` (`response.content[0].text`); plus "base API extraction
+should use the latest Claude 5 instead of 4.6".
+
+1. **Root cause:** newer Claude models (the Claude 5 family runs adaptive thinking by default) return
+   `thinking` content blocks BEFORE the `text` block. `content[0]` was therefore a ThinkingBlock and
+   `.text` raised. Per current Claude API guidance, response content must be walked and filtered by
+   `block.type == "text"`. **Fix:** `claude_service._response_text()` — joins all text blocks, skips
+   thinking blocks, tolerates typeless duck-typed blocks (back-compat with old fixtures), and raises an
+   informative RuntimeError (with `stop_reason`) instead of AttributeError when no text came back.
+   Regression tests written FIRST and confirmed failing on the old code (Rule 4).
+2. **Model:** `MODEL_EXTRACT` default → **`claude-sonnet-5`** (exact ID, no date suffix — successor to
+   `claude-sonnet-4-6`; near-Opus coding/agentic quality at Sonnet cost). `MODEL_SYNTH` stays
+   `claude-opus-4-8`. **Token budgets raised** for the Sonnet 5 tokenizer (~30% more tokens than 4.6)
+   + adaptive-thinking spend inside `max_tokens`: extract 8192→16000, benchmark 4096→8192, HAS-infer
+   3072→6144, `complete()` default 2048→4096 (D34/D35 discipline; scale test asserts `>=` so it guards).
+3. **Coherence fix found during review:** the Settings UI stored `model_extract`/`model_synth` (D11)
+   but the pipeline read env `settings.MODEL_*` directly — the UI model fields only affected Test-LLM.
+   New `settings_service.model_extract()/model_synth()` (UI value → env fallback); all four AI call
+   sites (extract, benchmark, HAS-infer, matrix narrative, transition pathways) now route through them.
+   Test proves the pipeline honours a UI override and never sends a blank model string.
+**Note for Eric:** if an old model was ever saved in Settings, it now actually drives the pipeline —
+check Settings → LLM shows `claude-sonnet-5` / `claude-opus-4-8` after deploying this.
+**Skills:** `resilient-build` (process, already mapped) + `web-design-dataviz` (installed; no UI change
+this session — applies to future frontend/dataviz work).
+**Verification:** 5 new regression tests + E2E repro through the real route (mock at the Anthropic
+client seam returning [thinking, text] → 200, model=claude-sonnet-5, max_tokens=16000). Gate GREEN:
+**149 backend tests + clean frontend build, zero regressions.**

@@ -714,3 +714,15 @@ collapsible org-chart tree (reporting lines, layers, per-node rolled-up index/H-
 Verified end-to-end on the real Global-Mktg-&-Comms CSV (25 positions): old cap hid 7/19 tasks; after
 Approve-all the board shows 0 stuck-unreviewed; the tree renders CCO → Global Heads → teams correctly.
 **Gate:** PASS — **144 backend tests + clean frontend build**, tsc clean, zero regressions.
+
+## 2026-07-06 — ThinkingBlock 500 fix + Claude Sonnet 5 extraction + model-settings coherence (D44)
+
+Live crash fixed: `POST /task-intel/extract` 500'd with `'ThinkingBlock' object has no attribute
+'text'` — Claude 5-family responses put thinking blocks before the text block and
+`response.content[0].text` broke. `claude_service` now extracts text blocks by type (thinking skipped,
+informative error when no text). Extraction model upgraded to **claude-sonnet-5** (env default +
+.env.example); token budgets raised for the new tokenizer + thinking spend (16000/8192/6144; default
+4096). Coherence: pipeline now honours the Settings-managed models via
+`settings_service.model_extract()/model_synth()` (UI → env fallback) instead of env-only. Tests-first
+(3 confirmed failing pre-fix); E2E repro through the real route returns 200 on claude-sonnet-5.
+**Gate:** PASS — **149 backend tests + clean frontend build**, tsc clean, zero regressions.

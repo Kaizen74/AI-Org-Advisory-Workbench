@@ -138,6 +138,20 @@ and index. No existing route/schema/migration changed. Verified end-to-end on Er
 cap hid 7/19 tasks; post Approve-all the board shows 0 stuck-unreviewed; tree renders CCO → Global Heads
 → teams). **Gate GREEN: 144 backend tests + clean frontend build, zero regressions.**
 
+**ThinkingBlock 500 fix + Claude Sonnet 5 + model-settings coherence (2026-07-06 — D44):** live
+`POST /task-intel/extract` 500'd with `AttributeError: 'ThinkingBlock' object has no attribute 'text'`
+— Claude 5-family models return thinking blocks BEFORE the text block, and `claude_service` read
+`response.content[0].text`. Fixed: `_response_text()` walks content and joins `type=="text"` blocks
+(thinking skipped; informative RuntimeError with `stop_reason` when no text; typeless duck-typed
+blocks tolerated). **Extraction now defaults to `claude-sonnet-5`** (latest Sonnet tier; `MODEL_SYNTH`
+stays `claude-opus-4-8`); token budgets raised for the Sonnet 5 tokenizer + adaptive-thinking spend
+(extract 16000 / benchmark 8192 / infer 6144 / default 4096). Coherence fix: the pipeline now honours
+the **Settings-managed models** via `settings_service.model_extract()/model_synth()` (UI → env
+fallback) — previously the UI model fields only affected Test-LLM. Skills `resilient-build` (mapped
+above) + `web-design-dataviz` installed to `~/.claude/skills/`. 5 new regression tests (written first,
+confirmed failing) + an E2E repro through the real route. **Gate GREEN: 149 backend tests + clean
+frontend build, zero regressions.**
+
 ---
 
 ## RESILIENT-BUILD SKILL — FILE MAPPING (do NOT create parallel files)

@@ -16,7 +16,6 @@ from typing import Dict, List, Optional, Tuple
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..config import settings
 from ..models import (
     Dataset,
     Engagement,
@@ -29,6 +28,7 @@ from ..models import (
     TaxonomyTask,
 )
 from ._json_utils import parse_ai_json
+from . import settings_service
 from .anonymization import display_label
 from .claude_service import claude_service
 
@@ -88,7 +88,9 @@ def _extract_batch(batch: List[Position]) -> List[Tuple[str, str]]:
     key_to_id = {p.employee_key: p.id for p in batch}
     prompt = _build_extract_prompt(batch)
     raw = claude_service.complete(
-        model=settings.MODEL_EXTRACT, max_tokens=8192,  # batches of positions → large JSON output
+        # Batches of positions → large JSON output. Sized for Claude 5 models: adaptive thinking
+        # spends from max_tokens and the Sonnet 5 tokenizer runs ~30% heavier than 4.6 (D44).
+        model=settings_service.model_extract(), max_tokens=16000,
         messages=[{"role": "user", "content": prompt}],
     )
     data = parse_ai_json(raw)
@@ -193,7 +195,7 @@ def _build_benchmark_prompt(batch: List[Task], grounding: List[Dict]) -> str:
 
 def _benchmark_batch(batch: List[Task], grounding: List[Dict]) -> List[Dict]:
     raw = claude_service.complete(
-        model=settings.MODEL_EXTRACT, max_tokens=4096,  # one row per task → keep within the budget
+        model=settings_service.model_extract(), max_tokens=8192,  # one row/task + Claude 5 thinking headroom (D44)
         messages=[{"role": "user", "content": _build_benchmark_prompt(batch, grounding)}],
     )
     return parse_ai_json(raw).get("benchmarks", [])
@@ -473,7 +475,7 @@ async def infer_unmatched_potential(session: AsyncSession, dataset_id: str) -> D
         chunk = payload[i:i + INFER_BATCH]
         try:
             raw = claude_service.complete(
-                model=settings.MODEL_SYNTH, max_tokens=3072,
+                model=settings_service.model_synth(), max_tokens=6144,  # + thinking headroom (D44)
                 messages=[{"role": "user", "content": _build_inference_prompt(chunk)}],
             )
             results.extend(parse_ai_json(raw).get("scores", []) or [])

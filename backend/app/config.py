@@ -23,7 +23,9 @@ class Settings:
     ANTHROPIC_API_KEY: str | None = os.getenv("ANTHROPIC_API_KEY") or None
 
     # Model strings are env-configurable with sensible defaults (Build Spec A4 / PRD §6).
-    MODEL_EXTRACT: str = os.getenv("MODEL_EXTRACT", "claude-sonnet-4-6")
+    # Extraction: Claude Sonnet 5 (latest Sonnet-tier; adaptive thinking on by default, new
+    # tokenizer ~30% more tokens than 4.6 — call-site max_tokens budgets are sized for it, D44).
+    MODEL_EXTRACT: str = os.getenv("MODEL_EXTRACT", "claude-sonnet-5")
     MODEL_SYNTH: str = os.getenv("MODEL_SYNTH", "claude-opus-4-8")
 
     # Database. SQLite for dev; Postgres-ready via the same SQLAlchemy models (PRD §7).

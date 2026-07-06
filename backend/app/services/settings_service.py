@@ -102,6 +102,17 @@ def llm_provider() -> str:
     return (_cache.get("llm_provider") or "anthropic").lower()
 
 
+def model_extract() -> str:
+    """The extraction/benchmark model: UI-configured value, falling back to env (D44).
+    Pipeline services MUST use this (not env directly) so Settings → 'Extraction model' is honoured."""
+    return _cache.get("model_extract") or env.MODEL_EXTRACT
+
+
+def model_synth() -> str:
+    """The synthesis/inference model: UI-configured value, falling back to env (D44)."""
+    return _cache.get("model_synth") or env.MODEL_SYNTH
+
+
 def anthropic_key() -> str:
     return _cache.get("anthropic_api_key") or ""
 

@@ -1,6 +1,13 @@
 # LATEST CHECKPOINT
-**Updated:** 2026-06-30 (D43 — Validation-Queue reachability fix + org-hierarchy roll-up; live deploy still pending Eric)
-**Latest micro-task:** D43 — (1) fixed reviewed/rated tasks still showing "Unreviewed" on the Workflow
+**Updated:** 2026-07-06 (D44 — ThinkingBlock 500 fix + Claude Sonnet 5 extraction + Settings-model coherence; live deploy still pending Eric)
+**Latest micro-task:** D44 — (1) fixed the live 500 on extract: Claude 5 responses put ThinkingBlocks
+before the TextBlock; `claude_service` now extracts by block type (join text, skip thinking, clear
+RuntimeError when none). (2) `MODEL_EXTRACT` default → `claude-sonnet-5`; token budgets raised
+(16000/8192/6144; default 4096) for the new tokenizer + adaptive thinking. (3) pipeline now honours the
+Settings-managed models (`settings_service.model_extract()/model_synth()`, UI → env fallback). Eric:
+after deploying, check Settings → LLM shows claude-sonnet-5 (a previously saved model now really drives
+the pipeline). Gate GREEN: 149 tests + clean build.
+**Prior micro-task:** D43 — (1) fixed reviewed/rated tasks still showing "Unreviewed" on the Workflow
 Mapper board: the Validation Queue's default `max confidence = 0.7` HARD-filtered model-inferred scores
 ≥ 0.7 out of the queue so they could never be approved (frontend-only fix: optional confidence filter,
 blank = show all needing review, + Select-all). (2) Rebuilt the Roll-up as an ORG-CHART hierarchy tree
@@ -48,7 +55,7 @@ ai_score band; Task Intelligence headline chart+legend). L0–L3 kept internally
      wording corrections (actual Vercel/Railway button names) back into README §4.
   Optional follow-ups (additive): branch merge to `main` (then delete `legacy v1 app.zip` from main);
   expand audit UI; refine activator/L0-L3 rubrics if Eric supplies definitions.
-**Test status:** PASS — gate GREEN, **144 backend tests + clean frontend build**, zero regressions.
+**Test status:** PASS — gate GREEN, **149 backend tests + clean frontend build**, zero regressions.
 **Recovery commands:** `bash scripts/gate.sh`
 **Open questions for Eric:**
   1. **Live cloud deploy** needs your Vercel + Railway accounts connected to the GitHub repo — say

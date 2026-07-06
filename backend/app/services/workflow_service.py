@@ -14,8 +14,8 @@ from typing import Dict, List, Optional
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..config import settings
 from ..models import Position, Process, ProcessStep, Task, TaskAIScore, TaskLink
+from . import settings_service
 from ._json_utils import parse_ai_json
 from .claude_service import claude_service
 from .task_intelligence_service import HUMAN_AGENCY_SCALE, STANDARD_CAVEATS, human_agency_band
@@ -154,7 +154,7 @@ def _ai_priority(process_name: str, overall: Dict[str, int],
         '{"priority": "High|Medium|Low", "complexity": "High|Medium|Low", "rationale": "..."}.'
     )
     raw = claude_service.complete(
-        model=settings.MODEL_SYNTH, messages=[{"role": "user", "content": prompt}]
+        model=settings_service.model_synth(), messages=[{"role": "user", "content": prompt}]
     )
     data = parse_ai_json(raw)
     return {
