@@ -42,6 +42,23 @@ const HAS: Record<AgencyBand, { name: string; chip: string; bar: string; potenti
 };
 const AI_AMENABLE: AgencyBand[] = ["H1", "H2"]; // strongly AI-amenable bands
 
+// Zone = the go/no-go recommendation, DERIVED from the H-band + capability (kept coherent with H0–H5
+// backend-side): GREEN = an AI-agent opportunity (H1–H2 + high capability), RED = keep human-led
+// (H3–H5), ROBOTICS = physical/handling work (off the software-agent scale — a robotics/GSE lever).
+const ZONE_META: Record<string, { label: string; help: string; dot: string; text: string }> = {
+  GREEN_LIGHT: { label: "Green light", dot: "#2f8074", text: "text-[#1d564d]",
+    help: "AI-agent opportunity — the task is AI-amenable (H1–H2) and current AI capability is high." },
+  RED_LIGHT: { label: "Red light", dot: "#c2683f", text: "text-[#8a4526]",
+    help: "Keep human-led — human agency dominates (H3–H5) or capability is low; not an agent opportunity now." },
+  ROBOTICS_GSE_LEVER: { label: "Robotics lever", dot: "#7c8db5", text: "text-[#4a5a86]",
+    help: "Physical/handling task — off the software-agent scale; assess as a robotics/GSE automation lever." },
+  NO_BENCHMARK_MATCH: { label: "No benchmark", dot: "#94a3b8", text: "text-slate-500",
+    help: "No matching benchmark in the loaded taxonomy yet — load/curate one or rate it manually to score it." },
+};
+function zoneMeta(zone?: string | null) {
+  return (zone && ZONE_META[zone]) || { label: zone ?? "—", help: "", dot: "#cbd5e1", text: "text-slate-500" };
+}
+
 // ── pure helpers ─────────────────────────────────────────────────────────────
 function stepOfTask(board: WorkflowBoard, taskId: string): string | null {
   for (const s of board.steps) if (s.tasks.some((t) => t.id === taskId)) return s.id;
@@ -539,7 +556,12 @@ function TaskCard({ t, dim, roleLit, draggable, onDragStart, onClick, onHoverRol
       <div className="mt-2 flex items-center justify-between">
         <span className="flex items-center gap-1.5">
           <span title={HAS[t.human_agency_level].name} className={`rounded px-1.5 py-0.5 text-[10px] font-bold tabular-nums ${HAS[t.human_agency_level].chip}`}>{t.human_agency_level}</span>
-          {t.zone && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[9.5px] font-medium text-slate-500">{t.zone}</span>}
+          {t.zone && (
+            <span title={zoneMeta(t.zone).help} className="inline-flex items-center gap-1 rounded bg-slate-100 px-1.5 py-0.5 text-[9.5px] font-medium text-slate-500">
+              <span className="h-1.5 w-1.5 rounded-full" style={{ background: zoneMeta(t.zone).dot }} />
+              {t.zone}
+            </span>
+          )}
         </span>
         <span title={t.review_state} className="h-1.5 w-1.5 rounded-full" style={{ background: t.review_state === "approved" ? "#3f9d77" : "#cbb24a" }} />
       </div>
@@ -900,6 +922,17 @@ function OverviewInspector({ proc, board, index, reviewFilter }: {
         ))}
         <div className="flex items-center gap-2 pt-1 text-[11px] text-slate-500"><span className="h-1.5 w-1.5 rounded-full" style={{ background: "#cbb24a" }} /> unreviewed score</div>
       </div>
+
+      <div className="mt-5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Legend — Zone (go / no-go)</div>
+      <div className="mt-2.5 space-y-1.5">
+        {(["GREEN_LIGHT", "RED_LIGHT", "ROBOTICS_GSE_LEVER"] as const).map((z) => (
+          <div key={z} className="flex items-start gap-2 text-[11px] text-slate-500">
+            <span className="mt-0.5 h-2.5 w-2.5 flex-none rounded-full" style={{ background: zoneMeta(z).dot }} />
+            <span><b className={zoneMeta(z).text}>{zoneMeta(z).label}</b> — {zoneMeta(z).help}</span>
+          </div>
+        ))}
+        <p className="pt-0.5 text-[10.5px] italic leading-snug text-slate-400">Zone is derived from the H-band + capability, so it always agrees with H0–H5.</p>
+      </div>
       {board?.caveats?.[0] && <p className="mt-4 text-[11px] italic leading-snug text-amber-600">{board.caveats[0]}</p>}
       <p className="mt-4 text-[11px] leading-snug text-slate-400">Drag a task between steps to re-map it. Hover a task to trace its role across the process. ⌘Z undoes.</p>
     </div>
@@ -948,13 +981,19 @@ function TaskInspector({ task, steps, scale, onBack, onMove }: { task: BoardTask
       <div className="mt-4 grid grid-cols-2 gap-2">
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-2.5">
           <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Zone</div>
-          <div className="mt-0.5 text-[13px] font-semibold text-slate-700">{task.zone ?? "—"}</div>
+          <div className={`mt-0.5 flex items-center gap-1.5 text-[13px] font-semibold ${zoneMeta(task.zone).text}`}>
+            <span className="h-2 w-2 flex-none rounded-full" style={{ background: zoneMeta(task.zone).dot }} />
+            {zoneMeta(task.zone).label}
+          </div>
         </div>
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-2.5">
           <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Confidence</div>
           <div className="mt-0.5 text-[13px] font-semibold text-slate-700">{task.confidence != null ? `${Math.round(task.confidence * 100)}%` : "—"}</div>
         </div>
       </div>
+      {zoneMeta(task.zone).help && (
+        <p className="mt-2 text-[11px] leading-snug text-slate-400">{zoneMeta(task.zone).help}</p>
+      )}
 
       {task.rationale && (
         <div className="mt-3 rounded-lg border border-slate-100 bg-slate-50 p-3">

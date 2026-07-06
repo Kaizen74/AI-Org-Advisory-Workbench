@@ -152,6 +152,20 @@ above) + `web-design-dataviz` installed to `~/.claude/skills/`. 5 new regression
 confirmed failing) + an E2E repro through the real route. **Gate GREEN: 149 backend tests + clean
 frontend build, zero regressions.**
 
+**GREEN/RED zone coherence + UI clarification (2026-07-06 — D45):** the Workflow Mapper showed the
+same H-band in two colours (an H3 task tagged GREEN_LIGHT beside an H3 tagged RED). Root cause: three
+scoring paths, only two coherent — `derive_zone(cap, has)` (GREEN only for AI-amenable H1–H2 + high
+capability) is used by the WORKBank-overlay and manual-override paths, but the **inference** path stored
+the model's OWN `zone` label (the HAS-rubric prompt asks the model to assign zone SEPARATELY from
+`has_level`, so it returned H3/H4 + GREEN). Fix: `infer_unmatched_potential` now derives the zone via
+`derive_zone(cap, has_level)` (ROBOTICS_GSE_LEVER still honoured for physical tasks). All three paths +
+the Validation-Queue label + the board now agree, and GREEN ⇔ AI-amenable H1–H2. Frontend
+(WorkflowMapper only): `ZONE_META` gives each zone a plain-language label + one-line meaning + colour,
+wired into the task-card badge (tooltip), the inspector Zone box, and a new go/no-go legend. Regression
+test (`test_inferred_zone_is_derived_from_has_not_model_label`) + E2E: the screenshot's H3 "Develop
+social media content strategy" now reads RED_LIGHT in BOTH the queue and the board. No
+schema/route/API change. **Gate GREEN: 150 backend tests + clean frontend build, zero regressions.**
+
 ---
 
 ## RESILIENT-BUILD SKILL — FILE MAPPING (do NOT create parallel files)

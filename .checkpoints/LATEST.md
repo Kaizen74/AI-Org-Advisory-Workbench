@@ -1,6 +1,12 @@
 # LATEST CHECKPOINT
-**Updated:** 2026-07-06 (D44 — ThinkingBlock 500 fix + Claude Sonnet 5 extraction + Settings-model coherence; live deploy still pending Eric)
-**Latest micro-task:** D44 — (1) fixed the live 500 on extract: Claude 5 responses put ThinkingBlocks
+**Updated:** 2026-07-06 (D45 — GREEN/RED zone coherence + UI clarification; live deploy still pending Eric)
+**Latest micro-task:** D45 — fixed GREEN/RED zone incoherence: the inference path stored the model's
+own GREEN/RED label (assigned separately from the H-band), so the board showed one H-band in two
+colours. Now `infer_unmatched_potential` derives the zone via `derive_zone(cap, has)` — matching the
+overlay + manual paths + queue label + board; GREEN ⇔ AI-amenable H1–H2 (ROBOTICS preserved). Frontend:
+plain-language zone labels/meaning + go/no-go legend clarify GREEN vs RED. Regression test + E2E prove
+the screenshot's H3 task now reads RED_LIGHT in both queue and board. Gate GREEN: 150 tests + clean build.
+**Prior micro-task:** D44 — (1) fixed the live 500 on extract: Claude 5 responses put ThinkingBlocks
 before the TextBlock; `claude_service` now extracts by block type (join text, skip thinking, clear
 RuntimeError when none). (2) `MODEL_EXTRACT` default → `claude-sonnet-5`; token budgets raised
 (16000/8192/6144; default 4096) for the new tokenizer + adaptive thinking. (3) pipeline now honours the

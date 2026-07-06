@@ -482,6 +482,7 @@ async def infer_unmatched_potential(session: AsyncSession, dataset_id: str) -> D
         except Exception:  # noqa: BLE001 — a malformed batch shouldn't abort the others
             continue
 
+    from .workbank_ingest import derive_zone
     updated = 0
     for item in results:
         s = scores.get(item.get("task_id"))
@@ -489,11 +490,17 @@ async def infer_unmatched_potential(session: AsyncSession, dataset_id: str) -> D
             continue
         has_level = item.get("has_level")
         cap = item.get("capability_score")
-        zone = item.get("zone") or "RED_LIGHT"
-        if zone not in ("GREEN_LIGHT", "RED_LIGHT", "ROBOTICS_GSE_LEVER"):
-            zone = "RED_LIGHT"
-        if zone == "ROBOTICS_GSE_LEVER":
-            has_level = None  # physical lever → off the software-agent scale
+        if item.get("zone") == "ROBOTICS_GSE_LEVER":
+            # Physical/handling task → off the software-agent scale; keep it a robotics/GSE lever.
+            has_level = None
+            zone = "ROBOTICS_GSE_LEVER"
+        else:
+            # COHERENCE (D45): derive GREEN/RED deterministically from capability + HAS rather than
+            # trusting the model's separate zone label. The model often tags an H3/H4 task GREEN even
+            # though only H1/H2 are AI-amenable, so the board showed one H-band in two colours. This
+            # now matches the WORKBank-overlay and manual-override paths (all three use derive_zone),
+            # the Validation-Queue label, and the app's "AI-amenable = H1–H2" framing.
+            zone = derive_zone(cap, has_level)
         s.has_level = has_level
         s.capability_score = cap
         s.zone = zone

@@ -198,6 +198,71 @@ async def test_infer_corrects_spurious_robotics_keeps_physical(api_client, async
     assert again["candidates"] == 0
 
 
+async def test_inferred_zone_is_derived_from_has_not_model_label(api_client, async_session, monkeypatch):
+    """D45 coherence: the inference path must DERIVE the GREEN/RED zone from capability + HAS (GREEN =
+    AI-amenable H1–H2 + high capability), not trust the model's separate zone label — otherwise the
+    board shows the same H-band in two colours (an H3 task tagged GREEN). Physical tasks stay robotics."""
+    def _ai(*, model, max_tokens=2048, messages):  # noqa: ARG001
+        c = messages[0]["content"]
+        if "HUMAN AGENCY SCALE BENCHMARK" in c:  # the model deliberately returns INCOHERENT zones
+            payload = json.loads(c.split("TASKS:\n```json\n")[1].split("\n```")[0])
+            out = []
+            for t in payload:
+                low = t["task_text"].lower()
+                if "physical" in low:
+                    out.append({"task_id": t["task_id"], "has_level": None, "capability_score": None,
+                                "zone": "ROBOTICS_GSE_LEVER", "confidence": 0.5, "rationale": "Physical."})
+                elif "amenable" in low:  # H2 + high cap → correctly GREEN
+                    out.append({"task_id": t["task_id"], "has_level": 2, "capability_score": 0.8,
+                                "zone": "GREEN_LIGHT", "confidence": 0.6, "rationale": "AI can do most."})
+                elif "partner" in low:  # H3 but model WRONGLY says GREEN → must derive to RED
+                    out.append({"task_id": t["task_id"], "has_level": 3, "capability_score": 0.9,
+                                "zone": "GREEN_LIGHT", "confidence": 0.6, "rationale": "Equal partnership."})
+                else:  # "humanled": H4 but model WRONGLY says GREEN → must derive to RED
+                    out.append({"task_id": t["task_id"], "has_level": 4, "capability_score": 0.3,
+                                "zone": "GREEN_LIGHT", "confidence": 0.6, "rationale": "Human leads."})
+            return json.dumps({"scores": out})
+        if "GROUNDING:" in c:  # nothing matches the seed
+            tasks = json.loads(c.split("TASKS:\n```json\n")[1].split("\n```")[0])
+            return json.dumps({"benchmarks": [
+                {"task_id": t["task_id"], "status": "MISSING", "matched_task_ref": None,
+                 "onet_task_code": None, "taxonomy_source_code": None,
+                 "source": "model-inferred", "confidence": 0.3} for t in tasks]})
+        items = json.loads(c.split("INPUT:\n```json\n")[1].split("\n```")[0])
+        return json.dumps({"extractions": [
+            {"employee_key": it["employee_key"],
+             "tasks": [s.strip() for s in it["work_activities"].split(";") if s.strip()]}
+            for it in items]})
+
+    from sqlalchemy import select
+    from app.models import Task, TaskAIScore
+    monkeypatch.setattr(type(claude_service), "has_api_key", property(lambda self: True))
+    monkeypatch.setattr(claude_service, "complete", _ai)
+    await load_taxonomies(async_session)
+    c = await api_client.post("/api/v1/engagements/clients", json={"name": "GM"})
+    e = await api_client.post("/api/v1/engagements", json={"client_id": c.json()["id"], "name": "AI"})
+    eng = e.json()["id"]
+    csv = ("Name,Job Title,Grade,Department,Level,Line Manager,Salary,Employee ID,Work Activities\n"
+           "Ann,Head,H5,Marketing,1,Top,300000,E1,"
+           "amenable routine drafting; partner cross-team decision; humanled leadership call; physical haul crates\n")
+    ds = (await api_client.post(f"/api/v1/engagements/{eng}/datasets",
+          files={"file": ("o.csv", csv.encode(), "text/csv")})).json()["id"]
+    for ep in ("extract", "benchmark", "ai-opportunity", "infer-potential"):
+        await api_client.post(f"/api/v1/task-intel/{ep}", params={"dataset_id": ds})
+
+    by_text = {(await async_session.get(Task, s.task_id)).task_text: s
+               for s in await async_session.scalars(select(TaskAIScore))}
+    # H2 + high capability → GREEN (the only AI-amenable band that should be green).
+    assert by_text["amenable routine drafting"].zone == "GREEN_LIGHT"
+    # H3 with high capability but the model said GREEN → DERIVED to RED (not AI-amenable band).
+    assert by_text["partner cross-team decision"].zone == "RED_LIGHT"
+    # H4 → RED regardless of the model's GREEN label.
+    assert by_text["humanled leadership call"].zone == "RED_LIGHT"
+    # Physical → stays a robotics/GSE lever, off the software-agent scale.
+    assert by_text["physical haul crates"].zone == "ROBOTICS_GSE_LEVER"
+    assert by_text["physical haul crates"].has_level is None
+
+
 async def test_org_rollup_endpoint_returns_reporting_hierarchy(api_client, async_session, monkeypatch):
     """GET /task-intel/org-rollup returns the reporting hierarchy with AI rolled up to the head (the
     shape the Workflow Mapper Roll-up org chart consumes). No API key needed for the read itself."""

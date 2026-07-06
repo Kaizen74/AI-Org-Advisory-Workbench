@@ -825,3 +825,39 @@ this session — applies to future frontend/dataviz work).
 **Verification:** 5 new regression tests + E2E repro through the real route (mock at the Anthropic
 client seam returning [thinking, text] → 200, model=claude-sonnet-5, max_tokens=16000). Gate GREEN:
 **149 backend tests + clean frontend build, zero regressions.**
+
+## 2026-07-06 — D45: GREEN/RED zone coherence (derive from H-band) + UI clarification
+
+**Source:** Eric — the Workflow Mapper showed the SAME H-band in two colours (e.g. an H3 task tagged
+GREEN_LIGHT next to an H3 tagged RED_LIGHT). Asked to clarify GREEN vs RED and check the zone /
+"why this score" are coherent + aligned across Validation Queue → Workflow Mapper.
+
+**Root cause:** three scoring paths, only two coherent. `derive_zone(cap, has)` (workbank_ingest) =
+GREEN only when capability ≥ 0.60 AND HAS ≤ 2 (i.e. the AI-amenable H1–H2 bands); else RED. The
+**WORKBank-overlay** path and the **manual-override** path (`apply_manual_opportunity`) both use it.
+The **inference** path (`infer_unmatched_potential`) instead stored the model's OWN `zone` label, which
+the HAS-rubric prompt asks the model to assign SEPARATELY from `has_level` — so the model routinely
+returned H3/H4 + GREEN_LIGHT. Result: the board (and the queue label, both read `TaskAIScore.zone`)
+showed one H-band in two colours.
+
+**Fix (backend):** in `infer_unmatched_potential`, derive the zone with `derive_zone(cap, has_level)`
+instead of trusting the model's label; ROBOTICS_GSE_LEVER is still honoured (physical → has_level None,
+off the software-agent scale). Now ALL THREE paths + the queue label + the board agree, and GREEN ⇔
+AI-amenable (H1–H2), matching the app's own "AI-amenable (H1–H2)" header. Zone is now a deterministic
+function of (capability, HAS): high-capability H3 is RED (correct — only H1/H2 are agent opportunities).
+
+**Fix (frontend, WorkflowMapper only):** added `ZONE_META` (plain-language label + one-line meaning +
+colour) — GREEN "AI-agent opportunity (H1–H2 + high capability)", RED "keep human-led (H3–H5 / low
+capability)", ROBOTICS "physical → robotics/GSE lever". Wired into the task-card zone badge (colour dot
++ tooltip), the inspector Zone box (label + inline meaning), and a new "Zone (go/no-go)" legend in the
+overview sidebar noting the zone is derived from the H-band so it always agrees with H0–H5.
+
+**Coherence with "why this score":** the inference rationale is the model's sentence explaining the
+H-band; the zone is now derived from that same H-band, so colour and prose no longer contradict. Manual
+overrides keep their "Consultant-set …" rationale + derived zone. No schema/route/API change.
+
+**Verification:** new regression test (`test_inferred_zone_is_derived_from_has_not_model_label`) —
+model returns H3+GREEN / H4+GREEN / H2+GREEN / physical; stored zones are RED / RED / GREEN / ROBOTICS.
+E2E on the screenshot scenario: "Develop social media content strategy" (H3) → RED_LIGHT in BOTH the
+Validation Queue label and the Workflow Mapper board (aligned). Gate GREEN: **150 backend tests +
+clean frontend build, zero regressions.**

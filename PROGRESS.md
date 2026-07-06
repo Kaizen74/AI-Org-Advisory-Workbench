@@ -726,3 +726,14 @@ informative error when no text). Extraction model upgraded to **claude-sonnet-5*
 `settings_service.model_extract()/model_synth()` (UI → env fallback) instead of env-only. Tests-first
 (3 confirmed failing pre-fix); E2E repro through the real route returns 200 on claude-sonnet-5.
 **Gate:** PASS — **149 backend tests + clean frontend build**, tsc clean, zero regressions.
+
+## 2026-07-06 — GREEN/RED zone coherence + UI clarification (D45)
+
+The Workflow Mapper showed one H-band in two colours because the inference path stored the model's own
+GREEN/RED label (assigned separately from the H-band it also returned), while the overlay + manual paths
+derive the zone from capability + HAS. Fixed: `infer_unmatched_potential` now derives the zone via
+`derive_zone(cap, has_level)` (GREEN = AI-amenable H1–H2 + high capability; ROBOTICS preserved for
+physical). All three paths + the Validation-Queue label + the Workflow-Mapper board now agree, and GREEN
+⇔ H1–H2. Frontend (WorkflowMapper): plain-language zone labels + meaning + a go/no-go legend so GREEN vs
+RED is explained. Regression test + E2E prove the screenshot's H3 task now reads RED_LIGHT in both the
+queue and the board. **Gate:** PASS — **150 backend tests + clean frontend build**, tsc clean, zero regressions.
