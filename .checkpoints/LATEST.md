@@ -1,6 +1,11 @@
 # LATEST CHECKPOINT
-**Updated:** 2026-07-06 (D46 — Roll-up own-vs-team coherence + per-role linked-task detail; live deploy still pending Eric)
-**Latest micro-task:** D46 — Workflow-Mapper Roll-up: the node count was the rolled-up total (self +
+**Updated:** 2026-07-14 (D47 — external research calibration + non-technical deploy README; live deploy still pending Eric)
+**Latest micro-task:** D47 — web-harvester calibration vs primary sources (WORKBank arXiv:2506.06576,
+Anthropic Economic Index, Railway docs): FIXED the reversed Landscape quadrants (Red Light = capable but
+workers resist; was labelled "Automate"), tightened HAS rubric/prompt/chip text to the paper's
+definitions, added automation-vs-augmentation counts + legend, README §1b research anchors + upgraded
+§4 step-by-step deploy guide with pre-flight and verify-it-worked checklists. Gate GREEN: 151 + build.
+**Prior micro-task:** D46 — Workflow-Mapper Roll-up: the node count was the rolled-up total (self +
 all reports), so a head's number read as tasks they personally own ("CCO has 49 tasks?"), and a role's
 tasks weren't visible. `org_rollup` now returns per node the role's OWN tasks (band/zone/review + the
 process→step placement via TaskLink); the Roll-up view shows own vs team distinctly and each role

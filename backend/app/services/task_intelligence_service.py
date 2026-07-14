@@ -253,13 +253,19 @@ async def benchmark_tasks(
 # WORKBank HAS, surfaced as H0–H5. Lower H = more AI-amenable (AI does more of the task); higher H =
 # more human agency required. H0 is our extension: no software-agent overlay (assess as robotics/GSE).
 # Values are ILLUSTRATIVE per the WORKBank guardrail — verify against the source before client use.
+# Level texts calibrated to the WORKBank paper's HAS definitions (Stanford SALT-NLP,
+# arXiv:2506.06576): H1 = agent handles the task entirely; H2 = minimal human input needed;
+# H3 = equal human–agent partnership (outperforms either alone); H4 = agent requires human input
+# (human-led); H5 = human involvement essential throughout. H1–H2 ⇒ automation strategies,
+# H3–H5 ⇒ augmentation strategies (per the paper; the Anthropic Economic Index reads real usage
+# the same way). H0 remains our extension for tasks with no software-agent overlay.
 HUMAN_AGENCY_SCALE: Dict[str, str] = {
     "H0": "No software-agent overlay — either a physical/handling task (robotics/GSE lever) or not yet matched to a relevant benchmark. Not an AI-agent opportunity as-is.",
-    "H1": "AI agent can perform the task with minimal or no human involvement.",
-    "H2": "AI performs most of the task; light human review.",
-    "H3": "Human–AI equal partnership.",
-    "H4": "Human leads the task; AI assists.",
-    "H5": "Human performs the task; AI adds little.",
+    "H1": "AI agent handles the task entirely on its own (automation).",
+    "H2": "AI agent needs only minimal human input for optimal performance (automation).",
+    "H3": "Equal human–AI partnership — together they outperform either alone (augmentation).",
+    "H4": "AI agent requires human input to complete the task successfully — human-led (augmentation).",
+    "H5": "Human involvement is essential throughout; the AI agent cannot function without continuous human direction.",
 }
 
 
@@ -426,10 +432,11 @@ def _build_inference_prompt(payload: List[Dict]) -> str:
         "Human Agency Scale (HAS) and your knowledge of O*NET / ESCO / SkillsFuture task taxonomies.\n"
         f"{_HAS_INFERENCE_MARKER}\n"
         "For EACH task assign:\n"
-        "- has_level: integer 1-5 — H1 = AI can perform with minimal/no human; H2 = AI does most, "
-        "light human review; H3 = equal human-AI partnership; H4 = human leads, AI assists; "
-        "H5 = human-led, AI adds little. Use null ONLY for a physical/handling task with no "
-        "software-agent overlay.\n"
+        "- has_level: integer 1-5 (WORKBank HAS definitions) — H1 = an AI agent can handle the task "
+        "entirely on its own; H2 = the agent needs only minimal human input; H3 = equal human-agent "
+        "partnership (together they outperform either alone); H4 = the agent requires human input to "
+        "succeed (human-led); H5 = human involvement is essential throughout. Use null ONLY for a "
+        "physical/handling task with no software-agent overlay.\n"
         "- capability_score: 0.0-1.0 (current AI capability to perform the task).\n"
         "- zone: GREEN_LIGHT (strong agentic fit), RED_LIGHT (keep human-led), or "
         "ROBOTICS_GSE_LEVER (physical → robotics, not a software agent).\n"

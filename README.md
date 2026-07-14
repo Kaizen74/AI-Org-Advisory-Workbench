@@ -1,8 +1,8 @@
 # OrgAI Advisory Workbench
 
-> **Status:** Early build (Phase 0 — foundations). This README grows as features ship. It is
-> written for a **non-technical owner**: if a word looks like jargon, it is explained the first
-> time it appears.
+> **Status:** All build phases complete (P0–P7) — the app runs locally and is ready for its first
+> cloud deployment (Section 4). This README is written for a **non-technical owner**: if a word
+> looks like jargon, it is explained the first time it appears.
 
 ---
 
@@ -24,14 +24,16 @@ it ships):**
 - _Validation Queue_ — review/approve/reject the AI's mappings in bulk (filtered by confidence);
   approvals teach the system, and a desire-pulse instrument captures local automation preferences
   alongside (never overwriting) the US data. ✅ _(Phase 3)_
-- _Scenario Studio_ — design future-state org options as a list of "moves" (merge/split/reparent/
-  add/delete/regrade), see live deltas vs the baseline, and compare scenarios side-by-side; present
-  to lock, fork to keep editing. ✅ _(Phase 4)_
-- _Workflow Mapper_ — map tasks onto end-to-end processes/value streams and score AI opportunity
-  (L0–L3) per process. ✅ _(Phase 5)_
-- _Transition Planner_ — for a scenario, classify how each role is affected (unchanged/augmented/
-  transformed/displaced/new), suggest SkillsFuture reskilling pathways, and export a transition
-  register. ✅ _(Phase 5)_
+- _Workflow Mapper_ — the heart of the app: a visual drag-and-drop board that maps tasks onto
+  end-to-end processes, scored on the **Human Agency Scale (H0–H5)** from Stanford's WORKBank
+  research. Three views: **Flow** (the board), **Landscape** (capability × worker desire, with the
+  four WORKBank zones), and **Roll-up** (an org chart with AI opportunity aggregated up the
+  reporting lines to each department head; click a role to see its tasks and where they're mapped).
+  Exports the finalized workflow as CSV or a branded PowerPoint. ✅ _(Phase 5, expanded)_
+- _Scenario Studio_ & _Transition Planner_ — future-state design moves and role-impact/reskilling
+  registers. ✅ _(Built and tested; currently hidden behind a switch — `SHOW_SIMULATION` in
+  `frontend/src/config.ts` — to keep the app focused on role → task → AI-potential. Flip it to
+  `true` to restore the two tabs.)_
 - _Deliverables_ — one-click branded PowerPoint/Word/Excel exports (diagnostic, scenario
   comparison, AI roadmap, TOM, metrics, transition register), each with an auto-generated provenance
   page; unreviewed AI content is automatically blocked. ✅ _(Phase 6 — modern-minimalist template)_
@@ -41,6 +43,36 @@ it ships):**
 - _Security_ — **private sign-in** (email + passcode allowlist; the app is never public),
   per-engagement anonymization (pseudonyms; no real names in exports), real-name purge + full purge
   (PDPA), and an audit trail; Postgres-ready for cloud deploy. ✅ _(Phase 7)_
+
+---
+
+## 1b. The research behind the scores (methodology anchors)
+
+The app's AI-potential language is deliberately anchored to published research, so what a client
+sees in a deliverable can be traced to a credible source (last calibrated **July 2026**):
+
+- **Human Agency Scale (H0–H5)** and the **WORKBank** dataset come from Stanford's *"Future of Work
+  with AI Agents"* study ([arXiv:2506.06576](https://arxiv.org/abs/2506.06576); data:
+  [SALT-NLP/WORKBank](https://github.com/SALT-NLP/workbank)) — 1,500 workers and AI experts rating
+  844 tasks across 104 occupations. H1 = an AI agent can handle the task entirely; H3 = equal
+  human–AI partnership; H5 = human involvement essential. **H0 is this app's own extension** for
+  tasks with no software-agent overlay (physical work → a robotics lever instead).
+- **The four Landscape quadrants** (Green Light / Red Light / R&D Opportunity / Low Priority) are
+  the paper's zones, defined by **capability × worker desire**. Note the counter-intuitive one:
+  *Red Light* means AI *can* do the task but workers *don't want it automated* — deploy there with
+  caution and change management, not enthusiasm. The study found workers' top concerns are lack of
+  trust (45%), fear of replacement (23%), and loss of human touch (16%).
+- **Automation vs augmentation:** H1–H2 tasks favour automation strategies; H3–H4 favour
+  augmentation (human–AI collaboration). H3 "equal partnership" is the most worker-desired level in
+  roughly 45% of occupations — and real-world usage agrees: the
+  [Anthropic Economic Index](https://www.anthropic.com/news/the-anthropic-economic-index) measures
+  a near-even split (augmentation ~52% / automation ~45% of AI conversations as of 2026). So the
+  augmentation count in the Workflow Mapper is an opportunity class in its own right.
+- **The go/no-go zone on each task card** (GREEN_LIGHT / RED_LIGHT / ROBOTICS) is this app's own
+  derived signal — capability × H-band — kept deliberately separate from the desire-based WORKBank
+  zones above (desire data is often not yet captured for a client; the Landscape shows it once it is).
+- All WORKBank-derived values remain **illustrative until verified for the client** — the app
+  caveats them automatically and blocks unreviewed AI content from deliverables.
 
 ---
 
@@ -154,8 +186,22 @@ your API key or database address.
 > account with the `ACCESS_USERS` variable below, then add/remove others inside the app
 > (**Settings → Access control**).
 
-> **Note:** these steps were written from the services' standard flow. The exact button wording can
-> change as Vercel/Railway update their sites; the names below are what to look for. Do this once.
+> **Note:** these steps were checked against the services' current documentation (July 2026). The
+> exact button wording can still change as Vercel/Railway update their sites; the names below are
+> what to look for. Do this once — total time is about 30–45 minutes.
+
+**What you need before starting (the pre-flight list):**
+
+- [ ] A **GitHub account** that can see this repository (you have this — it's your repo).
+- [ ] A **Railway account** (<https://railway.app>) — sign up with the "Login with GitHub" button.
+- [ ] A **Vercel account** (<https://vercel.com>) — also sign up with GitHub.
+- [ ] Your **Anthropic API key** (from <https://console.anthropic.com>) — you'll paste it into the
+      app's Settings page at the very end, not into any hosting site.
+- [ ] Two long random strings for `ANON_SALT` and `AUTH_SECRET` (open a password manager and
+      generate two 40-character passwords — that's all these are).
+- [ ] Decide your first login: an email + a strong passcode (this becomes `ACCESS_USERS`).
+- [ ] The code must be on the **`main` branch** (or point Railway/Vercel at your working branch —
+      both services let you pick the branch under their settings).
 
 ### 4a. Backend on Railway
 1. Go to <https://railway.app> → sign in with GitHub.
@@ -196,8 +242,24 @@ your API key or database address.
    passcode you set in step 4a-4. Then go to **Settings**, paste your **Anthropic API key**, and (in
    **Settings → Access control**) add any other people who should have access. You're live and private.
 
-### 4d. Redeploying after changes
-Just push to `main` (or merge a branch into `main`). Railway and Vercel both rebuild automatically.
+### 4d. Verify it worked (5-minute checklist)
+1. Open **`https://your-app.up.railway.app/health`** in a browser — you should see
+   `{"status":"ok"}`. (This is the only page that works without signing in.)
+2. Open your **Vercel URL** — you should see the neutral **sign-in screen** (no SATS branding
+   visible before login — that's by design).
+3. Sign in with your `ACCESS_USERS` email + passcode.
+4. Go to **Settings** and check the **AI model** fields show `claude-sonnet-5` (extraction) and
+   `claude-opus-4-8` (synthesis). Paste your **Anthropic API key** and click **Test connection** —
+   you want "Connection OK".
+5. Go to **Engagements** → create a client + engagement → upload an org CSV → click **Diagnose →**.
+   If the metric tiles appear, the whole chain (browser → Vercel → Railway → database) works.
+6. Run the pipeline on the **Task Intelligence** tab, review items in the **Validation Queue**, and
+   open the **Workflow Mapper** — you're fully live.
+
+### 4e. Redeploying after changes
+Just push to `main` (or merge a branch into `main`). Railway and Vercel both rebuild automatically —
+there is nothing to click. Give them 2–3 minutes, then hard-refresh your browser
+(Ctrl/Cmd+Shift+R).
 
 ---
 

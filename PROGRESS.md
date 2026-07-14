@@ -746,3 +746,16 @@ review + workflow placement (process→step via TaskLink); the Roll-up view show
 and expands each role (click) to list its own tasks and where each is mapped — tying the org chart back
 to Flow. Verified on the real CSV (CCO own=1, team=19=org total; Head Global Marketing own=1<team=14).
 2 new/extended tests. **Gate:** PASS — **151 backend tests + clean frontend build**, tsc clean, zero regressions.
+
+## 2026-07-14 — External research calibration + non-technical deploy README (D47)
+
+Ran a web-harvester (Mode A) calibration pass against primary sources (Stanford WORKBank
+arXiv:2506.06576, Anthropic Economic Index, Railway docs). Caught and fixed a real calibration bug:
+the Landscape quadrants were reversed vs the paper (high-capability + LOW-desire was labelled
+"Automate ↗"; it is WORKBank's Red Light zone — workers resist). Quadrants now carry the paper's four
+zone names with tooltips; HAS rubric text + inference prompt + chip names tightened to the paper's
+definitions; header shows automation (H1–H2) AND augmentation (H3–H4) counts with an explanatory
+legend (H3 the most worker-desired level; AEI 2026 ≈52/45 augmentation/automation). README: new
+methodology-anchors section + upgraded step-by-step §4 deploy guide (pre-flight checklist + verify-it-
+worked checklist) for a non-technical owner. Skills installed: web-harvester (new). **Gate:** PASS —
+**151 backend tests + clean frontend build**, zero regressions.

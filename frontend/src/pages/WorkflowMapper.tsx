@@ -32,15 +32,17 @@ type MoveOp = { taskId: string; fromStepId: string | null; toStepId: string | nu
 // Headline scale: WORKBank Human Agency Scale (H0–H5). `potential` is the AI-amenability weight used
 // for the opportunity index (lower H = higher potential; H0/H5 contribute 0).
 const BANDS: AgencyBand[] = ["H0", "H1", "H2", "H3", "H4", "H5"];
+// Names calibrated to the WORKBank paper's HAS definitions (Stanford, arXiv:2506.06576).
 const HAS: Record<AgencyBand, { name: string; chip: string; bar: string; potential: number }> = {
   H0: { name: "No agent overlay (robotics/GSE)", chip: "bg-[#e7eaf3] text-[#5b6b9c]", bar: "#94a3b8", potential: 0 },
-  H1: { name: "AI can do it (minimal human)", chip: "bg-[#7fc0b2] text-[#0d3b34]", bar: "#2f8074", potential: 1.0 },
-  H2: { name: "AI does most", chip: "bg-[#b6dbd1] text-[#1d564d]", bar: "#5fb3a6", potential: 0.75 },
+  H1: { name: "AI handles it entirely", chip: "bg-[#7fc0b2] text-[#0d3b34]", bar: "#2f8074", potential: 1.0 },
+  H2: { name: "AI does most, minimal input", chip: "bg-[#b6dbd1] text-[#1d564d]", bar: "#5fb3a6", potential: 0.75 },
   H3: { name: "Equal partnership", chip: "bg-[#dcebe7] text-[#2f6e64]", bar: "#9fcabf", potential: 0.5 },
-  H4: { name: "Human leads, AI assists", chip: "bg-[#eef1f4] text-[#64748b]", bar: "#cbd5e1", potential: 0.25 },
-  H5: { name: "Human-led", chip: "bg-slate-100 text-slate-500", bar: "#e2e8f0", potential: 0 },
+  H4: { name: "Human-led, AI assists", chip: "bg-[#eef1f4] text-[#64748b]", bar: "#cbd5e1", potential: 0.25 },
+  H5: { name: "Human essential", chip: "bg-slate-100 text-slate-500", bar: "#e2e8f0", potential: 0 },
 };
-const AI_AMENABLE: AgencyBand[] = ["H1", "H2"]; // strongly AI-amenable bands
+const AI_AMENABLE: AgencyBand[] = ["H1", "H2"];   // automation-leaning bands (WORKBank: automation strategies)
+const AUGMENTATION: AgencyBand[] = ["H3", "H4"];  // augmentation-leaning bands (human–AI collaboration)
 
 // Zone = the go/no-go recommendation, DERIVED from the H-band + capability (kept coherent with H0–H5
 // backend-side): GREEN = an AI-agent opportunity (H1–H2 + high capability), RED = keep human-led
@@ -350,6 +352,7 @@ export default function WorkflowMapper({
   const proc = processes.find((p) => p.id === activeProc);
   const filtersActive = BANDS.some((b) => !aiOn[b]) || reviewFilter !== "all";
   const amenable = (ts: BoardTask[]) => ts.filter((t) => AI_AMENABLE.includes(t.human_agency_level)).length;
+  const augmentable = (ts: BoardTask[]) => ts.filter((t) => AUGMENTATION.includes(t.human_agency_level)).length;
 
   return (
     <div className="flex h-[calc(100vh-150px)] min-h-[560px] flex-col overflow-hidden rounded-lg border border-slate-200 bg-white">
@@ -367,7 +370,8 @@ export default function WorkflowMapper({
                 <span><b className="tabular-nums text-slate-700">{board.steps.length}</b> steps</span>
                 <span><b className="tabular-nums text-slate-700">{board.task_count}</b> tasks</span>
                 <span><b className="tabular-nums text-slate-700">{board.unmapped.length}</b> unmapped</span>
-                <span><b className="tabular-nums text-[#1d564d]">{amenable(analysisTasks)}</b> AI-amenable (H1–H2)</span>
+                <span title="Automation-leaning tasks (WORKBank: H1–H2 favour automation strategies)"><b className="tabular-nums text-[#1d564d]">{amenable(analysisTasks)}</b> automation (H1–H2)</span>
+                <span title="Augmentation-leaning tasks (WORKBank: H3–H4 favour human–AI collaboration; H3 'equal partnership' is the most worker-desired level across occupations)"><b className="tabular-nums text-[#2f6e64]">{augmentable(analysisTasks)}</b> augmentation (H3–H4)</span>
               </div>
             )}
           </div>
@@ -661,7 +665,7 @@ function LandscapeView({ tasks, dimOf, onSelectTask, onHoverRole }: {
     <div className="max-w-[820px]">
       <div className="mb-4 flex items-center gap-2.5">
         <h3 className="text-sm font-semibold text-slate-800">AI opportunity landscape</h3>
-        <span className="text-xs text-slate-400">automation capability × local desire · dot colour = Human Agency (H0–H5)</span>
+        <span className="text-xs text-slate-400">automation capability × worker desire · dot colour = Human Agency (H0–H5) · quadrants per Stanford WORKBank</span>
       </div>
       {placeable.length === 0 ? (
         <Empty message="No capability scores yet. Run Task Intelligence → AI opportunity (and rate/benchmark tasks) to populate the landscape." />
@@ -671,12 +675,15 @@ function LandscapeView({ tasks, dimOf, onSelectTask, onHoverRole }: {
             <div className="flex w-5 items-center justify-center"><span className="rotate-180 text-[10.5px] font-semibold uppercase tracking-wider text-slate-400" style={{ writingMode: "vertical-rl" }}>Desire →</span></div>
             <div className="flex-1">
               <div className="relative h-[420px] rounded-xl border border-slate-200 bg-white">
-                {/* quadrant guides */}
+                {/* Quadrant guides — the four WORKBank zones (desire × capability, arXiv:2506.06576).
+                    CALIBRATION FIX: high capability + HIGH desire = "Green Light" (automate);
+                    high capability + LOW desire = "Red Light" (workers resist — deploy with caution).
+                    The previous labels had these reversed vs the source research. */}
                 <div className="absolute inset-0 grid grid-cols-2 grid-rows-2">
-                  <div className="border-b border-r border-slate-100 p-2 text-[10px] font-semibold uppercase tracking-wide text-slate-300">Human-led</div>
-                  <div className="border-b border-slate-100 p-2 text-right text-[10px] font-semibold uppercase tracking-wide text-[#9a6a18]">Augment / co-pilot</div>
-                  <div className="border-r border-slate-100 p-2 text-[10px] font-semibold uppercase tracking-wide text-slate-300">Deprioritize</div>
-                  <div className="p-2 text-right text-[10px] font-semibold uppercase tracking-wide text-[#3d8273]">Automate ↗</div>
+                  <div title="High worker desire but low current AI capability — promising direction to pilot/watch (WORKBank: R&D Opportunity Zone)" className="border-b border-r border-slate-100 p-2 text-[10px] font-semibold uppercase tracking-wide text-[#9a6a18]">R&D opportunity</div>
+                  <div title="High capability AND high worker desire — prime candidates for AI-agent deployment (WORKBank: Automation 'Green Light' Zone)" className="border-b border-slate-100 p-2 text-right text-[10px] font-semibold uppercase tracking-wide text-[#3d8273]">Green light — automate ↗</div>
+                  <div title="Low desire and low capability (WORKBank: Low Priority Zone)" className="border-r border-slate-100 p-2 text-[10px] font-semibold uppercase tracking-wide text-slate-300">Low priority</div>
+                  <div title="AI is capable but workers don't want it automated — expect resistance; involve the team first (WORKBank: Automation 'Red Light' Zone)" className="p-2 text-right text-[10px] font-semibold uppercase tracking-wide text-[#a04d2e]">Red light — caution</div>
                 </div>
                 {placeable.map((t) => {
                   const hasDesire = t.desire_score != null;
@@ -964,6 +971,11 @@ function OverviewInspector({ proc, board, index, reviewFilter }: {
           </div>
         ))}
         <div className="flex items-center gap-2 pt-1 text-[11px] text-slate-500"><span className="h-1.5 w-1.5 rounded-full" style={{ background: "#cbb24a" }} /> unreviewed score</div>
+        <p className="pt-1 text-[10.5px] italic leading-snug text-slate-400">
+          H1–H2 favour <b>automation</b>; H3–H4 favour <b>augmentation</b> (human–AI collaboration).
+          Across occupations, workers most often prefer H3 "equal partnership" — augmentation is an
+          opportunity class, not a consolation prize. (Stanford WORKBank; Anthropic Economic Index.)
+        </p>
       </div>
 
       <div className="mt-5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Legend — Zone (go / no-go)</div>

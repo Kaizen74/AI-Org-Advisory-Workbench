@@ -179,6 +179,20 @@ CCO own=1 / team=19 (=org total) / reports 2-24; Head Global Marketing own=1 < t
 band/zone/placement matches the Flow board. 2 new/extended tests. No route/schema/migration change.
 **Gate GREEN: 151 backend tests + clean frontend build, zero regressions.**
 
+**External research calibration + deploy README (2026-07-14 — D47):** web-harvester (new skill,
+installed) calibration pass against primary sources. **Fixed a reversed-quadrant calibration bug** in
+the Landscape: per WORKBank (arXiv:2506.06576) Green Light = high capability + HIGH desire (automate)
+and Red Light = high capability + LOW desire (workers resist); our labels had these swapped. Quadrants
+now use the paper's four zone names + tooltips. HAS rubric text, the HAS-inference prompt, and the
+frontend chip names tightened to the paper's exact level definitions; the Workflow Mapper header now
+shows BOTH "automation (H1–H2)" and "augmentation (H3–H4)" counts with an explanatory legend (H3 the
+most worker-desired level in ~45% of occupations; Anthropic Economic Index 2026 ≈52/45
+augmentation/automation). The per-task go/no-go zone stays capability × H-band (D45 — settled),
+distinct from the paper's desire-based zones; documented in README §1b. README also gained the
+methodology-anchors section and an upgraded §4 deploy guide (pre-flight checklist + "Verify it worked"
+checklist) for the non-technical owner. **Gate GREEN: 151 backend tests + clean frontend build, zero
+regressions.**
+
 ---
 
 ## RESILIENT-BUILD SKILL — FILE MAPPING (do NOT create parallel files)

@@ -894,3 +894,44 @@ organization"), team=19 (=org total), reports 2/24; Head Global Marketing own=1 
 
 **Verification:** 2 new/extended backend tests (own≠rollup coherence + task carries process→step
 placement). Gate GREEN: **151 backend tests + clean frontend build, zero regressions.**
+
+## 2026-07-14 — D47: external research calibration (web-harvester) + README deploy guide for a non-technical owner
+
+**Source:** Eric — "review the entire code build and calibrate against external credible trends and
+research", leverage the attached skills (web-harvester NEW; web-design-dataviz + resilient-build
+re-uploads), apply refinements, and ensure step-by-step README deploy instructions for a
+non-technical owner.
+
+**Harvest provenance (web-harvester Mode A):** 5 triangulated WebSearch queries (WORKBank/HAS zones;
+Anthropic Economic Index automation-vs-augmentation; HAS level definitions + zone stats; Railway
+deploy flow). Direct page fetches (arxiv.org, saltlab.stanford.edu) returned 403 via the sandbox
+proxy — recorded as a gap; calibration facts come from search-result content over primary sources
+(arXiv:2506.06576, Stanford SALT Lab, anthropic.com/research, docs.railway.com — quality 4–5).
+
+**Findings → refinements applied:**
+1. **CALIBRATION BUG (fixed):** the Landscape quadrant labels were REVERSED vs the WORKBank paper.
+   The paper's zones (desire × capability): Green Light = high capability + HIGH desire (automate);
+   Red Light = high capability + LOW desire (workers resist — caution); R&D Opportunity = high desire
+   + low capability; Low Priority = low both. Our chart labelled high-desire/high-capability
+   "Augment / co-pilot" and LOW-desire/high-capability "Automate ↗" — i.e. it pointed consultants at
+   exactly the tasks workers don't want automated. Quadrants renamed + repositioned to the paper's
+   four zones with plain-language tooltips (incl. worker concerns: trust 45%, replacement fear 23%,
+   human touch 16%). Frontend labels only — the plotting math was already correct.
+2. **HAS rubric fidelity:** HUMAN_AGENCY_SCALE texts + the HAS-inference prompt + frontend chip names
+   tightened to the paper's definitions (H1 "agent handles entirely" … H5 "human involvement
+   essential"; H0 stays our extension). The prompt change grounds live scoring in the source rubric.
+3. **Automation vs augmentation framing:** header now shows BOTH counts — "N automation (H1–H2) ·
+   M augmentation (H3–H4)" — and the HAS legend explains the split (paper: H1–H2 → automation
+   strategies, H3–H5 → augmentation; H3 'equal partnership' the most worker-desired level in ~45% of
+   occupations; Anthropic Economic Index 2026: augmentation ~52% vs automation ~45% of real usage).
+   Positions augmentation as an opportunity class, not a consolation prize. Index formula unchanged.
+4. **Kept settled (D45):** the per-task go/no-go zone stays capability × H-band — deliberately
+   DIFFERENT from the paper's desire-based zones (local desire mostly uncaptured; D45 coherence
+   holds). The distinction is now documented in README §1b so nobody conflates the two.
+5. **README:** new §1b "The research behind the scores" (citations + calibration date); module list
+   updated to the post-D17 product; §4 deploy guide upgraded — pre-flight checklist (accounts, two
+   random secrets, first login, branch), Railway flow re-verified against current docs, new §4d
+   "Verify it worked" 6-step checklist (health endpoint → sign-in → model check claude-sonnet-5 →
+   test connection → first diagnose → pipeline), redeploy note.
+**Verification:** frontend-copy + prompt/rubric-text changes only (no schema/route/logic change);
+gate GREEN — **151 backend tests + clean frontend build, zero regressions.**
