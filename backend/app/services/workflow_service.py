@@ -392,3 +392,127 @@ async def export_workflow_csv(session: AsyncSession, engagement_id: str, dataset
                     t.get("ai_level") or "", t.get("review_state") or "", t.get("source") or "",
                 ])
     return out.getvalue().encode("utf-8")
+
+
+# ── Landscape & Roll-up exports (D48) — deck/CSV mirrors of the other two views ──────────────────
+def _workbank_quadrant(cap: Optional[float], desire: Optional[float]) -> str:
+    """The WORKBank zone a plotted dot falls in (0.5 axis split — the UI's quadrant grid, D47).
+    Desire not captured → '' (the UI draws those hollow at neutral height, unclassified)."""
+    if cap is None or desire is None:
+        return ""
+    if cap >= 0.5:
+        return "Green Light — automate" if desire >= 0.5 else "Red Light — caution"
+    return "R&D Opportunity" if desire >= 0.5 else "Low Priority"
+
+
+async def landscape_rows(session: AsyncSession, dataset_id: str,
+                         reviewed_only: bool = False) -> Dict:
+    """Every dataset task flattened with the same `_board_task_payload` fields the Landscape view
+    plots (capability = X, desire = Y, H-band = colour), split into plotted `points`
+    (capability-scored) and an `unscored` count. `reviewed_only` mirrors the UI's
+    'Reviewed only' analysis filter (D42)."""
+    tasks = list(await session.scalars(
+        select(Task).join(Position, Task.position_id == Position.id)
+        .where(Position.dataset_id == dataset_id).order_by(Task.id)
+    ))
+    positions = {
+        p.id: p
+        for p in await session.scalars(select(Position).where(Position.dataset_id == dataset_id))
+    }
+    task_ids = [t.id for t in tasks]
+    scores = {
+        s.task_id: s
+        for s in await session.scalars(select(TaskAIScore).where(TaskAIScore.task_id.in_(task_ids)))
+    } if task_ids else {}
+    rows = [_board_task_payload(t, positions.get(t.position_id), scores.get(t.id), None)
+            for t in tasks]
+    if reviewed_only:
+        rows = [r for r in rows if r["review_state"] == "approved"]
+    points = [r for r in rows if r["capability_score"] is not None]
+    for r in points:
+        r["workbank_quadrant"] = _workbank_quadrant(r["capability_score"], r["desire_score"])
+    return {"points": points, "unscored": len(rows) - len(points), "total": len(rows)}
+
+
+async def export_landscape_csv(session: AsyncSession, dataset_id: str,
+                               reviewed_only: bool = False) -> bytes:
+    """CSV of the AI-opportunity landscape: one row per plotted dot (capability-scored task),
+    carrying exactly the fields the on-screen plot encodes (axes, H-band colour, quadrant).
+    Role = job title, never a name."""
+    data = await landscape_rows(session, dataset_id, reviewed_only=reviewed_only)
+    headers = ["task_text", "role", "department", "human_agency_level", "capability_score",
+               "desire_score", "workbank_quadrant", "zone", "review_state", "source"]
+    out = io.StringIO()
+    w = csv.writer(out)
+    w.writerow(headers)
+    for r in data["points"]:
+        w.writerow([
+            r["text"], r["role"], r.get("department") or "", r["human_agency_level"],
+            r["capability_score"],
+            "" if r["desire_score"] is None else r["desire_score"],
+            r["workbank_quadrant"], r.get("zone") or "", r["review_state"], r.get("source") or "",
+        ])
+    return out.getvalue().encode("utf-8")
+
+
+def flatten_rollup(rollup: Dict) -> List[Dict]:
+    """Depth-first flatten of the org-hierarchy roll-up into display rows — the same order and
+    numbers the Roll-up view renders: siblings sorted by rolled-up index (desc), each row with
+    own vs team counts, reviewed %, rolled-up index and H-band mix. Role = job title, never a name."""
+    from .deliverable_builders import has_index
+
+    nodes = {n["employee_key"]: n for n in rollup["nodes"]}
+    children: Dict[str, List[Dict]] = {}
+    for n in rollup["nodes"]:
+        if n["manager_key"]:
+            children.setdefault(n["manager_key"], []).append(n)
+
+    def sort_key(n: Dict):
+        # Mirrors the UI's sortByOpportunity: index desc, team size desc, then stable by title.
+        return (-has_index(n["rollup_bands"]), -n["rollup_tasks"], n["job_title"])
+
+    rows: List[Dict] = []
+
+    def walk(n: Dict, depth: int) -> None:
+        team = n["rollup_tasks"]
+        rows.append({
+            "employee_key": n["employee_key"],
+            "title": n["job_title"],
+            "department": n.get("department") or "",
+            "depth": depth,
+            "level": n.get("level", 0),
+            "own": n["self_tasks"],
+            "team": team,
+            "reviewed_pct": round(n["rollup_reviewed"] / team * 100) if team else 0,
+            "index": has_index(n["rollup_bands"]),
+            "bands": n["rollup_bands"],
+            "direct_reports": n["direct_reports"],
+            "total_reports": n["total_reports"],
+        })
+        for c in sorted(children.get(n["employee_key"], []), key=sort_key):
+            walk(c, depth + 1)
+
+    for root in sorted((nodes[k] for k in rollup["roots"] if k in nodes), key=sort_key):
+        walk(root, 0)
+    return rows
+
+
+async def export_rollup_csv(session: AsyncSession, dataset_id: str) -> bytes:
+    """CSV of the org-hierarchy roll-up: one row per role in the on-screen (depth-first) order,
+    with own/team task counts, rolled-up index, reviewed % and the H0–H5 mix."""
+    from .task_intelligence_service import org_rollup
+
+    rows = flatten_rollup(await org_rollup(session, dataset_id))
+    headers = ["depth", "role", "department", "org_level", "own_tasks", "team_tasks",
+               "direct_reports", "total_reports", "rollup_index", "reviewed_pct",
+               "H0", "H1", "H2", "H3", "H4", "H5"]
+    out = io.StringIO()
+    w = csv.writer(out)
+    w.writerow(headers)
+    for r in rows:
+        w.writerow([
+            r["depth"], r["title"], r["department"], r["level"], r["own"], r["team"],
+            r["direct_reports"], r["total_reports"], r["index"], r["reviewed_pct"],
+            *(r["bands"].get(b, 0) for b in ("H0", "H1", "H2", "H3", "H4", "H5")),
+        ])
+    return out.getvalue().encode("utf-8")

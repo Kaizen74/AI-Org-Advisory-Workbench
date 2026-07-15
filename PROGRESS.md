@@ -759,3 +759,16 @@ legend (H3 the most worker-desired level; AEI 2026 ≈52/45 augmentation/automat
 methodology-anchors section + upgraded step-by-step §4 deploy guide (pre-flight checklist + verify-it-
 worked checklist) for a non-technical owner. Skills installed: web-harvester (new). **Gate:** PASS —
 **151 backend tests + clean frontend build**, zero regressions.
+
+## 2026-07-15 — Landscape & Roll-up exports mirror the on-screen views (D48)
+
+↓CSV/↓PPTX only covered the Flow view. Now the toolbar buttons are view-aware and export whatever is on
+screen: **Landscape** → `ai_landscape.csv` (one row per plotted dot: capability, desire, H-band, WORKBank
+quadrant, zone, review state; honours "Reviewed only") + `ai_landscape.pptx` (the capability×desire
+scatter with D47 quadrant labels, band-coloured dots, hollow = no desire, capped at 250 dots);
+**Roll-up** → `org_rollup.csv` (depth-first rows in on-screen order: own/team tasks, rolled-up index,
+reviewed %, H0–H5 mix) + `org_rollup.pptx` (indented reporting lines + H-mix bars, paginated 12
+roles/slide). Exports reuse the exact data paths + math the views render from (`_board_task_payload`,
+`org_rollup` + shared `has_index`) so screen and file can't drift; role = job title, never a name
+(test-asserted). 4 additive endpoints, 3 new tests. **Gate:** PASS — **154 backend tests + clean
+frontend build**, tsc clean, zero regressions.

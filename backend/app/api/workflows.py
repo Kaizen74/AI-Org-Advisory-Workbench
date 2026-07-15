@@ -158,3 +158,47 @@ async def export_pptx(engagement_id: str, dataset_id: str,
         content=data, media_type=_PPTX_MEDIA,
         headers={"Content-Disposition": "attachment; filename=workflow_map.pptx"},
     )
+
+
+# ── Export the Landscape & Roll-up views (D48) — deck/CSV mirrors of what's on screen ─────────
+@router.get("/landscape.csv")
+async def landscape_csv(dataset_id: str, reviewed_only: bool = False,
+                        session: AsyncSession = Depends(get_session)):
+    """CSV of the AI-opportunity landscape: one row per plotted (capability-scored) task."""
+    data = await svc.export_landscape_csv(session, dataset_id, reviewed_only=reviewed_only)
+    return Response(
+        content=data, media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=ai_landscape.csv"},
+    )
+
+
+@router.get("/landscape.pptx")
+async def landscape_pptx(dataset_id: str, reviewed_only: bool = False,
+                         session: AsyncSession = Depends(get_session)):
+    """PowerPoint mirror of the Landscape view (capability × desire, WORKBank quadrants)."""
+    data = await deliverable_service.build_landscape_deck(session, dataset_id,
+                                                          reviewed_only=reviewed_only)
+    return Response(
+        content=data, media_type=_PPTX_MEDIA,
+        headers={"Content-Disposition": "attachment; filename=ai_landscape.pptx"},
+    )
+
+
+@router.get("/rollup.csv")
+async def rollup_csv(dataset_id: str, session: AsyncSession = Depends(get_session)):
+    """CSV of the org-hierarchy roll-up: one row per role, depth-first in on-screen order."""
+    data = await svc.export_rollup_csv(session, dataset_id)
+    return Response(
+        content=data, media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=org_rollup.csv"},
+    )
+
+
+@router.get("/rollup.pptx")
+async def rollup_pptx(dataset_id: str, session: AsyncSession = Depends(get_session)):
+    """PowerPoint mirror of the Roll-up view (reporting lines, own/team, index, H-mix bars)."""
+    data = await deliverable_service.build_rollup_deck(session, dataset_id)
+    return Response(
+        content=data, media_type=_PPTX_MEDIA,
+        headers={"Content-Disposition": "attachment; filename=org_rollup.pptx"},
+    )

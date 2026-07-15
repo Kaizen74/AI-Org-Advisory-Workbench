@@ -193,6 +193,21 @@ methodology-anchors section and an upgraded §4 deploy guide (pre-flight checkli
 checklist) for the non-technical owner. **Gate GREEN: 151 backend tests + clean frontend build, zero
 regressions.**
 
+**Landscape & Roll-up exports (2026-07-15 — D48):** the Workflow Mapper's ↓CSV/↓PPTX toolbar buttons
+are now **view-aware** — they export whatever view is on screen, as a faithful mirror of the visual.
+Landscape → `ai_landscape.csv` (one row per plotted dot: capability, desire, H-band, WORKBank quadrant,
+zone, review state; honours the "Reviewed only" filter via `?reviewed_only=`) + `ai_landscape.pptx`
+(the capability×desire scatter with the D47 quadrant labels, band-coloured dots, hollow = desire not
+captured, 250-dot cap for scale). Roll-up → `org_rollup.csv` (depth-first rows in on-screen order:
+own/team tasks, rolled-up index, reviewed %, H0–H5 mix) + `org_rollup.pptx` (indented reporting lines
+with own/team, index and H-mix stacked bars; paginated 12 roles/slide). Exports reuse the exact data
+paths and math the views render from (`_board_task_payload`, `org_rollup`, shared `has_index`) so screen
+and file cannot drift; role = job title, never a name (test-asserted). Additive only: 4 new endpoints
+(`GET /workflows/landscape.csv|.pptx`, `/rollup.csv|.pptx`), builders `landscape_slide`/
+`org_rollup_slide`, service fns `landscape_rows`/`flatten_rollup`/`export_*_csv`/`build_*_deck`; 3 new
+tests. PAX baseline unchanged — still LOCKED 64 / 34 / 53.1% / 6,620,000 / 6. **Gate GREEN: 154 backend
+tests + clean frontend build, zero regressions.**
+
 ---
 
 ## RESILIENT-BUILD SKILL — FILE MAPPING (do NOT create parallel files)

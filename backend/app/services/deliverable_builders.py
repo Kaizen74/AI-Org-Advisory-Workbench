@@ -25,6 +25,16 @@ HAS_COLORS = {
     "H0": "94A3B8", "H1": "2F8074", "H2": "5FB3A6",
     "H3": "9FCABF", "H4": "CBD5E1", "H5": "E2E8F0",
 }
+# AI-opportunity index weights — the SAME formula the Workflow Mapper UI shows (index = mean × 100).
+HAS_WEIGHTS = {"H0": 0.0, "H1": 1.0, "H2": 0.75, "H3": 0.5, "H4": 0.25, "H5": 0.0}
+
+
+def has_index(bands: dict) -> int:
+    """Index 0-100 from a band-count map — identical to the frontend's indexFromBands."""
+    total = sum(bands.get(b, 0) for b in HAS_WEIGHTS)
+    if not total:
+        return 0
+    return round(sum(bands.get(b, 0) * w for b, w in HAS_WEIGHTS.items()) / total * 100)
 
 
 def _rgb(hexstr: str) -> RGBColor:
@@ -247,6 +257,135 @@ def workflow_board_slide(prs: Presentation, theme: Theme, name: str, value_strea
              f"Mapped {mapped} / {total} tasks  ·  {unmapped} unmapped   "
              "·   colour = Human Agency (H0 robotics → H5 human-led)",
              size=10, color=theme.muted, font=theme.body_font)
+
+
+def landscape_slide(prs: Presentation, theme: Theme, points: Sequence[dict],
+                    unscored: int = 0) -> None:
+    """The AI-opportunity landscape (capability × worker desire) — the deck mirror of the Workflow
+    Mapper's Landscape view. Quadrants carry the WORKBank zone names (arXiv:2506.06576, D47):
+    Green Light (high cap + high desire), Red Light (high cap + low desire), R&D Opportunity,
+    Low Priority. `points`: [{capability, desire|None, band}]; desire None → neutral 0.5, hollow dot.
+    Scalable: dots capped at 250 (a '+N more' note covers the rest)."""
+    slide = _blank(prs)
+    _textbox(slide, Inches(0.5), Inches(0.45), Inches(12.3), Inches(0.8),
+             "AI opportunity landscape", size=24, color=theme.ink, font=theme.title_font)
+    _accent_rule(slide, theme, top=Inches(1.25), left=Inches(0.5), width=Inches(1.4))
+
+    if not points:
+        _textbox(slide, Inches(0.5), Inches(2.0), Inches(11), Inches(0.6),
+                 "No capability-scored tasks yet — run Task Intelligence → AI opportunity.",
+                 size=14, color=theme.muted, font=theme.body_font)
+        return
+
+    # Plot area
+    px, py, pw, ph = Inches(1.5), Inches(1.7), Inches(8.6), Inches(4.9)
+    plot = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, px, py, pw, ph)
+    plot.fill.solid(); plot.fill.fore_color.rgb = _rgb("FFFFFF")
+    plot.line.color.rgb = _rgb("E2E8F0"); plot.line.width = Pt(1)
+    # Quadrant split lines
+    for ln in (slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, px + int(pw / 2), py, Emu(9000), ph),
+               slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, px, py + int(ph / 2), pw, Emu(9000))):
+        ln.fill.solid(); ln.fill.fore_color.rgb = _rgb("EEF1F4"); ln.line.fill.background()
+    # WORKBank quadrant labels (correct orientation — D47): x = capability →, y = desire ↑.
+    quad = [("R&D opportunity", px, py, "9A6A18", False),
+            ("Green light — automate", px + int(pw / 2), py, "3D8273", True),
+            ("Low priority", px, py + int(ph / 2), "94A3B8", False),
+            ("Red light — caution", px + int(pw / 2), py + int(ph / 2), "A04D2E", True)]
+    for label, qx, qy, color, right in quad:
+        box = _textbox(slide, qx + Inches(0.08), qy + Inches(0.05), int(pw / 2) - Inches(0.16),
+                       Inches(0.3), label.upper(), size=9, color=color, bold=True,
+                       font=theme.body_font)
+        if right:
+            from pptx.enum.text import PP_ALIGN
+            box.text_frame.paragraphs[0].alignment = PP_ALIGN.RIGHT
+    # Dots (band-coloured; hollow = desire not captured, at neutral height — mirrors the UI)
+    MAX_DOTS = 250
+    d = Inches(0.13)
+    for pt_ in list(points)[:MAX_DOTS]:
+        cap = max(0.0, min(1.0, float(pt_.get("capability") or 0.0)))
+        desire = pt_.get("desire")
+        y_val = max(0.0, min(1.0, float(desire))) if desire is not None else 0.5
+        band = pt_.get("band", "H0")
+        cx = px + int(cap * (pw - d))
+        cy = py + int((1.0 - y_val) * (ph - d))  # pptx y grows downward; desire grows upward
+        dot = slide.shapes.add_shape(MSO_SHAPE.OVAL, cx, cy, d, d)
+        color = HAS_COLORS.get(band, "CBD5E1")
+        dot.fill.solid()
+        dot.fill.fore_color.rgb = _rgb("FFFFFF" if desire is None else color)
+        dot.line.color.rgb = _rgb(color)
+        dot.line.width = Pt(1.75 if desire is None else 1.0)
+    # Axes + legend
+    _textbox(slide, px, py + ph + Inches(0.08), pw, Inches(0.3),
+             "Automation capability →", size=10, color=theme.muted, font=theme.body_font)
+    _textbox(slide, Inches(0.55), py + Inches(1.6), Inches(0.9), Inches(1.6),
+             "Worker desire →", size=10, color=theme.muted, font=theme.body_font)
+    legend_y = Inches(1.7)
+    for i, b in enumerate(("H1", "H2", "H3", "H4", "H5", "H0")):
+        sw = slide.shapes.add_shape(MSO_SHAPE.OVAL, Inches(10.4), legend_y + i * Inches(0.34),
+                                    Inches(0.16), Inches(0.16))
+        sw.fill.solid(); sw.fill.fore_color.rgb = _rgb(HAS_COLORS[b]); sw.line.fill.background()
+        _textbox(slide, Inches(10.65), legend_y + i * Inches(0.34) - Inches(0.045), Inches(2.5),
+                 Inches(0.3), b, size=10, color=theme.ink, font=theme.body_font)
+    notes = ["hollow dot = local desire not captured (neutral height)",
+             "quadrants per Stanford WORKBank (desire × capability)"]
+    if len(points) > MAX_DOTS:
+        notes.insert(0, f"showing {MAX_DOTS} of {len(points)} scored tasks")
+    if unscored:
+        notes.append(f"{unscored} task(s) not yet capability-scored (not plotted)")
+    _textbox(slide, Inches(0.5), Inches(7.0), Inches(12.3), Inches(0.4),
+             "  ·  ".join(notes), size=9, color=theme.muted, font=theme.body_font)
+
+
+def org_rollup_slide(prs: Presentation, theme: Theme, rows: Sequence[dict],
+                     org_index: int, page: int = 1, pages: int = 1) -> None:
+    """One page of the org-hierarchy Roll-up — the deck mirror of the Workflow Mapper's Roll-up view.
+    Each row: depth-indented role, own/team task counts, rolled-up index, and an H-mix stacked bar.
+    `rows`: [{title, name, depth, own, team, reviewed_pct, index, bands}] in depth-first order."""
+    slide = _blank(prs)
+    heading = "Org-hierarchy AI roll-up" + (f"   (page {page}/{pages})" if pages > 1 else "")
+    _textbox(slide, Inches(0.5), Inches(0.45), Inches(9.6), Inches(0.8), heading,
+             size=24, color=theme.ink, font=theme.title_font)
+    _textbox(slide, Inches(10.2), Inches(0.5), Inches(2.6), Inches(0.8),
+             f"Org index  {org_index}/100", size=16, color=theme.accent, bold=True,
+             font=theme.title_font)
+    _accent_rule(slide, theme, top=Inches(1.25), left=Inches(0.5), width=Inches(1.4))
+
+    top0, row_h = Inches(1.6), Inches(0.42)
+    bar_x, bar_w = Inches(9.0), Inches(2.4)
+    for i, r in enumerate(rows):
+        y = top0 + i * row_h
+        indent = Inches(0.5) + min(int(r.get("depth", 0)), 6) * Inches(0.32)
+        title = r.get("title", "—")
+        label = (title[:52] + "…") if len(title) > 52 else title
+        _textbox(slide, indent, y, Inches(5.6) - (indent - Inches(0.5)), Inches(0.36),
+                 label, size=11, color=theme.ink, font=theme.body_font)
+        _textbox(slide, Inches(6.1), y, Inches(1.6), Inches(0.36),
+                 f"{r.get('own', 0)} own · {r.get('team', 0)} team", size=9, color=theme.muted,
+                 font=theme.body_font)
+        _textbox(slide, Inches(7.7), y, Inches(0.7), Inches(0.36),
+                 str(r.get("index", 0)), size=12, color=theme.accent, bold=True,
+                 font=theme.title_font)
+        _textbox(slide, Inches(8.3), y, Inches(0.7), Inches(0.36),
+                 f"{r.get('reviewed_pct', 0)}%", size=9, color=theme.muted, font=theme.body_font)
+        # H-mix stacked bar (rolled-up team mix — same encoding as the UI)
+        bands = r.get("bands", {})
+        total = sum(bands.get(b, 0) for b in HAS_WEIGHTS) or 1
+        x = bar_x
+        for b in ("H0", "H1", "H2", "H3", "H4", "H5"):
+            c = bands.get(b, 0)
+            if not c:
+                continue
+            w = int(bar_w * (c / total))
+            if w <= 0:
+                continue
+            seg = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, x, y + Inches(0.10), w, Inches(0.16))
+            seg.fill.solid(); seg.fill.fore_color.rgb = _rgb(HAS_COLORS[b])
+            seg.line.fill.background()
+            x += w
+    _textbox(slide, Inches(0.5), Inches(7.0), Inches(12.3), Inches(0.4),
+             "index & bar = this role + all reports (rolled up the reporting line)  ·  "
+             "own = the role's personal tasks  ·  % = reviewed share  ·  bar colour = H0→H5",
+             size=9, color=theme.muted, font=theme.body_font)
 
 
 def save_pptx(prs: Presentation) -> bytes:

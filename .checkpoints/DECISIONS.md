@@ -935,3 +935,33 @@ proxy — recorded as a gap; calibration facts come from search-result content o
    test connection → first diagnose → pipeline), redeploy note.
 **Verification:** frontend-copy + prompt/rubric-text changes only (no schema/route/logic change);
 gate GREEN — **151 backend tests + clean frontend build, zero regressions.**
+
+## 2026-07-15 — D48: Landscape & Roll-up exports mirror the on-screen views
+**Context:** ↓CSV/↓PPTX exported only the Flow view (the finalized workflow board); the Landscape and
+Roll-up views had no export, so what a consultant saw on screen couldn't be handed to a client.
+**Decision (fit-for-purpose + scalable, following the settled D22/D32 toolbar pattern):**
+1. **Per-view exports, not one mega-deck:** the existing ↓CSV/↓PPTX toolbar buttons became VIEW-AWARE —
+   they export whatever view is active (Flow → workflow map, Landscape → ai_landscape, Roll-up →
+   org_rollup). One mental model, no new UI surface, no new deliverable type/migration.
+2. **Same data paths as the screen:** Landscape export reuses `_board_task_payload` (identical fields the
+   board serves: capability=X, desire=Y, H-band=colour); Roll-up export reuses `org_rollup` (D43/D46)
+   flattened depth-first with the UI's exact sibling order (`sortByOpportunity`: index desc, team desc)
+   and the UI's exact math (index = mean(HAS weight)×100 via shared `has_index`; reviewed% =
+   rollup_reviewed/rollup_tasks). No parallel computation → no drift.
+3. **PPTX = visual mirrors:** `landscape_slide` draws the capability×desire scatter with the D47 WORKBank
+   quadrant labels (correct orientation), band-coloured dots, hollow = desire-not-captured at neutral
+   height; `org_rollup_slide` draws depth-indented reporting lines with own/team, rolled-up index and an
+   H-mix stacked bar per role. Scalability: dots capped at 250 with a "+N more" note; roll-up paginates
+   at 12 roles/slide (page x/y).
+4. **Filters:** the Landscape export honours the UI's "Reviewed only" analysis filter via
+   `?reviewed_only=` (the D42 client-ready lens); the per-band Agency toggles are a screen-side
+   exploration aid and deliberately NOT exported (an export must be reproducible, not depend on
+   transient checkbox state). Roll-up is org-wide on screen and in export.
+5. **Privacy:** both CSVs/decks carry role = job title only — never a name (same rule as the workflow
+   CSV; test-asserted: "Boss"/"Cargo Joe" absent). Quadrant column blank when desire not captured —
+   never invent a desire-based classification the screen doesn't show.
+**Additive-only:** 4 new GET endpoints (`/workflows/landscape.csv|.pptx`, `/workflows/rollup.csv|.pptx`),
+new service fns (`landscape_rows`, `export_landscape_csv`, `flatten_rollup`, `export_rollup_csv`,
+`build_landscape_deck`, `build_rollup_deck`, builders `landscape_slide`/`org_rollup_slide`/`has_index`);
+no existing route/schema/migration touched. 3 new tests (quadrant parity vs UI grid, reviewed_only,
+depth-first own/team roll-up arithmetic + no-real-names). **Gate GREEN: 154 backend tests + clean build.**

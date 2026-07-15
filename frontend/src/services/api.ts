@@ -326,6 +326,20 @@ export const api = {
       `${BASE}/workflows/export.pptx?engagement_id=${encodeURIComponent(engagementId)}&dataset_id=${encodeURIComponent(datasetId)}`,
       `workflow_map.pptx`,
     ),
+  exportLandscapeCsv: (datasetId: string, reviewedOnly = false) =>
+    downloadBlob(
+      `${BASE}/workflows/landscape.csv?dataset_id=${encodeURIComponent(datasetId)}&reviewed_only=${reviewedOnly}`,
+      `ai_landscape.csv`,
+    ),
+  exportLandscapePptx: (datasetId: string, reviewedOnly = false) =>
+    downloadBlob(
+      `${BASE}/workflows/landscape.pptx?dataset_id=${encodeURIComponent(datasetId)}&reviewed_only=${reviewedOnly}`,
+      `ai_landscape.pptx`,
+    ),
+  exportRollupCsv: (datasetId: string) =>
+    downloadBlob(`${BASE}/workflows/rollup.csv?dataset_id=${encodeURIComponent(datasetId)}`, `org_rollup.csv`),
+  exportRollupPptx: (datasetId: string) =>
+    downloadBlob(`${BASE}/workflows/rollup.pptx?dataset_id=${encodeURIComponent(datasetId)}`, `org_rollup.pptx`),
   deleteProcess: (processId: string) =>
     request<{ deleted: string }>(`/workflows/${processId}`, { method: "DELETE" }),
   deleteStep: (stepId: string) =>

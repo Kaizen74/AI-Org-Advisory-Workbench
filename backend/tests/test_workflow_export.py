@@ -56,3 +56,87 @@ async def test_export_csv_empty_when_nothing_mapped(api_client, async_session, m
     assert csv_resp.status_code == 200
     rows = list(csv.DictReader(io.StringIO(csv_resp.text)))
     assert rows == []  # header only, no mapped tasks
+
+
+# ── D48 — Landscape & Roll-up exports mirror the on-screen views ─────────────────────────────
+async def test_landscape_export_csv_and_pptx(api_client, async_session, monkeypatch):
+    eng_id, ds_id = await _setup(api_client, async_session, monkeypatch)
+
+    csv_resp = await api_client.get("/api/v1/workflows/landscape.csv",
+                                    params={"dataset_id": ds_id})
+    assert csv_resp.status_code == 200
+    rows = list(csv.DictReader(io.StringIO(csv_resp.text)))
+    # One row per plotted dot — exactly the fields the on-screen scatter encodes.
+    assert rows, "capability-scored tasks should plot"
+    for col in ("task_text", "role", "human_agency_level", "capability_score",
+                "desire_score", "workbank_quadrant", "zone", "review_state", "source"):
+        assert col in rows[0]
+    for r in rows:
+        assert 0.0 <= float(r["capability_score"]) <= 1.0
+        assert r["role"] in {"Director", "Cargo Officer", "Unassigned"}  # job title, never a name
+        # Quadrant agrees with the UI's 0.5-split grid ('' = desire not captured → hollow dot).
+        if r["desire_score"] == "":
+            assert r["workbank_quadrant"] == ""
+        else:
+            cap, des = float(r["capability_score"]), float(r["desire_score"])
+            expect = ("Green Light — automate" if des >= 0.5 else "Red Light — caution") \
+                if cap >= 0.5 else ("R&D Opportunity" if des >= 0.5 else "Low Priority")
+            assert r["workbank_quadrant"] == expect
+
+    ppt = await api_client.get("/api/v1/workflows/landscape.pptx",
+                               params={"dataset_id": ds_id})
+    assert ppt.status_code == 200 and ppt.content[:2] == b"PK"
+    import io as _io
+
+    from pptx import Presentation
+    prs = Presentation(_io.BytesIO(ppt.content))
+    blob = "\n".join(sh.text_frame.text for s in prs.slides
+                     for sh in s.shapes if sh.has_text_frame)
+    assert "AI opportunity landscape" in blob
+    # The four WORKBank quadrant labels are drawn on the plot (D47 orientation).
+    for label in ("GREEN LIGHT — AUTOMATE", "RED LIGHT — CAUTION",
+                  "R&D OPPORTUNITY", "LOW PRIORITY"):
+        assert label in blob
+
+
+async def test_landscape_export_reviewed_only_filter(api_client, async_session, monkeypatch):
+    _, ds_id = await _setup(api_client, async_session, monkeypatch)
+    csv_resp = await api_client.get("/api/v1/workflows/landscape.csv",
+                                    params={"dataset_id": ds_id, "reviewed_only": "true"})
+    assert csv_resp.status_code == 200
+    rows = list(csv.DictReader(io.StringIO(csv_resp.text)))
+    assert all(r["review_state"] == "approved" for r in rows)  # nothing approved yet → header only
+
+
+async def test_rollup_export_csv_and_pptx(api_client, async_session, monkeypatch):
+    _, ds_id = await _setup(api_client, async_session, monkeypatch)
+
+    csv_resp = await api_client.get("/api/v1/workflows/rollup.csv",
+                                    params={"dataset_id": ds_id})
+    assert csv_resp.status_code == 200
+    rows = list(csv.DictReader(io.StringIO(csv_resp.text)))
+    assert len(rows) == 2  # Director + Cargo Officer
+    # Depth-first, on-screen order: the root first, its report indented one level beneath it.
+    assert rows[0]["role"] == "Director" and rows[0]["depth"] == "0"
+    assert rows[1]["role"] == "Cargo Officer" and rows[1]["depth"] == "1"
+    # Own vs team: the head's team count rolls up their whole line (own + every report's tasks).
+    assert int(rows[0]["team_tasks"]) == int(rows[0]["own_tasks"]) + int(rows[1]["team_tasks"])
+    assert int(rows[0]["total_reports"]) == 1
+    for col in ("rollup_index", "reviewed_pct", "H0", "H1", "H2", "H3", "H4", "H5"):
+        assert col in rows[0]
+    # Role identity only — never a real name (privacy posture, same rule as the workflow CSV).
+    assert "Boss" not in csv_resp.text and "Cargo Joe" not in csv_resp.text
+
+    ppt = await api_client.get("/api/v1/workflows/rollup.pptx",
+                               params={"dataset_id": ds_id})
+    assert ppt.status_code == 200 and ppt.content[:2] == b"PK"
+    import io as _io
+
+    from pptx import Presentation
+    prs = Presentation(_io.BytesIO(ppt.content))
+    blob = "\n".join(sh.text_frame.text for s in prs.slides
+                     for sh in s.shapes if sh.has_text_frame)
+    assert "Org-hierarchy AI roll-up" in blob
+    assert "Director" in blob and "Cargo Officer" in blob
+    assert "Boss" not in blob and "Cargo Joe" not in blob
+    assert "Org index" in blob

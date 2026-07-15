@@ -1,6 +1,15 @@
 # LATEST CHECKPOINT
-**Updated:** 2026-07-14 (D47 — external research calibration + non-technical deploy README; live deploy still pending Eric)
-**Latest micro-task:** D47 — web-harvester calibration vs primary sources (WORKBank arXiv:2506.06576,
+**Updated:** 2026-07-15 (D48 — Landscape & Roll-up exports mirror the on-screen views; live deploy still pending Eric)
+**Latest micro-task:** D48 — the Workflow Mapper's ↓CSV/↓PPTX buttons are now VIEW-AWARE and export
+whatever view is on screen: Landscape → `ai_landscape.csv` (one row per plotted dot: capability, desire,
+H-band, WORKBank quadrant, zone, review state; honours "Reviewed only") + `ai_landscape.pptx` (the
+capability×desire scatter with D47 quadrant labels, band-coloured dots, hollow = no desire, 250-dot cap);
+Roll-up → `org_rollup.csv` (depth-first, on-screen order: own/team, rolled-up index, reviewed %, H0–H5
+mix) + `org_rollup.pptx` (indented reporting lines + H-mix bars, 12 roles/slide). Exports reuse the exact
+data paths + math the views render from (`_board_task_payload`, `org_rollup`, shared `has_index`) so
+screen and file can't drift; role = job title, never a name (test-asserted). 4 additive endpoints
+(`/workflows/landscape.csv|.pptx`, `/rollup.csv|.pptx`), 3 new tests. Gate GREEN: 154 + build.
+**Prior micro-task:** D47 — web-harvester calibration vs primary sources (WORKBank arXiv:2506.06576,
 Anthropic Economic Index, Railway docs): FIXED the reversed Landscape quadrants (Red Light = capable but
 workers resist; was labelled "Automate"), tightened HAS rubric/prompt/chip text to the paper's
 definitions, added automation-vs-augmentation counts + legend, README §1b research anchors + upgraded
@@ -72,7 +81,7 @@ ai_score band; Task Intelligence headline chart+legend). L0–L3 kept internally
      wording corrections (actual Vercel/Railway button names) back into README §4.
   Optional follow-ups (additive): branch merge to `main` (then delete `legacy v1 app.zip` from main);
   expand audit UI; refine activator/L0-L3 rubrics if Eric supplies definitions.
-**Test status:** PASS — gate GREEN, **149 backend tests + clean frontend build**, zero regressions.
+**Test status:** PASS — gate GREEN, **154 backend tests + clean frontend build**, zero regressions.
 **Recovery commands:** `bash scripts/gate.sh`
 **Open questions for Eric:**
   1. **Live cloud deploy** needs your Vercel + Railway accounts connected to the GitHub repo — say

@@ -351,6 +351,27 @@ export default function WorkflowMapper({
 
   const proc = processes.find((p) => p.id === activeProc);
   const filtersActive = BANDS.some((b) => !aiOn[b]) || reviewFilter !== "all";
+
+  // ↓CSV / ↓PPTX export the ACTIVE view, so what you download mirrors what's on screen (D48):
+  // Flow → the finalized workflow map; Landscape → the plotted dots (honours 'Reviewed only');
+  // Roll-up → the org hierarchy with own/team counts, index and H-mix.
+  const reviewedOnly = reviewFilter === "reviewed";
+  const exportView = (kind: "csv" | "pptx") => {
+    if (!engagementId || !datasetId) return;
+    const call =
+      view === "landscape"
+        ? (kind === "csv" ? api.exportLandscapeCsv : api.exportLandscapePptx)(datasetId, reviewedOnly)
+        : view === "rollup"
+          ? (kind === "csv" ? api.exportRollupCsv : api.exportRollupPptx)(datasetId)
+          : (kind === "csv" ? api.exportWorkflowCsv : api.exportWorkflowPptx)(engagementId, datasetId);
+    call.catch((e) => setError(String((e as Error).message ?? e)));
+  };
+  const exportHint =
+    view === "landscape"
+      ? `the AI-opportunity landscape — capability, desire, H-band & WORKBank quadrant per plotted task${reviewedOnly ? " (reviewed only)" : ""}`
+      : view === "rollup"
+        ? "the org-hierarchy roll-up — own/team tasks, rolled-up index & H-mix per role"
+        : "the finalized workflow — every mapped task → step → process";
   const amenable = (ts: BoardTask[]) => ts.filter((t) => AI_AMENABLE.includes(t.human_agency_level)).length;
   const augmentable = (ts: BoardTask[]) => ts.filter((t) => AUGMENTATION.includes(t.human_agency_level)).length;
 
@@ -381,14 +402,14 @@ export default function WorkflowMapper({
               <Tool onClick={undo} disabled={!history.length} title="Undo your last move this session (⌘Z)">↺ Undo{history.length ? ` (${history.length})` : ""}</Tool>
               <Tool onClick={resetBoard} disabled={!board || (board.mapped_count === 0 && !history.length)} title="Unmap all tasks from this process (clear the board)">Reset board</Tool>
               <Tool
-                onClick={() => engagementId && datasetId && api.exportWorkflowCsv(engagementId, datasetId).catch((e) => setError(String((e as Error).message ?? e)))}
+                onClick={() => exportView("csv")}
                 disabled={!engagementId || !datasetId}
-                title="Export every mapped task → step → process (.csv)"
+                title={`Export ${exportHint} (.csv)`}
               >↓ CSV</Tool>
               <Tool
-                onClick={() => engagementId && datasetId && api.exportWorkflowPptx(engagementId, datasetId).catch((e) => setError(String((e as Error).message ?? e)))}
+                onClick={() => exportView("pptx")}
                 disabled={!engagementId || !datasetId}
-                title="Export a PowerPoint deck of the finalized workflow (.pptx)"
+                title={`Export a PowerPoint mirror of ${exportHint} (.pptx)`}
               >↓ PPTX</Tool>
             </div>
             <div className="flex gap-0.5 rounded-lg bg-slate-100 p-0.5">

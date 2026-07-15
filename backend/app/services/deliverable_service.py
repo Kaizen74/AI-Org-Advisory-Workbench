@@ -32,9 +32,12 @@ from . import scenario_service, transition_service, workflow_service
 from . import validation_service as vs
 from .deliverable_builders import (
     doc_section,
+    has_index,
+    landscape_slide,
     metric_slide,
     new_document,
     new_presentation,
+    org_rollup_slide,
     provenance_slide,
     save_docx,
     save_pptx,
@@ -189,6 +192,58 @@ async def build_workflow_deck(session, engagement_id: str, dataset_id: Optional[
     (same builder as the PPTX_WORKFLOW deliverable). Returns pptx bytes (not persisted)."""
     return await _gen_pptx_workflow(session, get_theme(template), engagement_id=engagement_id,
                                     dataset_id=dataset_id)
+
+
+async def build_landscape_deck(session, dataset_id: str, template: str = "minimal",
+                               reviewed_only: bool = False) -> bytes:
+    """The AI-opportunity Landscape as a deck — the visual mirror of the Workflow Mapper's
+    Landscape view (capability × desire scatter, WORKBank quadrants, H-band-coloured dots).
+    Returns pptx bytes (not persisted). `reviewed_only` mirrors the UI's analysis filter."""
+    theme = get_theme(template)
+    prs = new_presentation()
+    title_slide(prs, theme, "AI Opportunity Landscape",
+                "Automation capability × worker desire — WORKBank zones, Human Agency H0–H5")
+    data = await workflow_service.landscape_rows(session, dataset_id, reviewed_only=reviewed_only)
+    points = [{"capability": p["capability_score"], "desire": p["desire_score"],
+               "band": p["human_agency_level"]} for p in data["points"]]
+    landscape_slide(prs, theme, points, unscored=data["unscored"])
+    provenance_slide(prs, theme, await provenance_summary(session, dataset_id))
+    return save_pptx(prs)
+
+
+_ROLLUP_ROWS_PER_SLIDE = 12
+
+
+async def build_rollup_deck(session, dataset_id: str, template: str = "minimal") -> bytes:
+    """The org-hierarchy Roll-up as a deck — the visual mirror of the Workflow Mapper's Roll-up
+    view (depth-indented reporting lines, own/team counts, rolled-up index, H-mix bars).
+    Paginates past 12 roles per slide, so large orgs stay legible. Returns pptx bytes."""
+    from .task_intelligence_service import org_rollup
+
+    theme = get_theme(template)
+    prs = new_presentation()
+    title_slide(prs, theme, "Org-Hierarchy AI Roll-up",
+                "AI opportunity rolled up the reporting lines — Human Agency Scale H0–H5")
+    rollup = await org_rollup(session, dataset_id)
+    rows = workflow_service.flatten_rollup(rollup)
+    if rows:
+        # Org-wide index over the roots' rolled-up mixes — same math as the UI's stat card.
+        roots = set(rollup["roots"])
+        org_bands: dict = {}
+        for n in rollup["nodes"]:
+            if n["employee_key"] in roots:
+                for b, c in n["rollup_bands"].items():
+                    org_bands[b] = org_bands.get(b, 0) + c
+        org_index = has_index(org_bands)
+        chunks = [rows[i:i + _ROLLUP_ROWS_PER_SLIDE]
+                  for i in range(0, len(rows), _ROLLUP_ROWS_PER_SLIDE)]
+        for idx, chunk in enumerate(chunks, 1):
+            org_rollup_slide(prs, theme, chunk, org_index, page=idx, pages=len(chunks))
+    else:
+        section_slide(prs, theme, "Org roll-up",
+                      ["No org structure yet — upload an org CSV and run Task Intelligence."])
+    provenance_slide(prs, theme, await provenance_summary(session, dataset_id))
+    return save_pptx(prs)
 
 
 async def _gen_docx_tom(session, theme, dataset_id, **_) -> bytes:
