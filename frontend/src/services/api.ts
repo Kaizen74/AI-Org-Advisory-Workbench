@@ -326,14 +326,16 @@ export const api = {
       `${BASE}/workflows/export.pptx?engagement_id=${encodeURIComponent(engagementId)}&dataset_id=${encodeURIComponent(datasetId)}`,
       `workflow_map.pptx`,
     ),
-  exportLandscapeCsv: (datasetId: string, reviewedOnly = false) =>
+  // `bands` = the Agency toggles left switched on; omitted when all are on, so a default export is
+  // the unfiltered plot. Together with reviewedOnly this makes the file the picture on screen.
+  exportLandscapeCsv: (datasetId: string, reviewedOnly = false, bands?: string[]) =>
     downloadBlob(
-      `${BASE}/workflows/landscape.csv?dataset_id=${encodeURIComponent(datasetId)}&reviewed_only=${reviewedOnly}`,
+      `${BASE}/workflows/landscape.csv?dataset_id=${encodeURIComponent(datasetId)}&reviewed_only=${reviewedOnly}${bands?.length ? `&bands=${encodeURIComponent(bands.join(","))}` : ""}`,
       `ai_landscape.csv`,
     ),
-  exportLandscapePptx: (datasetId: string, reviewedOnly = false) =>
+  exportLandscapePptx: (datasetId: string, reviewedOnly = false, bands?: string[]) =>
     downloadBlob(
-      `${BASE}/workflows/landscape.pptx?dataset_id=${encodeURIComponent(datasetId)}&reviewed_only=${reviewedOnly}`,
+      `${BASE}/workflows/landscape.pptx?dataset_id=${encodeURIComponent(datasetId)}&reviewed_only=${reviewedOnly}${bands?.length ? `&bands=${encodeURIComponent(bands.join(","))}` : ""}`,
       `ai_landscape.pptx`,
     ),
   exportRollupCsv: (datasetId: string) =>

@@ -356,22 +356,28 @@ export default function WorkflowMapper({
   // Flow → the finalized workflow map; Landscape → the plotted dots (honours 'Reviewed only');
   // Roll-up → the org hierarchy with own/team counts, index and H-mix.
   const reviewedOnly = reviewFilter === "reviewed";
+  // Bands the Landscape is actually plotting. Sent only when some are switched off, so the export
+  // is the FILTERED picture on screen rather than the whole dataset.
+  const activeBands = BANDS.filter((b) => aiOn[b]);
+  const bandFilter = activeBands.length === BANDS.length ? undefined : activeBands;
   const exportView = (kind: "csv" | "pptx") => {
     if (!engagementId || !datasetId) return;
     const call =
       view === "landscape"
-        ? (kind === "csv" ? api.exportLandscapeCsv : api.exportLandscapePptx)(datasetId, reviewedOnly)
+        ? (kind === "csv" ? api.exportLandscapeCsv : api.exportLandscapePptx)(datasetId, reviewedOnly, bandFilter)
         : view === "rollup"
           ? (kind === "csv" ? api.exportRollupCsv : api.exportRollupPptx)(datasetId)
           : (kind === "csv" ? api.exportWorkflowCsv : api.exportWorkflowPptx)(engagementId, datasetId);
     call.catch((e) => setError(String((e as Error).message ?? e)));
   };
+  const landscapeFilterNote = [reviewedOnly ? "reviewed only" : "", bandFilter ? bandFilter.join("/") : ""]
+    .filter(Boolean).join(", ");
   const exportHint =
     view === "landscape"
-      ? `the AI-opportunity landscape — capability, desire, H-band & WORKBank quadrant per plotted task${reviewedOnly ? " (reviewed only)" : ""}`
+      ? `the AI-opportunity landscape — capability, desire, H-band & WORKBank quadrant per plotted task${landscapeFilterNote ? ` (${landscapeFilterNote})` : ""}`
       : view === "rollup"
         ? "the org-hierarchy roll-up — own/team tasks, rolled-up index & H-mix per role"
-        : "the finalized workflow — every mapped task → step → process";
+        : "the finalized workflow — every mapped task → step → process, with the unmapped tray";
   const amenable = (ts: BoardTask[]) => ts.filter((t) => AI_AMENABLE.includes(t.human_agency_level)).length;
   const augmentable = (ts: BoardTask[]) => ts.filter((t) => AUGMENTATION.includes(t.human_agency_level)).length;
 

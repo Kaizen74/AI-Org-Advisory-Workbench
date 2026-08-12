@@ -178,6 +178,9 @@ async def _gen_pptx_workflow(session, theme, engagement_id, dataset_id=None, **_
                 prs, theme, proc.name, proc.value_stream or "", chunk,
                 b["mapped_count"], b["task_count"], len(b["unmapped"]),
                 page=idx, pages=len(chunks),
+                # The dashed tray sits left of the steps on screen; draw it on page 1 only so
+                # continuation slides stay all-flow (and wide orgs don't repeat it per page).
+                unmapped_tasks=b["unmapped"] if idx == 1 else (),
             )
     if not any_process:
         section_slide(prs, theme, "Workflows",
@@ -195,15 +198,18 @@ async def build_workflow_deck(session, engagement_id: str, dataset_id: Optional[
 
 
 async def build_landscape_deck(session, dataset_id: str, template: str = "minimal",
-                               reviewed_only: bool = False) -> bytes:
+                               reviewed_only: bool = False,
+                               bands: Optional[List[str]] = None) -> bytes:
     """The AI-opportunity Landscape as a deck — the visual mirror of the Workflow Mapper's
     Landscape view (capability × desire scatter, WORKBank quadrants, H-band-coloured dots).
-    Returns pptx bytes (not persisted). `reviewed_only` mirrors the UI's analysis filter."""
+    Returns pptx bytes (not persisted). `reviewed_only` + `bands` mirror the UI's analysis
+    filters so the deck is the same picture that is on screen."""
     theme = get_theme(template)
     prs = new_presentation()
     title_slide(prs, theme, "AI Opportunity Landscape",
                 "Automation capability × worker desire — WORKBank zones, Human Agency H0–H5")
-    data = await workflow_service.landscape_rows(session, dataset_id, reviewed_only=reviewed_only)
+    data = await workflow_service.landscape_rows(session, dataset_id, reviewed_only=reviewed_only,
+                                                 bands=bands)
     points = [{"capability": p["capability_score"], "desire": p["desire_score"],
                "band": p["human_agency_level"]} for p in data["points"]]
     landscape_slide(prs, theme, points, unscored=data["unscored"])
@@ -212,6 +218,7 @@ async def build_landscape_deck(session, dataset_id: str, template: str = "minima
 
 
 _ROLLUP_ROWS_PER_SLIDE = 12
+_ROLLUP_ROWS_FIRST_SLIDE = 10  # page 1 also carries the org-wide stat cards
 
 
 async def build_rollup_deck(session, dataset_id: str, template: str = "minimal") -> bytes:
@@ -227,18 +234,37 @@ async def build_rollup_deck(session, dataset_id: str, template: str = "minimal")
     rollup = await org_rollup(session, dataset_id)
     rows = workflow_service.flatten_rollup(rollup)
     if rows:
-        # Org-wide index over the roots' rolled-up mixes — same math as the UI's stat card.
-        roots = set(rollup["roots"])
+        # Org-wide totals sum every position's OWN bands once — the UI's formula. (Summing the
+        # ROOTS' rolled-up mixes instead would double-count nothing but silently DROP any node
+        # stranded outside the root forest by a malformed reporting line, which the cycle-guarded
+        # DFS tolerates; self-sum stays correct there and matches what the screen shows.)
         org_bands: dict = {}
+        org_tasks = org_reviewed = layers = 0
+        depts = set()
         for n in rollup["nodes"]:
-            if n["employee_key"] in roots:
-                for b, c in n["rollup_bands"].items():
-                    org_bands[b] = org_bands.get(b, 0) + c
+            for b, c in n["self_bands"].items():
+                org_bands[b] = org_bands.get(b, 0) + c
+            org_tasks += n["self_tasks"]
+            org_reviewed += n["self_reviewed"]
+            if n.get("department"):
+                depts.add(n["department"])
+            layers = max(layers, n.get("level") or 0)
         org_index = has_index(org_bands)
-        chunks = [rows[i:i + _ROLLUP_ROWS_PER_SLIDE]
-                  for i in range(0, len(rows), _ROLLUP_ROWS_PER_SLIDE)]
+        amenable = sum(org_bands.get(b, 0) for b in ("H1", "H2"))  # automation-leaning, as on screen
+        stats = [
+            ("People", str(len(rollup["nodes"]))),
+            ("Reporting layers", str(layers)),
+            ("AI-amenable tasks", str(amenable)),
+            ("Reviewed", f"{round(org_reviewed / org_tasks * 100) if org_tasks else 0}%"),
+        ]
+        # Page 1 carries the stat cards, so it fits fewer rows than the continuation pages.
+        chunks = [rows[:_ROLLUP_ROWS_FIRST_SLIDE]]
+        rest = rows[_ROLLUP_ROWS_FIRST_SLIDE:]
+        chunks += [rest[i:i + _ROLLUP_ROWS_PER_SLIDE]
+                   for i in range(0, len(rest), _ROLLUP_ROWS_PER_SLIDE)]
         for idx, chunk in enumerate(chunks, 1):
-            org_rollup_slide(prs, theme, chunk, org_index, page=idx, pages=len(chunks))
+            org_rollup_slide(prs, theme, chunk, org_index, page=idx, pages=len(chunks),
+                             stats=stats if idx == 1 else ())
     else:
         section_slide(prs, theme, "Org roll-up",
                       ["No org structure yet — upload an org CSV and run Task Intelligence."])

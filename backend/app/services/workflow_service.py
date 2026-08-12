@@ -405,12 +405,15 @@ def _workbank_quadrant(cap: Optional[float], desire: Optional[float]) -> str:
     return "R&D Opportunity" if desire >= 0.5 else "Low Priority"
 
 
-async def landscape_rows(session: AsyncSession, dataset_id: str,
-                         reviewed_only: bool = False) -> Dict:
+async def landscape_rows(session: AsyncSession, dataset_id: str, reviewed_only: bool = False,
+                         bands: Optional[List[str]] = None) -> Dict:
     """Every dataset task flattened with the same `_board_task_payload` fields the Landscape view
     plots (capability = X, desire = Y, H-band = colour), split into plotted `points`
-    (capability-scored) and an `unscored` count. `reviewed_only` mirrors the UI's
-    'Reviewed only' analysis filter (D42)."""
+    (capability-scored) and an `unscored` count.
+
+    `reviewed_only` mirrors the UI's 'Reviewed only' analysis filter (D42) and `bands` mirrors its
+    Agency band toggles (D49) — together they make the export the SAME picture that is on screen,
+    since the Landscape plots `analysisTasks` (the filtered set), not the whole dataset."""
     tasks = list(await session.scalars(
         select(Task).join(Position, Task.position_id == Position.id)
         .where(Position.dataset_id == dataset_id).order_by(Task.id)
@@ -428,18 +431,21 @@ async def landscape_rows(session: AsyncSession, dataset_id: str,
             for t in tasks]
     if reviewed_only:
         rows = [r for r in rows if r["review_state"] == "approved"]
+    if bands:
+        keep = set(bands)
+        rows = [r for r in rows if r["human_agency_level"] in keep]
     points = [r for r in rows if r["capability_score"] is not None]
     for r in points:
         r["workbank_quadrant"] = _workbank_quadrant(r["capability_score"], r["desire_score"])
     return {"points": points, "unscored": len(rows) - len(points), "total": len(rows)}
 
 
-async def export_landscape_csv(session: AsyncSession, dataset_id: str,
-                               reviewed_only: bool = False) -> bytes:
+async def export_landscape_csv(session: AsyncSession, dataset_id: str, reviewed_only: bool = False,
+                               bands: Optional[List[str]] = None) -> bytes:
     """CSV of the AI-opportunity landscape: one row per plotted dot (capability-scored task),
     carrying exactly the fields the on-screen plot encodes (axes, H-band colour, quadrant).
     Role = job title, never a name."""
-    data = await landscape_rows(session, dataset_id, reviewed_only=reviewed_only)
+    data = await landscape_rows(session, dataset_id, reviewed_only=reviewed_only, bands=bands)
     headers = ["task_text", "role", "department", "human_agency_level", "capability_score",
                "desire_score", "workbank_quadrant", "zone", "review_state", "source"]
     out = io.StringIO()

@@ -965,3 +965,38 @@ new service fns (`landscape_rows`, `export_landscape_csv`, `flatten_rollup`, `ex
 `build_landscape_deck`, `build_rollup_deck`, builders `landscape_slide`/`org_rollup_slide`/`has_index`);
 no existing route/schema/migration touched. 3 new tests (quadrant parity vs UI grid, reviewed_only,
 depth-first own/team roll-up arithmetic + no-real-names). **Gate GREEN: 154 backend tests + clean build.**
+
+## 2026-07-15 — D49: export visual-parity audit — closing the gaps D48 left
+**Context:** D48 added Landscape/Roll-up exports, but a element-by-element audit of each on-screen
+view against its exported artifact found three real gaps — including a bug in D48's own code.
+**Findings & fixes:**
+1. **Flow deck was the biggest miss (D48 never touched it).** The on-screen TaskCard carries a zone
+   chip and a review-state dot, each column header carries its task count, and the dashed
+   "Unmapped tasks" tray sits left of the steps. The deck had none of these. Fixed: `_card_text`
+   now renders `● <zone label>  ● <review state>` in the UI's ZONE_META colours (new `ZONE_META` /
+   `REVIEW_COLORS` maps mirroring the frontend); column headers show `(N)`; `workflow_board_slide`
+   takes `unmapped_tasks` and draws the tray as the leading dashed column on page 1 (continuation
+   pages stay all-flow so wide processes don't repeat it). Card height 0.66→0.78in, 6→5 cards/col
+   to fit the third line.
+2. **Landscape ignored the Agency band toggles.** The view plots `analysisTasks` — filtered by BOTH
+   the review filter AND the per-band toggles — but the export only honoured `reviewed_only`, so
+   turning off H0 on screen still exported H0 dots. D48 rationalised this as "exports should be
+   reproducible"; that was wrong — the ask is that the file match the picture. Fixed: `bands=H1,H2`
+   query param (blank/all = unfiltered, so a default export is unchanged); the frontend sends it
+   only when some bands are off, and the button tooltip names the active filters. Also: dots were
+   positioned by their top-left corner, so every dot sat half a diameter below-left of its true
+   coordinate (a dot at capability 0.50 fell inside the left quadrant) — now centred; and the
+   legend shows band NAMES (`H1  AI handles entirely`), as the on-screen legend does.
+3. **Roll-up org index could disagree with the screen (D48 bug).** D48 summed the ROOTS'
+   `rollup_bands`; the UI sums every node's `self_bands` once. These agree for a clean tree but
+   diverge when a malformed reporting line leaves nodes outside the root forest — exactly the case
+   the cycle-guarded DFS tolerates — where the roots-sum silently drops them. Now computed the UI's
+   way. Also added the view's four org-wide stat cards (People / Reporting layers / AI-amenable
+   tasks / Reviewed %) to page 1 and the `L<n>` org level to each row; page 1 fits 10 rows
+   (continuation pages 12) to make room.
+**Verification:** 3 new parity tests (Flow card zone+review+tray+counts, band-filter honoured,
+org-index formula + stat cards) — each written first and observed failing. Plus a manual mock pass
+that built all three artifacts from a seeded board and inventoried the rendered shapes: Flow slide
+draws the tray "(2)" + "1. Acceptance (1)" with cards reading `text | role · H2 | ● Green light
+● unreviewed`; Landscape draws 3 dots + 6 named legend swatches + 4 quadrant labels; Roll-up draws
+the 4 stat cards + "Org index 75/100". **Gate GREEN: 157 backend tests + clean frontend build.**

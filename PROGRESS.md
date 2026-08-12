@@ -772,3 +772,18 @@ roles/slide). Exports reuse the exact data paths + math the views render from (`
 `org_rollup` + shared `has_index`) so screen and file can't drift; role = job title, never a name
 (test-asserted). 4 additive endpoints, 3 new tests. **Gate:** PASS — **154 backend tests + clean
 frontend build**, tsc clean, zero regressions.
+
+## 2026-07-15 — Export visual-parity audit: closing the D48 gaps (D49)
+
+Audited each on-screen view element-by-element against its exported artifact and closed three real
+gaps. **Flow** (untouched by D48, and the biggest miss): deck cards now carry the zone chip and
+review-state dot the on-screen card shows, column headers carry their task counts, and the dashed
+"Unmapped tasks" tray is drawn as the leading column. **Landscape**: the export now honours the
+Agency band toggles (`bands=` param) as well as the review filter, so the file is the *filtered*
+picture on screen; dots are centred on their coordinates (they sat half a diameter off, so a dot at
+capability 0.50 fell in the wrong quadrant); the legend shows band names. **Roll-up**: fixed a D48
+bug where the org index summed the roots' rolled-up bands instead of every node's own bands the way
+the UI does — the two diverge when a malformed reporting line strands nodes outside the root forest;
+added the view's four org-wide stat cards and the L-level per row. 3 new parity tests (written first,
+observed failing) + a manual mock pass inventorying the rendered shapes of all three artifacts.
+**Gate:** PASS — **157 backend tests + clean frontend build**, tsc clean, zero regressions.

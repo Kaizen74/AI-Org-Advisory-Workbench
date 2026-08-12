@@ -193,6 +193,19 @@ methodology-anchors section and an upgraded §4 deploy guide (pre-flight checkli
 checklist) for the non-technical owner. **Gate GREEN: 151 backend tests + clean frontend build, zero
 regressions.**
 
+**Export visual parity (2026-07-15 — D49):** an element-by-element audit of each on-screen view
+against its exported artifact closed three gaps. **Flow** (untouched by D48): deck cards now carry
+the zone chip + review-state dot the on-screen card shows (`ZONE_META`/`REVIEW_COLORS` mirror the
+frontend maps), column headers carry task counts, and the dashed "Unmapped tasks" tray is drawn as
+the leading column on page 1. **Landscape**: the export honours the Agency band toggles
+(`?bands=H1,H2`, blank = unfiltered) as well as `reviewed_only`, so the file is the *filtered*
+picture on screen; dots are centred on their coordinates (they were placed by top-left corner, so a
+dot at capability 0.50 fell in the wrong quadrant); the legend shows band names. **Roll-up**: fixed
+a D48 bug — the org index summed the roots' `rollup_bands`, but the UI sums every node's
+`self_bands` once, and the two diverge when a malformed reporting line strands nodes outside the
+root forest; added the view's four org-wide stat cards and the `L<n>` level per row (page 1 fits 10
+rows, continuation pages 12). **Gate GREEN: 157 backend tests + clean frontend build.**
+
 **Landscape & Roll-up exports (2026-07-15 — D48):** the Workflow Mapper's ↓CSV/↓PPTX toolbar buttons
 are now **view-aware** — they export whatever view is on screen, as a faithful mirror of the visual.
 Landscape → `ai_landscape.csv` (one row per plotted dot: capability, desire, H-band, WORKBank quadrant,

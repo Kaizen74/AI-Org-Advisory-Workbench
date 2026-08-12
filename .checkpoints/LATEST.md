@@ -1,6 +1,17 @@
 # LATEST CHECKPOINT
-**Updated:** 2026-07-15 (D48 — Landscape & Roll-up exports mirror the on-screen views; live deploy still pending Eric)
-**Latest micro-task:** D48 — the Workflow Mapper's ↓CSV/↓PPTX buttons are now VIEW-AWARE and export
+**Updated:** 2026-07-15 (D49 — export visual-parity audit closing the D48 gaps; live deploy still pending Eric)
+**Latest micro-task:** D49 — audited each on-screen view element-by-element against its exported
+artifact and closed three real gaps. FLOW (untouched by D48, the biggest miss): deck cards now carry
+the zone chip + review-state dot the on-screen card shows, column headers carry task counts, and the
+dashed "Unmapped tasks" tray is drawn as the leading column. LANDSCAPE: export now honours the Agency
+band toggles (`bands=`) as well as the review filter, so the file is the FILTERED picture on screen;
+dots centred on their coordinates (they sat half a diameter off — a dot at capability 0.50 fell in the
+wrong quadrant); legend shows band names. ROLL-UP: fixed a D48 bug where the org index summed the
+roots' rolled-up bands instead of every node's own bands the way the UI does (the two diverge when a
+malformed reporting line strands nodes outside the root forest); added the view's four org-wide stat
+cards + the L-level per row. 3 new parity tests + a manual mock pass inventorying rendered shapes.
+Gate GREEN: 157 + build.
+**Prior micro-task:** D48 — the Workflow Mapper's ↓CSV/↓PPTX buttons are now VIEW-AWARE and export
 whatever view is on screen: Landscape → `ai_landscape.csv` (one row per plotted dot: capability, desire,
 H-band, WORKBank quadrant, zone, review state; honours "Reviewed only") + `ai_landscape.pptx` (the
 capability×desire scatter with D47 quadrant labels, band-coloured dots, hollow = no desire, 250-dot cap);
@@ -81,7 +92,7 @@ ai_score band; Task Intelligence headline chart+legend). L0–L3 kept internally
      wording corrections (actual Vercel/Railway button names) back into README §4.
   Optional follow-ups (additive): branch merge to `main` (then delete `legacy v1 app.zip` from main);
   expand audit UI; refine activator/L0-L3 rubrics if Eric supplies definitions.
-**Test status:** PASS — gate GREEN, **154 backend tests + clean frontend build**, zero regressions.
+**Test status:** PASS — gate GREEN, **157 backend tests + clean frontend build**, zero regressions.
 **Recovery commands:** `bash scripts/gate.sh`
 **Open questions for Eric:**
   1. **Live cloud deploy** needs your Vercel + Railway accounts connected to the GitHub repo — say

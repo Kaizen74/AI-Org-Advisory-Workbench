@@ -27,6 +27,20 @@ HAS_COLORS = {
 }
 # AI-opportunity index weights — the SAME formula the Workflow Mapper UI shows (index = mean × 100).
 HAS_WEIGHTS = {"H0": 0.0, "H1": 1.0, "H2": 0.75, "H3": 0.5, "H4": 0.25, "H5": 0.0}
+# Human Agency band names + go/no-go zone labels & dot colours — mirror the UI's HAS / ZONE_META maps
+# so a deck legend and an on-screen legend read identically.
+HAS_NAMES = {
+    "H0": "Robotics / GSE lever", "H1": "AI handles entirely", "H2": "AI with minimal input",
+    "H3": "Equal partnership", "H4": "Human-led, AI assists", "H5": "Human essential",
+}
+ZONE_META = {
+    "GREEN_LIGHT": ("Green light", "2F8074"),
+    "RED_LIGHT": ("Red light", "C2683F"),
+    "ROBOTICS_GSE_LEVER": ("Robotics lever", "7C8DB5"),
+    "NO_BENCHMARK_MATCH": ("No benchmark", "94A3B8"),
+}
+REVIEW_COLORS = {"approved": "3F9D77"}  # anything else = amber 'unreviewed', as on the board
+REVIEW_UNREVIEWED = "CBB24A"
 
 
 def has_index(bands: dict) -> int:
@@ -170,7 +184,10 @@ def provenance_slide(prs: Presentation, theme: Theme, summary: dict) -> None:
         section_slide(prs, theme, "Caveats", summary["caveats"])
 
 
-def _card_text(shape, theme: Theme, text: str, role: str, band: str) -> None:
+def _card_text(shape, theme: Theme, text: str, role: str, band: str,
+               zone: str = "", review_state: str = "") -> None:
+    """Card body — the deck twin of the on-screen TaskCard: task text, role · H-band, then the
+    zone chip and review state the card footer shows (D49)."""
     tf = shape.text_frame
     tf.word_wrap = True
     tf.margin_left = Inches(0.08)
@@ -189,13 +206,31 @@ def _card_text(shape, theme: Theme, text: str, role: str, band: str) -> None:
     r2.font.size = Pt(7.5)
     r2.font.name = theme.body_font
     r2.font.color.rgb = _rgb(theme.muted)
+    if zone or review_state:
+        p3 = tf.add_paragraph()
+        if zone:
+            label, color = ZONE_META.get(zone, (zone, "CBD5E1"))
+            rz = p3.add_run()
+            rz.text = f"● {label}"
+            rz.font.size = Pt(7)
+            rz.font.name = theme.body_font
+            rz.font.color.rgb = _rgb(color)
+        if review_state:
+            rv = p3.add_run()
+            rv.text = f"   ● {review_state}"
+            rv.font.size = Pt(7)
+            rv.font.name = theme.body_font
+            rv.font.color.rgb = _rgb(REVIEW_COLORS.get(review_state, REVIEW_UNREVIEWED))
 
 
 def workflow_board_slide(prs: Presentation, theme: Theme, name: str, value_stream: str,
                          steps: Sequence[dict], mapped: int, total: int, unmapped: int,
-                         page: int = 1, pages: int = 1) -> None:
+                         page: int = 1, pages: int = 1,
+                         unmapped_tasks: Sequence[dict] = ()) -> None:
     """Draw a process as a visual board: step columns of task cards (coloured by Human Agency band)
-    with arrows between steps — the deck mirror of the Workflow Mapper UI."""
+    with arrows between steps — the deck mirror of the Workflow Mapper UI. When `unmapped_tasks` is
+    given (page 1), the dashed 'Unmapped tasks' tray is drawn as the leading column, exactly where
+    the board shows it (D49)."""
     slide = _blank(prs)
     heading = name + (f"  ·  {value_stream}" if value_stream else "")
     if pages > 1:
@@ -204,39 +239,49 @@ def workflow_board_slide(prs: Presentation, theme: Theme, name: str, value_strea
              size=24, color=theme.ink, font=theme.title_font)
     _accent_rule(slide, theme, top=Inches(1.25), left=Inches(0.5), width=Inches(1.4))
 
-    if not steps:
+    if not steps and not unmapped_tasks:
         _textbox(slide, Inches(0.5), Inches(2.0), Inches(11), Inches(0.6),
                  "No steps yet — build them in the Workflow Mapper.", size=14, color=theme.muted,
                  font=theme.body_font)
         return
 
-    cols = len(steps)
+    # Columns = the optional unmapped tray (leading, as on screen) + this page's step columns.
+    tray = [{"tray": True, "name": "Unmapped tasks", "tasks": list(unmapped_tasks)}] \
+        if unmapped_tasks else []
+    columns = tray + [dict(s, tray=False) for s in steps]
+    cols = len(columns)
     left0, top0 = Inches(0.5), Inches(1.7)
     gap = Inches(0.34)
     colw = int((Inches(12.3) - gap * (cols - 1)) / cols)
     header_h = Inches(0.5)
-    card_h, card_gap = Inches(0.66), Inches(0.12)
-    max_cards = 6
+    card_h, card_gap = Inches(0.78), Inches(0.12)
+    max_cards = 5
 
-    for i, step in enumerate(steps):
+    for i, col in enumerate(columns):
         left = left0 + i * (colw + gap)
-        # step header
+        is_tray = col.get("tray")
+        tasks = col.get("tasks", [])
+        # column header — carries the card count, like the on-screen column header
         hdr = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, left, top0, colw, header_h)
-        hdr.fill.solid(); hdr.fill.fore_color.rgb = _rgb(theme.ink)
-        hdr.line.fill.background()
+        hdr.fill.solid()
+        hdr.fill.fore_color.rgb = _rgb("F1F5F9" if is_tray else theme.ink)
+        if is_tray:
+            hdr.line.color.rgb = _rgb("CBD5E1"); hdr.line.width = Pt(1)
+        else:
+            hdr.line.fill.background()
         htf = hdr.text_frame; htf.word_wrap = True
         hp = htf.paragraphs[0]; hr = hp.add_run()
-        hr.text = f"{step.get('seq', i + 1)}.  {step.get('name', '')}"
+        label = "Unmapped tasks" if is_tray else f"{col.get('seq', i)}.  {col.get('name', '')}"
+        hr.text = f"{label}   ({len(tasks)})"
         hr.font.size = Pt(11); hr.font.bold = True; hr.font.name = theme.title_font
-        hr.font.color.rgb = _rgb(theme.ground)
-        # arrow to the next step
-        if i < cols - 1:
+        hr.font.color.rgb = _rgb(theme.muted if is_tray else theme.ground)
+        # arrow to the next step (never out of the tray — the tray isn't part of the flow)
+        if not is_tray and i < cols - 1:
             arr = slide.shapes.add_shape(MSO_SHAPE.RIGHT_ARROW, left + colw + Emu(20000),
                                          top0 + Inches(0.12), gap - Emu(40000), Inches(0.26))
             arr.fill.solid(); arr.fill.fore_color.rgb = _rgb(theme.muted)
             arr.line.fill.background()
         # task cards
-        tasks = step.get("tasks", [])
         y = top0 + header_h + Inches(0.12)
         for t in tasks[:max_cards]:
             band = t.get("human_agency_level", "H0")
@@ -244,10 +289,12 @@ def workflow_board_slide(prs: Presentation, theme: Theme, name: str, value_strea
             card.fill.solid(); card.fill.fore_color.rgb = _rgb("FFFFFF")
             card.line.color.rgb = _rgb(HAS_COLORS.get(band, "CBD5E1"))
             card.line.width = Pt(1.5)
-            _card_text(card, theme, t.get("text", ""), t.get("role", ""), band)
+            _card_text(card, theme, t.get("text", ""), t.get("role", ""), band,
+                       zone=t.get("zone") or "", review_state=t.get("review_state") or "")
             y += card_h + card_gap
         if not tasks:
-            _textbox(slide, left, y, colw, Inches(0.4), "(no tasks linked)",
+            _textbox(slide, left, y, colw, Inches(0.4),
+                     "(nothing unmapped)" if is_tray else "(no tasks linked)",
                      size=9, color=theme.muted, font=theme.body_font)
         elif len(tasks) > max_cards:
             _textbox(slide, left, y, colw, Inches(0.3), f"+{len(tasks) - max_cards} more",
@@ -255,7 +302,8 @@ def workflow_board_slide(prs: Presentation, theme: Theme, name: str, value_strea
 
     _textbox(slide, Inches(0.5), Inches(7.0), Inches(12), Inches(0.4),
              f"Mapped {mapped} / {total} tasks  ·  {unmapped} unmapped   "
-             "·   colour = Human Agency (H0 robotics → H5 human-led)",
+             "·   colour = Human Agency (H0 robotics → H5 human-led)   "
+             "·   ● zone (go / no-go)   ·   ● review state",
              size=10, color=theme.muted, font=theme.body_font)
 
 
@@ -306,8 +354,10 @@ def landscape_slide(prs: Presentation, theme: Theme, points: Sequence[dict],
         desire = pt_.get("desire")
         y_val = max(0.0, min(1.0, float(desire))) if desire is not None else 0.5
         band = pt_.get("band", "H0")
-        cx = px + int(cap * (pw - d))
-        cy = py + int((1.0 - y_val) * (ph - d))  # pptx y grows downward; desire grows upward
+        # Centre the dot on its coordinate (shapes are placed by top-left corner), so a dot at
+        # capability 0.5 straddles the quadrant divide exactly as it does on screen.
+        cx = px + int(cap * pw) - int(d / 2)
+        cy = py + int((1.0 - y_val) * ph) - int(d / 2)  # pptx y grows down; desire grows up
         dot = slide.shapes.add_shape(MSO_SHAPE.OVAL, cx, cy, d, d)
         color = HAS_COLORS.get(band, "CBD5E1")
         dot.fill.solid()
@@ -324,8 +374,9 @@ def landscape_slide(prs: Presentation, theme: Theme, points: Sequence[dict],
         sw = slide.shapes.add_shape(MSO_SHAPE.OVAL, Inches(10.4), legend_y + i * Inches(0.34),
                                     Inches(0.16), Inches(0.16))
         sw.fill.solid(); sw.fill.fore_color.rgb = _rgb(HAS_COLORS[b]); sw.line.fill.background()
-        _textbox(slide, Inches(10.65), legend_y + i * Inches(0.34) - Inches(0.045), Inches(2.5),
-                 Inches(0.3), b, size=10, color=theme.ink, font=theme.body_font)
+        _textbox(slide, Inches(10.65), legend_y + i * Inches(0.34) - Inches(0.045), Inches(2.6),
+                 Inches(0.3), f"{b}  {HAS_NAMES[b]}", size=9, color=theme.ink,
+                 font=theme.body_font)
     notes = ["hollow dot = local desire not captured (neutral height)",
              "quadrants per Stanford WORKBank (desire × capability)"]
     if len(points) > MAX_DOTS:
@@ -337,10 +388,12 @@ def landscape_slide(prs: Presentation, theme: Theme, points: Sequence[dict],
 
 
 def org_rollup_slide(prs: Presentation, theme: Theme, rows: Sequence[dict],
-                     org_index: int, page: int = 1, pages: int = 1) -> None:
+                     org_index: int, page: int = 1, pages: int = 1,
+                     stats: Sequence[Tuple[str, str]] = ()) -> None:
     """One page of the org-hierarchy Roll-up — the deck mirror of the Workflow Mapper's Roll-up view.
     Each row: depth-indented role, own/team task counts, rolled-up index, and an H-mix stacked bar.
-    `rows`: [{title, name, depth, own, team, reviewed_pct, index, bands}] in depth-first order."""
+    `rows`: [{title, name, depth, own, team, reviewed_pct, index, bands}] in depth-first order.
+    `stats`: the view's org-wide stat cards (People / Reporting layers / …), drawn on page 1."""
     slide = _blank(prs)
     heading = "Org-hierarchy AI roll-up" + (f"   (page {page}/{pages})" if pages > 1 else "")
     _textbox(slide, Inches(0.5), Inches(0.45), Inches(9.6), Inches(0.8), heading,
@@ -351,14 +404,30 @@ def org_rollup_slide(prs: Presentation, theme: Theme, rows: Sequence[dict],
     _accent_rule(slide, theme, top=Inches(1.25), left=Inches(0.5), width=Inches(1.4))
 
     top0, row_h = Inches(1.6), Inches(0.42)
+    if stats:
+        # The four stat cards that head the Roll-up view on screen.
+        cw, cgap = Inches(2.9), Inches(0.24)
+        for i, (label, value) in enumerate(stats[:4]):
+            cx = Inches(0.5) + i * (cw + cgap)
+            card = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, cx, Inches(1.5), cw,
+                                          Inches(0.72))
+            card.fill.solid(); card.fill.fore_color.rgb = _rgb("FFFFFF")
+            card.line.color.rgb = _rgb("E2E8F0"); card.line.width = Pt(1)
+            _textbox(slide, cx + Inches(0.14), Inches(1.56), cw - Inches(0.2), Inches(0.24),
+                     label.upper(), size=8, color=theme.muted, font=theme.body_font)
+            _textbox(slide, cx + Inches(0.14), Inches(1.76), cw - Inches(0.2), Inches(0.4),
+                     str(value), size=16, color=theme.ink, bold=True, font=theme.title_font)
+        top0 = Inches(2.44)
     bar_x, bar_w = Inches(9.0), Inches(2.4)
     for i, r in enumerate(rows):
         y = top0 + i * row_h
         indent = Inches(0.5) + min(int(r.get("depth", 0)), 6) * Inches(0.32)
         title = r.get("title", "—")
-        label = (title[:52] + "…") if len(title) > 52 else title
+        label = (title[:48] + "…") if len(title) > 48 else title
+        # role + its org level — the title and L-chip the on-screen row shows.
         _textbox(slide, indent, y, Inches(5.6) - (indent - Inches(0.5)), Inches(0.36),
-                 label, size=11, color=theme.ink, font=theme.body_font)
+                 f"{label}   L{r.get('level', 0)}", size=11, color=theme.ink,
+                 font=theme.body_font)
         _textbox(slide, Inches(6.1), y, Inches(1.6), Inches(0.36),
                  f"{r.get('own', 0)} own · {r.get('team', 0)} team", size=9, color=theme.muted,
                  font=theme.body_font)

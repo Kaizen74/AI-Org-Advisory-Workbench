@@ -140,3 +140,80 @@ async def test_rollup_export_csv_and_pptx(api_client, async_session, monkeypatch
     assert "Director" in blob and "Cargo Officer" in blob
     assert "Boss" not in blob and "Cargo Joe" not in blob
     assert "Org index" in blob
+
+
+# ── D49 — visual parity: the deck must carry what the on-screen card/plot/row shows ───────────
+async def test_flow_deck_carries_card_zone_review_and_unmapped_tray(api_client, async_session,
+                                                                    monkeypatch):
+    """The Flow board on screen shows, per card, the zone chip + review dot, a per-step task count,
+    and an 'Unmapped tasks' tray column. The deck mirror must carry all four."""
+    eng_id, ds_id = await _setup(api_client, async_session, monkeypatch)
+    p = (await api_client.post("/api/v1/workflows",
+                               json={"engagement_id": eng_id, "name": "Cargo",
+                                     "value_stream": "Ops"})).json()
+    s1 = (await api_client.post(f"/api/v1/workflows/{p['id']}/steps",
+                                json={"name": "Acceptance"})).json()
+    tids = [t.id for t in await async_session.scalars(select(Task))]
+    await api_client.post(f"/api/v1/workflows/steps/{s1['id']}/map-tasks",
+                          json={"task_ids": tids[:2]})
+
+    ppt = await api_client.get("/api/v1/workflows/export.pptx",
+                               params={"engagement_id": eng_id, "dataset_id": ds_id})
+    import io as _io
+
+    from pptx import Presentation
+    prs = Presentation(_io.BytesIO(ppt.content))
+    texts = [sh.text_frame.text for s in prs.slides for sh in s.shapes if sh.has_text_frame]
+    blob = "\n".join(texts)
+    assert any("Unmapped tasks" in t for t in texts), "the tray column is part of the Flow visual"
+    # Step header carries its card count, like the column header on screen.
+    assert any(t.startswith("1.") and "Acceptance" in t and "2" in t for t in texts)
+    # Cards carry the zone chip + review state the on-screen card shows.
+    assert "Red light" in blob or "Green light" in blob or "Robotics lever" in blob
+    assert "unreviewed" in blob.lower() or "approved" in blob.lower()
+
+
+async def test_landscape_export_honours_agency_band_filter(api_client, async_session, monkeypatch):
+    """The Landscape plots only the Agency bands left switched on; the export must match the
+    filtered picture, not the unfiltered dataset."""
+    _, ds_id = await _setup(api_client, async_session, monkeypatch)
+    everything = list(csv.DictReader(io.StringIO(
+        (await api_client.get("/api/v1/workflows/landscape.csv",
+                              params={"dataset_id": ds_id})).text)))
+    bands_present = {r["human_agency_level"] for r in everything}
+    keep = sorted(bands_present)[0]
+    filtered = list(csv.DictReader(io.StringIO(
+        (await api_client.get("/api/v1/workflows/landscape.csv",
+                              params={"dataset_id": ds_id, "bands": keep})).text)))
+    assert filtered, "the kept band should still plot"
+    assert {r["human_agency_level"] for r in filtered} == {keep}
+    assert len(filtered) <= len(everything)
+
+
+async def test_rollup_org_index_matches_the_on_screen_formula(api_client, async_session,
+                                                              monkeypatch):
+    """The Roll-up's org-wide index sums every position's OWN bands once (the UI's formula), so it
+    stays correct even when a malformed reporting line leaves nodes outside the root forest."""
+    from app.services.deliverable_builders import has_index
+    from app.services.task_intelligence_service import org_rollup
+
+    _, ds_id = await _setup(api_client, async_session, monkeypatch)
+    rollup = await org_rollup(async_session, ds_id)
+    own_bands: dict = {}
+    for n in rollup["nodes"]:
+        for b, c in n["self_bands"].items():
+            own_bands[b] = own_bands.get(b, 0) + c
+    expected = has_index(own_bands)
+
+    ppt = await api_client.get("/api/v1/workflows/rollup.pptx", params={"dataset_id": ds_id})
+    import io as _io
+
+    from pptx import Presentation
+    prs = Presentation(_io.BytesIO(ppt.content))
+    blob = "\n".join(sh.text_frame.text for s in prs.slides
+                     for sh in s.shapes if sh.has_text_frame)
+    assert f"Org index  {expected}/100" in blob
+    # The org-wide stat cards from the top of the Roll-up view travel with the deck (the deck
+    # renders the labels upper-cased, as the on-screen cards do via their `uppercase` styling).
+    for card in ("People", "Reporting layers", "AI-amenable tasks", "Reviewed"):
+        assert card.upper() in blob.upper()

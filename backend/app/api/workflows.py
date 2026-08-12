@@ -161,11 +161,21 @@ async def export_pptx(engagement_id: str, dataset_id: str,
 
 
 # ── Export the Landscape & Roll-up views (D48) — deck/CSV mirrors of what's on screen ─────────
+def _band_list(bands: Optional[str]) -> Optional[List[str]]:
+    """Parse the `bands=H1,H2` filter (the Landscape's Agency toggles). Blank/absent = no filter,
+    so a default export is the unfiltered plot."""
+    if not bands:
+        return None
+    picked = [b.strip().upper() for b in bands.split(",") if b.strip()]
+    return picked or None
+
+
 @router.get("/landscape.csv")
-async def landscape_csv(dataset_id: str, reviewed_only: bool = False,
+async def landscape_csv(dataset_id: str, reviewed_only: bool = False, bands: Optional[str] = None,
                         session: AsyncSession = Depends(get_session)):
     """CSV of the AI-opportunity landscape: one row per plotted (capability-scored) task."""
-    data = await svc.export_landscape_csv(session, dataset_id, reviewed_only=reviewed_only)
+    data = await svc.export_landscape_csv(session, dataset_id, reviewed_only=reviewed_only,
+                                          bands=_band_list(bands))
     return Response(
         content=data, media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=ai_landscape.csv"},
@@ -173,11 +183,12 @@ async def landscape_csv(dataset_id: str, reviewed_only: bool = False,
 
 
 @router.get("/landscape.pptx")
-async def landscape_pptx(dataset_id: str, reviewed_only: bool = False,
+async def landscape_pptx(dataset_id: str, reviewed_only: bool = False, bands: Optional[str] = None,
                          session: AsyncSession = Depends(get_session)):
     """PowerPoint mirror of the Landscape view (capability × desire, WORKBank quadrants)."""
     data = await deliverable_service.build_landscape_deck(session, dataset_id,
-                                                          reviewed_only=reviewed_only)
+                                                          reviewed_only=reviewed_only,
+                                                          bands=_band_list(bands))
     return Response(
         content=data, media_type=_PPTX_MEDIA,
         headers={"Content-Disposition": "attachment; filename=ai_landscape.pptx"},
