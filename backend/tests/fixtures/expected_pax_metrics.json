@@ -1,0 +1,8 @@
+{
+  "_note": "Baseline fixture #1 (Build Spec A3 Rule 2). LOCKED values the Phase 1 metrics engine MUST reproduce byte-identically for the provided org_structure_PAX.csv. Per DECISIONS.md D9, Eric confirmed the zip's CSV is the source of truth; these are its actual values (the faithful port reproduces the legacy v1 code's output on this file exactly). They supersede the spec's earlier illustrative numbers (16 / 25.0 / 5,770,000), which referred to a different PAX file.",
+  "total_employees": 64,
+  "total_managers": 34,
+  "manager_ratio_pct": 53.1,
+  "total_cost": 6620000,
+  "organizational_layers": 6
+}

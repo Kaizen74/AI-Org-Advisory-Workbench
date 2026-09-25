@@ -1,0 +1,68 @@
+{
+  "_note": "Baseline P4 scenario-delta snapshot for a fixed move sequence on PAX (A3 Rule 2). Deterministic.",
+  "baseline": {
+    "average_cost_per_employee": 103438.0,
+    "average_span": 1.85,
+    "health_score": 55.0,
+    "manager_ratio_pct": 53.1,
+    "max_span": 4.0,
+    "median_span": 2.0,
+    "organizational_layers": 6.0,
+    "total_cost": 6620000.0,
+    "total_employees": 64.0,
+    "total_ics": 30.0,
+    "total_managers": 34.0
+  },
+  "delta": {
+    "average_cost_per_employee": 937.0,
+    "average_span": 0.0,
+    "health_score": 0.0,
+    "manager_ratio_pct": 0.0,
+    "max_span": 0.0,
+    "median_span": 0.0,
+    "organizational_layers": 0.0,
+    "total_cost": 60000.0,
+    "total_employees": 0.0,
+    "total_ics": 0.0,
+    "total_managers": 0.0
+  },
+  "moves": [
+    {
+      "move_type": "DELETE_POSITION",
+      "params": {
+        "employee_key": "E064"
+      }
+    },
+    {
+      "move_type": "ADD_POSITION",
+      "params": {
+        "department": "Passenger Services",
+        "employee_key": "E999",
+        "grade": "H5",
+        "level": 3,
+        "manager_key": "E001",
+        "salary": 120000
+      }
+    },
+    {
+      "move_type": "REPARENT",
+      "params": {
+        "employee_key": "E003",
+        "new_manager_key": "E002"
+      }
+    }
+  ],
+  "scenario": {
+    "average_cost_per_employee": 104375.0,
+    "average_span": 1.85,
+    "health_score": 55.0,
+    "manager_ratio_pct": 53.1,
+    "max_span": 4.0,
+    "median_span": 2.0,
+    "organizational_layers": 6.0,
+    "total_cost": 6680000.0,
+    "total_employees": 64.0,
+    "total_ics": 30.0,
+    "total_managers": 34.0
+  }
+}

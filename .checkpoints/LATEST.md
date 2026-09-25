@@ -1,0 +1,103 @@
+# LATEST CHECKPOINT
+**Updated:** 2026-07-15 (D49 — export visual-parity audit closing the D48 gaps; live deploy still pending Eric)
+**Latest micro-task:** D49 — audited each on-screen view element-by-element against its exported
+artifact and closed three real gaps. FLOW (untouched by D48, the biggest miss): deck cards now carry
+the zone chip + review-state dot the on-screen card shows, column headers carry task counts, and the
+dashed "Unmapped tasks" tray is drawn as the leading column. LANDSCAPE: export now honours the Agency
+band toggles (`bands=`) as well as the review filter, so the file is the FILTERED picture on screen;
+dots centred on their coordinates (they sat half a diameter off — a dot at capability 0.50 fell in the
+wrong quadrant); legend shows band names. ROLL-UP: fixed a D48 bug where the org index summed the
+roots' rolled-up bands instead of every node's own bands the way the UI does (the two diverge when a
+malformed reporting line strands nodes outside the root forest); added the view's four org-wide stat
+cards + the L-level per row. 3 new parity tests + a manual mock pass inventorying rendered shapes.
+Gate GREEN: 157 + build.
+**Prior micro-task:** D48 — the Workflow Mapper's ↓CSV/↓PPTX buttons are now VIEW-AWARE and export
+whatever view is on screen: Landscape → `ai_landscape.csv` (one row per plotted dot: capability, desire,
+H-band, WORKBank quadrant, zone, review state; honours "Reviewed only") + `ai_landscape.pptx` (the
+capability×desire scatter with D47 quadrant labels, band-coloured dots, hollow = no desire, 250-dot cap);
+Roll-up → `org_rollup.csv` (depth-first, on-screen order: own/team, rolled-up index, reviewed %, H0–H5
+mix) + `org_rollup.pptx` (indented reporting lines + H-mix bars, 12 roles/slide). Exports reuse the exact
+data paths + math the views render from (`_board_task_payload`, `org_rollup`, shared `has_index`) so
+screen and file can't drift; role = job title, never a name (test-asserted). 4 additive endpoints
+(`/workflows/landscape.csv|.pptx`, `/rollup.csv|.pptx`), 3 new tests. Gate GREEN: 154 + build.
+**Prior micro-task:** D47 — web-harvester calibration vs primary sources (WORKBank arXiv:2506.06576,
+Anthropic Economic Index, Railway docs): FIXED the reversed Landscape quadrants (Red Light = capable but
+workers resist; was labelled "Automate"), tightened HAS rubric/prompt/chip text to the paper's
+definitions, added automation-vs-augmentation counts + legend, README §1b research anchors + upgraded
+§4 step-by-step deploy guide with pre-flight and verify-it-worked checklists. Gate GREEN: 151 + build.
+**Prior micro-task:** D46 — Workflow-Mapper Roll-up: the node count was the rolled-up total (self +
+all reports), so a head's number read as tasks they personally own ("CCO has 49 tasks?"), and a role's
+tasks weren't visible. `org_rollup` now returns per node the role's OWN tasks (band/zone/review + the
+process→step placement via TaskLink); the Roll-up view shows own vs team distinctly and each role
+expands (click) to list its own tasks + where each is mapped — tied back to Flow. Verified on the real
+CSV (CCO own=1/team=19=org total; Head Global Mktg own=1<team=14). Gate GREEN: 151 tests + clean build.
+**Prior micro-task:** D45 — fixed GREEN/RED zone incoherence: the inference path stored the model's
+own GREEN/RED label (assigned separately from the H-band), so the board showed one H-band in two
+colours. Now `infer_unmatched_potential` derives the zone via `derive_zone(cap, has)` — matching the
+overlay + manual paths + queue label + board; GREEN ⇔ AI-amenable H1–H2 (ROBOTICS preserved). Frontend:
+plain-language zone labels/meaning + go/no-go legend clarify GREEN vs RED. Regression test + E2E prove
+the screenshot's H3 task now reads RED_LIGHT in both queue and board. Gate GREEN: 150 tests + clean build.
+**Prior micro-task:** D44 — (1) fixed the live 500 on extract: Claude 5 responses put ThinkingBlocks
+before the TextBlock; `claude_service` now extracts by block type (join text, skip thinking, clear
+RuntimeError when none). (2) `MODEL_EXTRACT` default → `claude-sonnet-5`; token budgets raised
+(16000/8192/6144; default 4096) for the new tokenizer + adaptive thinking. (3) pipeline now honours the
+Settings-managed models (`settings_service.model_extract()/model_synth()`, UI → env fallback). Eric:
+after deploying, check Settings → LLM shows claude-sonnet-5 (a previously saved model now really drives
+the pipeline). Gate GREEN: 149 tests + clean build.
+**Prior micro-task:** D43 — (1) fixed reviewed/rated tasks still showing "Unreviewed" on the Workflow
+Mapper board: the Validation Queue's default `max confidence = 0.7` HARD-filtered model-inferred scores
+≥ 0.7 out of the queue so they could never be approved (frontend-only fix: optional confidence filter,
+blank = show all needing review, + Select-all). (2) Rebuilt the Roll-up as an ORG-CHART hierarchy tree
+(new additive `GET /task-intel/org-rollup` + `org_rollup` service; AI exposure rolled up reporting lines
+to department heads). Verified end-to-end on the real 25-row CSV. Gate GREEN: 144 tests + clean build.
+**Phase:** P7 done + access-control (D13) + D14–D16 fixes + **D17 product refocus**. **All seven phases
+P0–P7 built; app is private and now centred on role→task→AI-potential (H0–H5).**
+**Last completed micro-task:** D42 — (1) Landscape now plots capability-scored tasks even without desire (hollow at neutral) so reviewed items appear; (2) AI Opportunity Index shows the explicit formula (mean weight ×100; H1 1.0·H2 .75·H3 .5·H4 .25·H5/H0 0); (3) Roll-up rebuilt by IMPACTED ROLES + cumulative org implications (per-role index/amenable/H-mix ranked, org-structure stat cards) instead of process/steps; honours Reviewed-only. Frontend-only; board test guards role/capability/desire. Gate GREEN (140 tests + build).
+**Prior micro-task:** D41 — added a 'Reviewed only' filter to the Workflow Mapper that drives the ANALYSIS: a 3-way Review control (All/Reviewed only/Unreviewed only); analysisTasks=allTasks.filter(pass) feeds the AI Opportunity Index, AI-amenable count, Landscape, and per-step Human Agency mix (Flow still dims; Mapped/Reviewed% stay structural). Frontend-only; data correctness proven by D40. Gate GREEN (140 tests + build).
+**Prior micro-task:** D40 — verified the Validation-Queue↔Workflow-Mapper handoff is correct (new test_queue_board_handoff: manual override → board approved/rated-H-band; approve-as-suggested → approved/inferred band; opportunity-matrix reflects both). The user's 'board shows unreviewed' was frontend staleness (board loaded before the queue edit) — added a ↻ Refresh button to the Workflow Mapper to pull latest reviewed scores. Gate GREEN (140 tests + build).
+**Prior micro-task:** D39 — validation-queue rating UX: optimistic removal (rated rows vanish instantly, clearer banner) + 'Show reviewed' toggle (include_reviewed) to audit/re-rate already-rated items; rating dropdown now on all ai_score rows. test_manual_score asserts rated task absent from default queue but present+approved under include_reviewed. Gate GREEN (139 tests + build).
+**Prior micro-task:** D38 — stop listing non-actionable EXTRA/MISSING benchmark rows in the validation queue (get_queue → MATCHED benchmarks only). Root of the 'EXTRA row lingers after rating' confusion: a no-benchmark task showed two rows; EXTRA isn't approvable. Now each no-benchmark task shows a single ai_score row with the rating dropdown that disappears when rated ('no match' still shown via the zone + Benchmark-coverage card). D37 (resolve-together) kept. test_manual_score updated. Gate GREEN (139 tests + build).
+**Prior micro-task:** D37 — manual AI override now resolves the WHOLE task: a no-benchmark task had two queue rows (benchmark EXTRA + ai_score); the rating only resolved the ai_score, so the benchmark row lingered. set_manual_opportunity now also marks the task's benchmark row(s) reviewed (edited) so the whole task leaves the queue. Test asserts no rows remain. Gate GREEN (139 tests + build).
+**Prior micro-task:** D36 — separated local desire from AI opportunity: apply_local_desirability now sets ONLY desire_score_local (feeds the landscape desire axis), NOT the AI band (band = benchmark/inference/manual override only); return {updated,skipped}; template lists all tasks. De-duplicated the two desire uploads — kept the task-id 'Local desire' card in Task Intelligence, removed the redundant 'Local desire pulse' card from the Validation Queue (pulse backend kept). Gate GREEN (139 tests + build).
+**Prior micro-task:** D35 — scalability review for large CSVs: raised max_tokens on extract (8192) and benchmark (4096) batch calls (they used the 2048 default → could silently drop tasks on big batches, like D34); IN-list limits confirmed non-issues (SQLite 250k/PG 65k); sequential-call latency mitigated by idempotent re-runnable steps. New test_pipeline_scale.py (25 tasks, multi-batch, nothing dropped + token budgets verified). Gate GREEN (139 tests + build).
+**Prior micro-task:** D34 — fixed AI-inference regression where large datasets showed every ai_score at H0/L0/NO_BENCHMARK_MATCH: infer_unmatched_potential sent ALL tasks in one Claude call at 2048 tokens → truncated JSON → 0 scores. Now batched (INFER_BATCH=12, max_tokens=3072, per-batch resilient). Inference test forces multi-batch. Gate GREEN (138 tests + build).
+**Prior micro-task:** D33 — (1) manual AI override re-keyed to task_id so it's available on benchmark/EXTRA rows too (POST /validation/manual-score {task_id,rating}; dropdown on every model-inferred row). (2) finalized-workflow PPTX is now a VISUAL board (workflow_board_slide: step columns + HAS-coloured task cards + arrows, 4 cols/slide), used by both the deliverable and the Workflow Mapper ↓PPTX export. Gate GREEN (138 tests + build).
+**Prior micro-task:** D32 — export the finalized workflow from the Workflow Mapper: '↓ CSV' (every mapped task→step→process: role/H-band/zone/level/source) + '↓ PPTX' (reuses D22's deck via deliverable_service.build_workflow_deck). Backend: workflow_service.export_workflow_csv + GET /workflows/export.csv & /export.pptx; _board_task_payload gains `source`. Frontend toolbar buttons + authed-blob api. Gate GREEN (138 tests + build).
+**Prior micro-task:** D31 — inline Validation-Queue manual override of AI opportunity for no-benchmark tasks: a 1–5 'Manual AI rating' dropdown on model-inferred ai_score rows → POST /validation/manual-score → consultant-approved (client-ready) via the shared apply_manual_opportunity mapping (also used by the CSV path). The override shows in the Workflow Mapper board (reads TaskAIScore). Gate GREEN (136 tests + build).
+**Prior micro-task:** D30 — (1) delete process/step in Workflow Mapper (delete_process/delete_step + DELETE routes; × on process chips & step columns; deleted step's tasks return to the tray). (2) local-desirability manual scoring for no-benchmark tasks: desirability-template.csv (task-id keyed) + POST /task-intel/desirability → consultant-approved AI opportunity from desire_rating (protects WORKBank/SFw/ONET; US desire untouched); Task Intelligence 'Local desirability' card. Gate GREEN (135 tests + build).
+**Prior micro-task:** D29 — confirmed WORKBank coverage is complete (uploaded CSVs = the whole dataset; 104-occupation overlay is full); verified deterministic rebuild + git-ignored raw data; added test_workbank_integration.py (one end-to-end test: overlay + inference + robotics + source_mix + workflow deliverable together, no regressions). Gate GREEN (133 tests + build).
+**Prior micro-task:** D28 — embedded the REAL WORKBank overlay: Eric supplied the 4 CSVs; built backend/app/resources/taxonomies/workbank_overlay.curated.json (104 occupations, 32 KB) via the hardened converter (Automation Capacity Rating, multi-rater averaging, drops un-surveyed occupations→inference). Loader auto-promotes it; tests hermetic via autouse fixture; verified a marketing task now scores from WORKBank (no inference). Raw dataset git-ignored. Gate GREEN (132 tests + build).
+**Prior micro-task:** D27 — WORKBank clone guidance: clone HF dataset into ./workbank as a git-ignored BUILD INPUT (never commit raw data, A4); commit only the curated overlay. Added /workbank/ to .gitignore; converter now finds CSVs recursively (HF nested layout); --src defaults to ./workbank. HF clone still 403 in sandbox (allowlist needed). Gate GREEN (131 tests + build).
+**Prior micro-task:** D26 — hardened WORKBank ingestion: converter extracted to importable app/services/workbank_ingest (unit-tested offline with synthetic CSVs; CLI is now a thin wrapper) + rollup `source_mix` {overlay/ai_inferred/robotics/unclassified} with a Task Intelligence 'Benchmark coverage' card so reliance on inference is measurable; proved overlay-backed tasks bypass inference. HF still not allowlisted in sandbox (403) — allowlist + run the script to go live. Gate GREEN (130 tests + build).
+**Prior micro-task:** D25 — WORKBank integration path (HF-hosted tables; HF not allowlisted here): scripts/build_workbank_overlay.py + additive taxonomy_loader hook (workbank_overlay.curated.json → authoritative overlay) so real values drop in once HF is reachable; layered authority curated>WORKBank>Claude inference. Also fixed lingering robotics levers — infer-potential re-bands auto ROBOTICS_GSE_LEVER rows via the HAS rubric (idempotent). Gate GREEN (128 tests + build).
+**Prior micro-task:** D24 — robust AI benchmarking: unmatched tasks (NO_BENCHMARK_MATCH) are now scored by Claude grounded in the WORKBank HAS rubric (infer_unmatched_potential + POST /task-intel/infer-potential; model-inferred/unreviewed → export-blocked; idempotent). Pipeline adds the step; AIInferResult type + api.inferPotential. Decided AGAINST live O*NET/ESCO/WORKBank API wiring (static dataset / keys / 200MB guardrail). Gate GREEN (126 tests + build).
+**Prior micro-task:** D23 — (1) Reset board now clears all mappings (POST /workflows/{id}/reset-board; active when mapped_count>0); (2) delete client/engagement/dataset (DELETE routes + thorough cascade + Engagements ✕ buttons); (3) scoring no longer mislabels unmatched knowledge work as robotics — new NO_BENCHMARK_MATCH zone vs ROBOTICS_GSE_LEVER, queue label + H0 rubric clarified. Gate GREEN (125 tests + build).
+**Prior micro-task:** D22 — added the 'Finalized workflow' deliverable (PPTX_WORKFLOW): per process, builds a deck from the real board (steps → mapped tasks `text [role · H-band]`, per-step H0–H5 mix, mapped/unmapped line) + provenance; registered backend + frontend button. Gate GREEN (122 tests + build).
+**Prior micro-task:** D20 — integrated the visual Workflow & Task-analysis Mapper (drag-to-remap board: Flow/Landscape/Roll-up, hover role-trace, undo, inspector). Backend (additive, no migration): board/move_task/unmap_task + GET /board, POST /move-task, /unmap-task; board rows carry real fields + headline human_agency_level (H0–H5) + has_level + HAS rubric. Frontend: BoardTask/Step/WorkflowBoard types, api.workflowBoard/moveTask/unmapTask, WorkflowMapper replaced and refined to H0–H5 (L0–L3 secondary). Gate GREEN (121 tests + build).
+**Prior micro-task:** D21 — dropped the scenario deck: centralized `SHOW_SIMULATION` into `src/config.ts` (App.tsx + Deliverables.tsx) and gated the scenario-comparison + transition-register deliverables behind it; Deliverables now offers only Diagnostic/AI-roadmap/TOM/Metrics. Backend intact (reversible). Gate GREEN (121 tests + build).
+**Prior micro-task:** D19 — re-banded the Workflow Mapper AI-opportunity matrix to H0–H5 (agency_matrix / per-step agency_counts / agency_evidencing / rubric; L0–L3 kept internally; UI grid + evidencing now H0–H5). Gate GREEN (118 tests + build).
+**Prior micro-task:** D18 — Workflow Mapper: matrix 'Run' progress (spinner + Running…), a new Mapping coverage card (progress bar + linked/unlinked/empty-step tiles + what's-left/what's-missing lists; `list_steps` now returns `linked_task_ids`), and a note that processes/steps are authored labels onto which CSV tasks are linked. Gate GREEN (118 tests + build).
+**Prior micro-task:** D17 — parked Scenario Studio + Transition Planner behind `SHOW_SIMULATION`
+(reversible nav flag; code+tests intact) and made the **WORKBank Human Agency Scale (H0–H5)** the headline
+AI-potential metric (`human_agency_band` + `HUMAN_AGENCY_SCALE` rubric; rollup `agency` breakdown; queue
+ai_score band; Task Intelligence headline chart+legend). L0–L3 kept internally. Gate GREEN (118 tests + build).
+**In-flight micro-task:** none. (D28 DONE — real WORKBank overlay embedded.)
+**Next action (be exact):** Two things remain, both needing Eric (cannot be done from this sandbox):
+  1. **Live deploy** — follow README §4 to deploy backend→Railway (root `backend`, add Postgres, set
+     `DATABASE_URL` with `+asyncpg`, `ANON_SALT`, **`AUTH_SECRET`, `ACCESS_USERS=you@email:passcode`**,
+     start command/Procfile) and frontend→Vercel (root `frontend`, set `VITE_API_BASE_URL` to the
+     Railway URL), then set `CORS_ORIGINS` on Railway to the Vercel URL. Sign in with your
+     `ACCESS_USERS` login, then enter the Anthropic key + add other users in Settings.
+  2. **Verify the README verbatim** from a clean machine (local run + deploy) per B5 #10; capture any
+     wording corrections (actual Vercel/Railway button names) back into README §4.
+  Optional follow-ups (additive): branch merge to `main` (then delete `legacy v1 app.zip` from main);
+  expand audit UI; refine activator/L0-L3 rubrics if Eric supplies definitions.
+**Test status:** PASS — gate GREEN, **157 backend tests + clean frontend build**, zero regressions.
+**Recovery commands:** `bash scripts/gate.sh`
+**Open questions for Eric:**
+  1. **Live cloud deploy** needs your Vercel + Railway accounts connected to the GitHub repo — say
+     when you want to do it and I'll walk you through (or adjust README §4 to the exact screens).
+  2. Branch `claude/compassionate-knuth-wx5bjq` holds P0–P7. Merge to `main` when ready; then you can
+     delete `legacy v1 app.zip` from `main` (this branch carries the unpacked `legacy/`).
+  3. (Optional) Five-Activator labels, L0–L3 rubric, impact-class mapping are heuristic placeholders —
+     send preferred definitions for a precise (additive) wiring.

@@ -1,0 +1,20 @@
+{
+  "tasks": [
+    {
+      "task_text": "Sort and reconcile baggage against flight manifests",
+      "source": "model-inferred",
+      "confidence": 0.82,
+      "review_state": "unreviewed"
+    },
+    {
+      "task_text": "Prepare the aircraft loadsheet and verify final load distribution",
+      "source": "model-inferred",
+      "confidence": 0.74,
+      "review_state": "unreviewed"
+    }
+  ],
+  "caveats": [
+    "WORKBank values are ILLUSTRATIVE — replace with real pulls before client use.",
+    "O*NET codes are occupation-level; verify/refine to task-statement level before client use."
+  ]
+}
