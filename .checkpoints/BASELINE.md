@@ -212,3 +212,12 @@ unreviewed items excluded from the canonical "client-ready" payload.
 
 **P4+:** scenario delta payload for a fixed move sequence on the PAX fixture; apply/undo
 byte-parity property test.
+
+
+**D50 (Compass hand-off) — must not regress:** `tests/test_compass_handoff.py` (23 tests) +
+`test_migration.py::test_migration_009_adds_and_removes_compass_handoff`. Fixture:
+`tests/fixtures/meridian_compass_handoff.json` (fictional). Invariants: broken packets write
+nothing; Compass refs stored exactly as received; near-matches never auto-applied; `T-nnn` never
+reused; unreviewed model-inferred content absent from the return file; return JSON has exactly the
+six agreed top-level fields; no names in any return output; every Compass field is null and every
+existing export column unmoved when no packet is loaded (standalone).

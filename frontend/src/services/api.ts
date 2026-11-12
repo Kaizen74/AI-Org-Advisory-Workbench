@@ -8,6 +8,10 @@ import type {
   ArchetypeSummary,
   BenchmarkResult,
   Client,
+  CompassApplyResult,
+  CompassPreview,
+  CompassRole,
+  CompassState,
   Dataset,
   DiagnosticsSummary,
   Engagement,
@@ -294,8 +298,15 @@ export const api = {
     request<ProcessInfo>("/workflows", json({ engagement_id: engagementId, name, value_stream: valueStream })),
   listSteps: (processId: string) =>
     request<{ steps: StepInfo[] }>(`/workflows/${processId}/steps`),
-  addStep: (processId: string, name: string) =>
-    request<StepInfo>(`/workflows/${processId}/steps`, json({ name })),
+  addStep: (processId: string, name: string, pmsStepId?: string) =>
+    request<StepInfo>(`/workflows/${processId}/steps`, json({ name, pms_step_id: pmsStepId || null })),
+  // Set/clear the Process Map Studio step ID (S-nn) on a step so the two apps can be joined on it.
+  updateStep: (stepId: string, pmsStepId: string | null) =>
+    request<{ id: string; pms_step_id: string | null }>(`/workflows/steps/${stepId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pms_step_id: pmsStepId }),
+    }),
   mapTasks: (stepId: string, taskIds: string[]) =>
     request<{ linked: number }>(`/workflows/steps/${stepId}/map-tasks`, json({ task_ids: taskIds })),
   opportunityMatrix: (processId: string) =>
@@ -382,6 +393,42 @@ export const api = {
     ),
   downloadDeliverable: (id: string, filename: string) =>
     downloadBlob(`${BASE}/deliverables/${id}/download`, filename),
+
+  // Capability Compass hand-off — optional; the app works with no packet.
+  compassPreview: (packet: unknown, engagementId?: string | null) =>
+    request<CompassPreview>("/compass/preview", json({ packet, engagement_id: engagementId || null })),
+  compassApply: (
+    packet: unknown,
+    opts: {
+      engagementId?: string | null;
+      matches?: Record<string, string | null>;
+      overwriteName?: boolean;
+      confirmKeyChange?: boolean;
+    } = {},
+  ) =>
+    request<CompassApplyResult>(
+      "/compass/apply",
+      json({
+        packet,
+        engagement_id: opts.engagementId || null,
+        matches: opts.matches ?? null,
+        overwrite_name: !!opts.overwriteName,
+        confirm_key_change: !!opts.confirmKeyChange,
+      }),
+    ),
+  compassState: (engagementId: string, datasetId?: string | null) =>
+    request<CompassState>(
+      `/compass/${engagementId}${datasetId ? `?dataset_id=${encodeURIComponent(datasetId)}` : ""}`,
+    ),
+  setCompassRoleMatch: (engagementId: string, ref: string, jobTitle: string | null) =>
+    request<CompassRole>(`/compass/${engagementId}/roles/${encodeURIComponent(ref)}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ job_title: jobTitle }),
+    }),
+  // The consultant raises a reviewed item to Confirmed (or lowers it back to Indicated).
+  setGrade: (kind: string, id: string, grade: "confirmed" | "indicated") =>
+    request<{ grade: string }>("/validation/grade", json({ kind, id, grade })),
 
   // Settings
   getSettings: () => request<AppSettings>("/settings"),

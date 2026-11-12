@@ -17,6 +17,82 @@ export interface Engagement {
   default_taxonomy_code?: string | null;
   anonymized: boolean;
   created_at?: string | null;
+  compass_key?: string | null;   // set when imported from Capability Compass (e.g. MERIDIAN)
+}
+
+// ── Shared language with the other three apps (Capability Compass hand-off) ──
+/** The shared evidence grade, shown alongside this app's own source/confidence/review state. */
+export type EvidenceGrade = "confirmed" | "indicated" | "hypothesis";
+
+/** Compass fields attached to a task or role row. All null when there is no Compass packet. */
+export interface CompassTag {
+  compass_ref?: string | null;         // e.g. RL-014 — exactly as received
+  compass_route?: string | null;       // critical | dual | specialist | standard
+  compass_cluster_ref?: string | null; // e.g. CAP-04
+  tacit_warning?: string | null;       // set when a high-tacit role's task is proposed at H1–H2
+}
+
+export interface CompassRole {
+  ref: string;
+  title: string;
+  cluster_ref?: string | null;
+  cluster_name?: string;
+  route?: string | null;
+  status?: string | null;              // exists | thin | absent
+  match_state: string;                 // matched | manual | near | missed | absent
+  matched_job_title?: string | null;
+  candidates: string[];
+  positions: number;
+  note?: string | null;
+  // stored-state extras
+  tasks?: number;
+  suggestion?: string | null;
+  seat?: string;
+  criticality_index?: number | null;
+  tacit_intensity?: number | null;
+}
+
+export interface CompassPreview {
+  ok: boolean;
+  errors: string[];
+  warnings: string[];
+  engagement?: {
+    action: "create" | "update";
+    id?: string | null;
+    key: string;
+    name: string;
+    current_name?: string | null;
+    client_name: string;
+  };
+  dataset_id?: string | null;
+  job_titles?: string[];
+  roles?: CompassRole[];
+  match_counts?: Record<string, number>;
+  changes?: string[];
+  asks?: { field: string; question: string }[];
+}
+
+export interface CompassApplyResult {
+  engagement_id: string;
+  client_id: string;
+  name: string;
+  key: string;
+  roles: number;
+  warnings: string[];
+}
+
+export interface CompassState {
+  engagement_id: string;
+  imported: boolean;
+  key?: string | null;
+  generated_at?: string | null;
+  imported_at?: string | null;
+  readiness?: { ready: boolean; verdict?: string; open?: string[] } | null;
+  reference_model: { ref: string; name: string }[];
+  leapfrog_gate: { ref: string; test: string }[];
+  dataset_id?: string | null;
+  job_titles: string[];
+  roles: CompassRole[];
 }
 
 export interface Dataset {
@@ -133,6 +209,12 @@ export interface QueueItem {
   source?: string | null;
   confidence?: number | null;
   review_state: string;
+  task_code?: string | null;     // shared displayed ID, e.g. T-014
+  grade?: EvidenceGrade;
+  compass_ref?: string | null;
+  compass_route?: string | null;
+  compass_cluster_ref?: string | null;
+  tacit_warning?: string | null;
 }
 
 export interface QueueResult {
@@ -182,6 +264,7 @@ export interface ScenarioDelta {
 
 export interface TaskItem {
   id: string;
+  code?: string | null;
   task_text: string;
   employee_key?: string | null;
 }
@@ -198,6 +281,7 @@ export interface StepInfo {
   name: string;
   linked_tasks: number;
   linked_task_ids: string[];
+  pms_step_id?: string | null;   // Process Map Studio step code (S-nn), optional
 }
 
 export interface OpportunityMatrix {
@@ -288,8 +372,10 @@ export type AiLevel = "L0" | "L1" | "L2" | "L3";
 
 /** One task as shown on the Workflow Mapper board. All fields are real persisted data:
  *  role/department from the source Position; human_agency_level/ai_level/zone/scores from TaskAIScore. */
-export interface BoardTask {
+export interface BoardTask extends CompassTag {
   id: string;
+  code?: string | null;          // shared displayed ID, e.g. T-014 (never reused)
+  grade?: EvidenceGrade;         // shared evidence grade
   text: string;
   role: string;                 // Position.job_title (or "Unassigned")
   department?: string | null;
@@ -311,6 +397,7 @@ export interface BoardStep {
   name: string;
   seq: number;
   tasks: BoardTask[];
+  pms_step_id?: string | null;   // Process Map Studio step code (S-nn), optional
 }
 
 export interface WorkflowBoard {
@@ -336,6 +423,9 @@ export interface OrgTaskPlacement {
 /** One of a role's OWN tasks, as shown when a role is expanded in the roll-up. */
 export interface OrgRollupTask {
   id: string;
+  code?: string | null;
+  grade?: EvidenceGrade;
+  tacit_warning?: string | null;
   text: string;
   human_agency_level: AgencyBand;
   zone?: string | null;
@@ -361,6 +451,9 @@ export interface OrgRollupNode {
   direct_reports: number;
   total_reports: number;        // all descendants
   tasks: OrgRollupTask[];       // this role's OWN tasks (not the rolled-up ones)
+  compass_ref?: string | null;
+  compass_route?: string | null;
+  compass_cluster_ref?: string | null;
 }
 
 export interface OrgRollup {

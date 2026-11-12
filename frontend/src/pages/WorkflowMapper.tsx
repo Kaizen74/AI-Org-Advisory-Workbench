@@ -14,6 +14,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../services/api";
+import { GradeBadge, RouteBadge, TacitWarning } from "../components/Compass";
 import type {
   AgencyBand,
   BoardStep,
@@ -553,6 +554,14 @@ export default function WorkflowMapper({
               step={selStep}
               onBack={() => { setSelKind(null); setSelId(null); }}
               onSelectTask={(id) => { setSelKind("task"); setSelId(id); }}
+              onSavePmsId={async (stepId, value) => {
+                try {
+                  await api.updateStep(stepId, value || null);
+                  if (activeProc) await loadBoard(activeProc);
+                } catch (e) {
+                  setError(String((e as Error).message ?? e));
+                }
+              }}
             />
           ) : (
             <OverviewInspector proc={proc} board={board} index={aiIndex(analysisTasks)} reviewFilter={reviewFilter} />
@@ -582,8 +591,15 @@ function TaskCard({ t, dim, roleLit, draggable, onDragStart, onClick, onHoverRol
       }}
       className="cursor-grab rounded-lg border border-slate-200 border-l-[3px] bg-white p-2.5 shadow-sm hover:shadow"
     >
-      <div className="text-[12px] font-medium leading-snug text-slate-700">{t.text}</div>
-      <div className="mt-1 text-[10.5px]" style={{ color: roleLit ? "#2f6e64" : "#7a8694", fontWeight: roleLit ? 600 : 400 }}>{t.role}</div>
+      <div className="text-[12px] font-medium leading-snug text-slate-700">
+        {t.code && <span className="mr-1 font-mono text-[10px] font-normal text-slate-400">{t.code}</span>}
+        {t.text}
+      </div>
+      <div className="mt-1 flex flex-wrap items-center gap-1 text-[10.5px]" style={{ color: roleLit ? "#2f6e64" : "#7a8694", fontWeight: roleLit ? 600 : 400 }}>
+        {t.role}
+        <RouteBadge route={t.compass_route} refId={t.compass_ref} />
+        <TacitWarning message={t.tacit_warning} compact />
+      </div>
       <div className="mt-2 flex items-center justify-between">
         <span className="flex items-center gap-1.5">
           <span title={HAS[t.human_agency_level].name} className={`rounded px-1.5 py-0.5 text-[10px] font-bold tabular-nums ${HAS[t.human_agency_level].chip}`}>{t.human_agency_level}</span>
@@ -594,14 +610,17 @@ function TaskCard({ t, dim, roleLit, draggable, onDragStart, onClick, onHoverRol
             </span>
           )}
         </span>
-        <span title={t.review_state} className="h-1.5 w-1.5 rounded-full" style={{ background: t.review_state === "approved" ? "#3f9d77" : "#cbb24a" }} />
+        <span className="flex items-center gap-1.5">
+          <GradeBadge grade={t.grade} compact />
+          <span title={t.review_state} className="h-1.5 w-1.5 rounded-full" style={{ background: t.review_state === "approved" ? "#3f9d77" : "#cbb24a" }} />
+        </span>
       </div>
     </div>
   );
 }
 
-function Column({ id, title, seq, tasks, dimOf, roleLitOf, isOver, setDragOver, onDrop, onSelectTask, onSelectStep, onDeleteStep, onHoverRole, onDragStart, tone }: {
-  id: string; title: string; seq?: number; tasks: BoardTask[]; dimOf: (t: BoardTask) => number; roleLitOf: (t: BoardTask) => boolean;
+function Column({ id, title, seq, pmsStepId, tasks, dimOf, roleLitOf, isOver, setDragOver, onDrop, onSelectTask, onSelectStep, onDeleteStep, onHoverRole, onDragStart, tone }: {
+  id: string; title: string; seq?: number; pmsStepId?: string | null; tasks: BoardTask[]; dimOf: (t: BoardTask) => number; roleLitOf: (t: BoardTask) => boolean;
   isOver: boolean; setDragOver: (v: string | null) => void; onDrop: () => void;
   onSelectTask: (id: string) => void; onSelectStep?: (id: string) => void; onDeleteStep?: (id: string, title: string) => void;
   onHoverRole: (r: string | null) => void; onDragStart: (id: string) => void; tone: "step" | "unmapped";
@@ -617,6 +636,7 @@ function Column({ id, title, seq, tasks, dimOf, roleLitOf, isOver, setDragOver, 
         <button onClick={() => onSelectStep?.(id)} className="flex items-center gap-2 text-left">
           {seq != null && <span className="flex h-5 w-5 flex-none items-center justify-center rounded-md bg-slate-800 text-[11px] font-semibold tabular-nums text-white">{seq}</span>}
           <span className="text-[13px] font-semibold leading-tight text-slate-800">{title}</span>
+          {pmsStepId && <span title="Process Map Studio step ID" className="whitespace-nowrap rounded bg-slate-100 px-1 py-0.5 font-mono text-[9.5px] text-slate-500">{pmsStepId}</span>}
         </button>
         <div className="flex items-center gap-1.5">
           <span className="text-[11px] tabular-nums text-slate-400">{tasks.length}</span>
@@ -658,7 +678,7 @@ function FlowView({ board, dimOf, hoverRole, dragOver, setDragOver, setDragId, o
       {board.steps.map((s, i) => (
         <div key={s.id} className="flex items-stretch">
           <Column
-            id={s.id} title={s.name} seq={s.seq} tasks={s.tasks} tone="step"
+            id={s.id} title={s.name} seq={s.seq} pmsStepId={s.pms_step_id} tasks={s.tasks} tone="step"
             dimOf={dimOf} roleLitOf={roleLitOf} isOver={dragOver === s.id}
             setDragOver={setDragOver} onDrop={() => onDrop(s.id)}
             onSelectTask={onSelectTask} onSelectStep={onSelectStep} onDeleteStep={onDeleteStep} onHoverRole={onHoverRole} onDragStart={setDragId}
@@ -784,6 +804,7 @@ function OrgNode({ node, childrenOf, collapsed, toggle, openTasks, toggleTasks, 
           <div className="flex items-center gap-2">
             {hasOwn && <span className="flex-none text-[10px] text-slate-400">{tasksOpen ? "▾" : "▸"}</span>}
             <span className="truncate text-[13px] font-semibold text-slate-800" title={node.job_title}>{node.job_title}</span>
+            <RouteBadge route={node.compass_route} refId={node.compass_ref} />
             <span className="flex-none rounded bg-slate-100 px-1.5 py-0.5 text-[9.5px] font-semibold tabular-nums text-slate-400">L{node.level}</span>
           </div>
           <div className="truncate text-[11px] text-slate-400">
@@ -820,7 +841,11 @@ function OrgNode({ node, childrenOf, collapsed, toggle, openTasks, toggleTasks, 
             <div key={t.id} className="flex items-start gap-2 text-[11px]">
               <span className={`mt-px flex-none rounded px-1.5 py-0.5 text-[9.5px] font-bold tabular-nums ${HAS[t.human_agency_level].chip}`} title={HAS[t.human_agency_level].name}>{t.human_agency_level}</span>
               {t.zone && <span className="mt-1 h-1.5 w-1.5 flex-none rounded-full" style={{ background: zoneMeta(t.zone).dot }} title={`${zoneMeta(t.zone).label} — ${zoneMeta(t.zone).help}`} />}
-              <span className="min-w-0 flex-1 leading-snug text-slate-600">{t.text}</span>
+              <span className="min-w-0 flex-1 leading-snug text-slate-600">
+                {t.code && <span className="mr-1 font-mono text-[10px] text-slate-400">{t.code}</span>}
+                {t.text} <TacitWarning message={t.tacit_warning} compact />
+              </span>
+              <GradeBadge grade={t.grade} compact />
               <span className={`flex-none text-right text-[10px] leading-snug ${t.mapped.length ? "text-[#2f6e64]" : "text-slate-300"}`}
                 title={t.mapped.length ? "Mapped in the finalized workflow" : "Not yet placed on a process step (Flow view)"}>
                 {t.mapped.length
@@ -1021,7 +1046,9 @@ function OverviewInspector({ proc, board, index, reviewFilter }: {
   );
 }
 
-function StepInspector({ step, onBack, onSelectTask }: { step: BoardStep; onBack: () => void; onSelectTask: (id: string) => void }) {
+function StepInspector({ step, onBack, onSelectTask, onSavePmsId }: { step: BoardStep; onBack: () => void; onSelectTask: (id: string) => void; onSavePmsId: (stepId: string, value: string) => Promise<void> }) {
+  const [pms, setPms] = useState(step.pms_step_id ?? "");
+  useEffect(() => { setPms(step.pms_step_id ?? ""); }, [step.id, step.pms_step_id]);
   const roles = new Set(step.tasks.map((t) => t.role));
   const bars = bandBars(step.tasks);
   return (
@@ -1030,6 +1057,16 @@ function StepInspector({ step, onBack, onSelectTask }: { step: BoardStep; onBack
       <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Step {step.seq}</div>
       <h3 className="mt-1 text-lg font-semibold tracking-tight text-slate-900">{step.name}</h3>
       <div className="text-xs text-slate-500">{step.tasks.length} tasks · {roles.size} roles</div>
+      <div className="mt-3">
+        <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Process Map Studio step ID (optional)</div>
+        <div className="mt-1 flex gap-1.5">
+          <input value={pms} onChange={(e) => setPms(e.target.value)} placeholder="e.g. S-04"
+            className="w-28 rounded-lg border border-slate-300 px-2 py-1.5 font-mono text-xs outline-none focus:border-slate-400" />
+          <button onClick={() => onSavePmsId(step.id, pms.trim())} disabled={pms.trim() === (step.pms_step_id ?? "")}
+            className="rounded-lg bg-slate-100 px-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-200 disabled:opacity-40">Save</button>
+        </div>
+        <p className="mt-1 text-[10.5px] leading-snug text-slate-400">Paste the step code from Process Map Studio so the two apps can be joined on it. Leave blank if the step did not come from there.</p>
+      </div>
       <div className="mt-3 flex h-1.5 gap-0.5 overflow-hidden rounded-full bg-slate-100">
         {bars.map((x) => <span key={x.b} title={`${x.b} · ${x.c}`} style={{ width: `${x.pct}%`, background: HAS[x.b].bar }} />)}
       </div>
@@ -1057,7 +1094,15 @@ function TaskInspector({ task, steps, scale, onBack, onMove }: { task: BoardTask
         <span className="rounded-md bg-slate-100 px-2 py-1 text-[10.5px] font-semibold text-slate-500" title="AI-opportunity level (secondary)">{task.ai_level}</span>
       </div>
       <h3 className="mt-3 text-base font-semibold leading-snug tracking-tight text-slate-900">{task.text}</h3>
-      <div className="text-xs text-slate-500">{task.role}{task.department ? ` · ${task.department}` : ""}</div>
+      <div className="text-xs text-slate-500">{task.code ? <span className="mr-1.5 font-mono text-slate-400">{task.code}</span> : null}{task.role}{task.department ? ` · ${task.department}` : ""}</div>
+      {(task.compass_ref || task.grade) && (
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          <GradeBadge grade={task.grade} />
+          <RouteBadge route={task.compass_route} refId={task.compass_ref} />
+          {task.compass_cluster_ref && <span title="Capability Compass cluster" className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] text-slate-500">{task.compass_cluster_ref}</span>}
+        </div>
+      )}
+      {task.tacit_warning && <div className="mt-2"><TacitWarning message={task.tacit_warning} /></div>}
       {scale?.[h] && <p className="mt-2 text-[11px] leading-snug text-slate-400">{scale[h]}</p>}
 
       <div className="mt-4 grid grid-cols-2 gap-2">

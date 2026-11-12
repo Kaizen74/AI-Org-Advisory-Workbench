@@ -24,6 +24,8 @@ from ..models import (
     TaxonomyCrosswalk,
     TaxonomyTask,
 )
+from . import compass_service
+from .shared_grade import grade_of, human_reviewed
 from .task_intelligence_service import apply_manual_opportunity, human_agency_band
 
 _ACTION_TO_STATE = {"approve": "approved", "edit": "edited", "reject": "rejected"}
@@ -80,9 +82,19 @@ async def get_queue(
     # as identical labels — e.g. many "EXTRA → …" / "L0 · zone …" rows look like duplicates).
     needed_ids = {b.task_id for b in benchmarks} | {s.task_id for s in ai_scores}
     text_by_task: Dict[str, str] = {}
+    code_by_task: Dict[str, Optional[str]] = {}
+    title_by_task: Dict[str, Optional[str]] = {}
+    role_idx = await compass_service.role_index_for_dataset(session, dataset_id)
+    if dataset_id:
+        await compass_service.ensure_task_codes(session, dataset_id)
     if needed_ids:
-        for t in await session.scalars(select(Task).where(Task.id.in_(needed_ids))):
+        rows = await session.execute(
+            select(Task, Position.job_title).join(Position, Task.position_id == Position.id)
+            .where(Task.id.in_(needed_ids)))
+        for t, job_title in rows.all():
             text_by_task[t.id] = t.task_text
+            code_by_task[t.id] = t.code
+            title_by_task[t.id] = job_title
 
     for b in benchmarks:
         # Show the ACTUAL benchmarked source (SFw primary / O*NET bridge), not a hardcoded one.
@@ -97,6 +109,8 @@ async def get_queue(
             "task_text": text_by_task.get(b.task_id),
             "label": label,
             "source": b.source, "confidence": b.confidence, "review_state": b.review_state,
+            "task_code": code_by_task.get(b.task_id), "grade": grade_of(b),
+            **compass_service.role_fields(role_idx, title_by_task.get(b.task_id), None),
         })
 
     for s in ai_scores:
@@ -106,6 +120,8 @@ async def get_queue(
             "task_text": text_by_task.get(s.task_id), "has_level": s.has_level,
             "label": f"{band} · {s.ai_opportunity_level} · zone {s.zone or '—'}",
             "source": s.source, "confidence": s.confidence, "review_state": s.review_state,
+            "task_code": code_by_task.get(s.task_id), "grade": grade_of(s),
+            **compass_service.role_fields(role_idx, title_by_task.get(s.task_id), band),
         })
 
     # Reference crosswalks (global; the seed's 0.40 row lands here) — Build Spec B0.
@@ -115,6 +131,8 @@ async def get_queue(
                 "kind": "crosswalk", "id": c.id, "task_id": None, "task_text": None,
                 "label": f"crosswalk → {c.to_source_code} {c.to_task_code}",
                 "source": c.method, "confidence": c.confidence, "review_state": c.review_state,
+                "task_code": None, "grade": grade_of(c),
+                **compass_service.role_fields({}, None, None),
             })
 
     return items
@@ -211,6 +229,26 @@ async def set_manual_opportunity(session: AsyncSession, task_id: str, rating: in
         "review_state": score.review_state,
         "source": score.source,
     }
+
+
+async def set_grade(session: AsyncSession, kind: str, item_id: str, grade: str) -> Dict:
+    """The consultant sets the shared grade on a reviewed AI score or benchmark: `confirmed` raises
+    it, `indicated` lowers it back. The grade is a human judgement, so the row must already be
+    approved/edited (a Hypothesis is reviewed first) — doing this records the human review.
+    Returns {"error": ...} on a refusal."""
+    model = {"ai_score": TaskAIScore, "benchmark": TaskBenchmark}.get(kind)
+    if model is None or grade not in ("confirmed", "indicated"):
+        return {"error": "bad_request"}
+    row = await session.get(model, item_id)
+    if row is None:
+        return {"error": "not_found"}
+    if row.review_state not in ("approved", "edited"):
+        return {"error": "not_reviewed"}
+    if not human_reviewed(row.source, row.review_state, row.reviewed_at):
+        row.reviewed_at = datetime.utcnow()  # the consultant has now judged it
+    row.grade_override = "confirmed" if grade == "confirmed" else None
+    await session.flush()
+    return {"kind": kind, "id": item_id, "grade": grade_of(row), "review_state": row.review_state}
 
 
 async def get_stats(session: AsyncSession, dataset_id: Optional[str] = None) -> Dict:

@@ -135,7 +135,7 @@ export default function App() {
       <main className="mx-auto max-w-6xl px-6 py-6">
         {tab === "engagements" && <Engagements onOpenDiagnostics={openDiagnostics} />}
         {tab === "diagnostics" && <Diagnostics datasetId={datasetId} title={diagTitle} />}
-        {tab === "task-intel" && <TaskIntelligence datasetId={datasetId} title={diagTitle} />}
+        {tab === "task-intel" && <TaskIntelligence datasetId={datasetId} title={diagTitle} engagementId={engagementId} />}
         {tab === "validation" && (
           <ValidationQueue datasetId={datasetId} engagementId={engagementId} />
         )}

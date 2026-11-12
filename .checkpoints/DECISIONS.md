@@ -1000,3 +1000,51 @@ that built all three artifacts from a seeded board and inventoried the rendered 
 draws the tray "(2)" + "1. Acceptance (1)" with cards reading `text | role · H2 | ● Green light
 ● unreviewed`; Landscape draws 3 dots + 6 named legend swatches + 4 quadrant labels; Roll-up draws
 the 4 stat cards + "Org index 75/100". **Gate GREEN: 157 backend tests + clean frontend build.**
+
+
+## D50 — Shared language + hand-off with Capability Compass (2026-11-12)
+**Ask (Eric's PRD):** read `compass-handoff` v1.x, keep Compass IDs and the three shared evidence
+grades, write findings back as `compass-return` v1.0; the app must still work with no packet.
+**What was built (additive; migration 009):**
+- `engagements.compass_key / compass_packet / task_seq`, new `compass_roles` table, `tasks.code`
+  (`T-nnn`), `process_steps.pms_step_id` (`S-nn`), `grade_override` on ai scores + benchmarks.
+- `compass_service` (validate → preview → apply; title matching; role index; T-codes),
+  `shared_grade`, `compass_return_service`, router `/api/v1/compass`, `PATCH /workflows/steps/{id}`,
+  `POST /validation/grade`, deliverable types `COMPASS_RETURN_JSON` / `COMPASS_RETURN_TXT`.
+**Decisions taken (Eric approved the four defaults before coding):**
+1. **No step importer built.** The PRD said "accept S-nn in the existing CSV import"; there is none
+   (the Mapper only exports). The field is editable on a step and included in the workflow CSV export.
+2. **Tacit-knowledge warning lives where tasks are proposed for automation** — Workflow Mapper,
+   Validation Queue, org roll-up, return file — not only in the transition register, which is
+   scenario-based, per-person and parked (D17). The register gained `compass_role_ref` /
+   `compass_route` columns (appended). Warning rule: route ∈ {specialist, dual} AND band ∈ {H1, H2}.
+3. **Capacity = headcount × share of the role's reviewed tasks at H1–H2.** Equal task weighting, so
+   it is ALWAYS graded Hypothesis and labelled an estimate. Thin evidence overstates it (1 of 1
+   reviewed task at H1 → the whole headcount) — the detail line states the counts so it is visible.
+4. **Client for an import** = created or reused by name from the packet's `organisation`.
+**Other rules settled here (do not re-litigate):**
+- A `cluster_ref` that points nowhere, a missing `engagement.key`, a duplicate role ref, or a
+  non-1.x version BLOCKS the import (records must carry valid Compass refs). `readiness.ready=false`
+  only warns.
+- Matching is by job title: exact (after tidying case/punctuation/&) is proposed; near-matches are
+  only SUGGESTED and never applied without Eric choosing. `absent` roles are listed, not analysed.
+- Re-import never renames an engagement or changes its key unless Eric ticks the box; an earlier
+  match is kept.
+- Grade mapping: not approved/edited → Hypothesis; auto-approved by the confidence router but never
+  seen by a person → Hypothesis if model-inferred or <0.70, else Indicated; human-approved/edited →
+  Indicated; Confirmed ONLY via `grade_override` set by the consultant on a reviewed row. A roll-up
+  (role_impact) is capped at Indicated and takes its weakest task grade.
+- `T-nnn` counter lives on the engagement and only increases (re-extract mints new codes). Codes
+  are minted at extract (Compass roles first) and lazily for older data on first read.
+- `role_impact` / `capacity` findings use the Compass `RL-nnn` as `ref` (the PRD says so); the app
+  never mints a non-`T` prefix. The return JSON has exactly the six agreed top-level fields — the
+  "N tasks left out as unreviewed" disclosure is in the text version only.
+- Only a whitelisted packet subset is stored (no thesis, rationale, evidence, or key-like fields).
+**Stored but unused (PRD 3E):** `charter.reference_model` (C1–C8) and `charter.leapfrog_gate`
+(LG-1..5) sit in `engagements.compass_packet`. A later OS module would need: (a) a table of
+per-component gap scores (component ref, level, grade, evidence note, relates_to S-nn/X-n);
+(b) Process Map Studio's return file as input (discrepancies are the evidence for C2–C4);
+(c) a decision on who scores (one assessor per cell, per the charter evidence rules); (d) a
+blueprint table (design choice per component, linked DC-n criteria) and a pass/fail-with-evidence
+record per leapfrog test; (e) new `kind` values in `compass-return` — a FORMAT change that needs
+Eric's sign-off across all four apps.

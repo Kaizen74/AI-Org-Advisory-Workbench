@@ -11,6 +11,7 @@ import {
 import { api } from "../services/api";
 import type { QuickStats, RollupResult } from "../types";
 import { Button, Card, Empty, ErrorNote, Spinner, StatCard } from "../components/ui";
+import { CompassRolesPanel } from "../components/Compass";
 
 const LEVELS = ["L0", "L1", "L2", "L3"];
 const AGENCY_BANDS = ["H0", "H1", "H2", "H3", "H4", "H5"];
@@ -18,9 +19,11 @@ const AGENCY_BANDS = ["H0", "H1", "H2", "H3", "H4", "H5"];
 export default function TaskIntelligence({
   datasetId,
   title,
+  engagementId,
 }: {
   datasetId: string | null;
   title: string;
+  engagementId?: string | null;
 }) {
   const [quick, setQuick] = useState<QuickStats | null>(null);
   const [rollup, setRollup] = useState<RollupResult | null>(null);
@@ -103,6 +106,9 @@ export default function TaskIntelligence({
           <Spinner label="Loading preview…" />
         )}
       </Card>
+
+      {/* Compass priority roles (only shown when the engagement was imported from Capability Compass). */}
+      <CompassRolesPanel engagementId={engagementId} datasetId={datasetId} refreshKey={rollup} />
 
       <Card title="Local desire (worker preference — feeds the AI-opportunity landscape)">
         <p className="mb-3 text-xs text-slate-500">

@@ -14,6 +14,7 @@ from .api import (
     access,
     audit,
     auth,
+    compass,
     deliverables,
     diagnostics,
     engagements,
@@ -83,3 +84,4 @@ app.include_router(transition.router, dependencies=_protected)
 app.include_router(deliverables.router, dependencies=_protected)
 app.include_router(settings_api.router, dependencies=_protected)
 app.include_router(audit.router, dependencies=_protected)
+app.include_router(compass.router, dependencies=_protected)  # Capability Compass hand-off (D50)

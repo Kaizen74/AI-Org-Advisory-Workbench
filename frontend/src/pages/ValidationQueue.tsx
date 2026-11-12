@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../services/api";
 import type { QueueItem } from "../types";
 import { Button, Card, Empty, ErrorNote, Spinner } from "../components/ui";
+import { GradeBadge, RouteBadge, TacitWarning } from "../components/Compass";
 
 function SourceBadge({ source }: { source?: string | null }) {
   const s = source ?? "—";
@@ -78,6 +79,16 @@ export default function ValidationQueue({
     }
   }
 
+  async function changeGrade(i: QueueItem, grade: "confirmed" | "indicated") {
+    try {
+      await api.setGrade(i.kind, i.id, grade);
+      setNote(grade === "confirmed" ? "Raised to Confirmed." : "Set back to Indicated.");
+      await load();
+    } catch (e) {
+      setError(String((e as Error).message ?? e));
+    }
+  }
+
   async function bulk(action: "approve" | "reject") {
     const actions = items
       .filter((i) => selected.has(i.id))
@@ -141,6 +152,11 @@ export default function ValidationQueue({
           Approving a benchmark feeds a consultant-curated crosswalk back into the system; crosswalk
           rows (including the seed's 0.40 row) appear here too.
         </p>
+        <p className="mb-3 text-xs text-slate-500">
+          <b>Evidence grade</b> (shared with the other apps): unreviewed AI output is a{" "}
+          <b>Hypothesis</b>; approving it here makes it <b>Indicated</b>; only you can raise it to{" "}
+          <b>Confirmed</b> — tick <i>Show reviewed</i> to find approved items and raise them.
+        </p>
 
         {loading ? (
           <Spinner label="Loading queue…" />
@@ -172,6 +188,7 @@ export default function ValidationQueue({
                   <th>Source</th>
                   <th>Confidence</th>
                   <th>State</th>
+                  <th>Evidence grade</th>
                   <th>Manual AI rating</th>
                 </tr>
               </thead>
@@ -187,7 +204,25 @@ export default function ValidationQueue({
                     </td>
                     <td className="text-slate-500">{i.kind}</td>
                     <td>
-                      <div className="font-medium">{i.task_text ?? i.label}</div>
+                      <div className="font-medium">
+                        {i.task_code && (
+                          <span className="mr-1.5 font-mono text-[11px] font-normal text-slate-400">
+                            {i.task_code}
+                          </span>
+                        )}
+                        {i.task_text ?? i.label}
+                      </div>
+                      {(i.compass_ref || i.tacit_warning) && (
+                        <div className="mt-0.5 flex items-center gap-1.5">
+                          <RouteBadge route={i.compass_route} refId={i.compass_ref} />
+                          <TacitWarning message={i.tacit_warning} compact />
+                          {i.tacit_warning && (
+                            <span className="text-[11px] text-amber-700">
+                              high tacit knowledge — proposed at a low human-agency level
+                            </span>
+                          )}
+                        </div>
+                      )}
                       {i.task_text && (
                         <div className="text-xs text-slate-400">{i.label}</div>
                       )}
@@ -197,6 +232,27 @@ export default function ValidationQueue({
                     </td>
                     <td>{i.confidence ?? "—"}</td>
                     <td className="text-slate-500">{i.review_state}</td>
+                    <td>
+                      <GradeBadge grade={i.grade} />
+                      {i.kind !== "crosswalk" &&
+                        (i.review_state === "approved" || i.review_state === "edited") &&
+                        (i.grade === "confirmed" ? (
+                          <button
+                            onClick={() => changeGrade(i, "indicated")}
+                            className="ml-1.5 text-[11px] text-slate-400 underline hover:text-slate-600"
+                          >
+                            lower
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => changeGrade(i, "confirmed")}
+                            title="Your judgement: you would defend this in front of a sceptic"
+                            className="ml-1.5 text-[11px] text-emerald-700 underline hover:text-emerald-900"
+                          >
+                            raise to Confirmed
+                          </button>
+                        ))}
+                    </td>
                     <td>
                       {i.task_id &&
                       (i.kind === "ai_score" ||

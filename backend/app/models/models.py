@@ -57,6 +57,10 @@ class Engagement(Base):
     default_taxonomy_code = Column(String(64), nullable=True)
     anonymized = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+    # Capability Compass hand-off (D50, migration 009). All optional — the app works with no packet.
+    compass_key = Column(String(64), nullable=True, index=True)  # e.g. MERIDIAN
+    compass_packet = Column(JSON, nullable=True)  # whitelisted packet subset (no keys, no doc text)
+    task_seq = Column(Integer, nullable=True)  # last T-nnn number minted; only ever increases
 
     client = relationship("Client", back_populates="engagements")
     datasets = relationship(
@@ -236,6 +240,7 @@ class Task(Base):
     task_text = Column(Text, nullable=False)
     batch_id = Column(String(64), nullable=True, index=True)
     extraction_source = Column(String(64), nullable=True)  # e.g. model-inferred
+    code = Column(String(16), nullable=True, index=True)  # displayed shared ID "T-nnn", never reused (D50)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     benchmarks = relationship("TaskBenchmark", back_populates="task", cascade="all, delete-orphan")
@@ -260,6 +265,7 @@ class TaskBenchmark(Base):
     review_state = Column(String(16), nullable=False, default="unreviewed")
     reviewed_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    grade_override = Column(String(16), nullable=True)  # "confirmed" when the assessor raises it (D50)
 
     task = relationship("Task", back_populates="benchmarks")
 
@@ -284,6 +290,7 @@ class TaskAIScore(Base):
     review_state = Column(String(16), nullable=False, default="unreviewed")
     reviewed_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    grade_override = Column(String(16), nullable=True)  # "confirmed" when the assessor raises it (D50)
 
     task = relationship("Task", back_populates="ai_scores")
 
@@ -409,6 +416,7 @@ class ProcessStep(Base):
     seq = Column(Integer, nullable=False, default=0)
     name = Column(String(255), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+    pms_step_id = Column(String(32), nullable=True)  # Process Map Studio step code "S-nn" (D50)
 
     process = relationship("Process", back_populates="steps")
     task_links = relationship("TaskLink", back_populates="step", cascade="all, delete-orphan")
@@ -449,6 +457,32 @@ class Deliverable(Base):
     file_path = Column(String(1024), nullable=True)
     provenance_summary = Column(JSON, nullable=True)
     generated_at = Column(DateTime, default=datetime.utcnow)
+
+
+class CompassRole(Base):
+    """An anchor role received from Capability Compass (D50). `ref` (RL-nnn), `cluster_ref`
+    (CAP-nn) and `route` are stored exactly as received — never renumbered. `matched_job_title`
+    links the role to org-data positions by job title; it is only ever set by an exact match or by
+    the consultant's explicit choice (never a silent guess)."""
+
+    __tablename__ = "compass_roles"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    engagement_id = Column(
+        String(36), ForeignKey("engagements.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    seq = Column(Integer, nullable=False, default=0)  # packet order = work order
+    ref = Column(String(32), nullable=False, index=True)
+    title = Column(String(255), nullable=False)
+    cluster_ref = Column(String(32), nullable=True)
+    route = Column(String(16), nullable=True)  # critical | dual | specialist | standard
+    status = Column(String(16), nullable=True)  # exists | thin | absent
+    criticality_index = Column(Float, nullable=True)
+    tacit_intensity = Column(Float, nullable=True)
+    note = Column(Text, nullable=True)
+    matched_job_title = Column(String(255), nullable=True)
+    match_state = Column(String(16), nullable=False, default="missed")  # matched|manual|missed|absent
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 
 class AuditEvent(Base):

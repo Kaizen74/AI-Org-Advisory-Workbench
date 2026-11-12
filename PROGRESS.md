@@ -787,3 +787,15 @@ the UI does — the two diverge when a malformed reporting line strands nodes ou
 added the view's four org-wide stat cards and the L-level per row. 3 new parity tests (written first,
 observed failing) + a manual mock pass inventorying the rendered shapes of all three artifacts.
 **Gate:** PASS — **157 backend tests + clean frontend build**, tsc clean, zero regressions.
+
+
+## 2026-11-12 — D50: shared language + hand-off with Capability Compass
+Micro-tasks (each tested + committed): (1) migration 009 + models; (2) `compass_service` import
+(validate/preview/apply, title matching) + `/api/v1/compass`; (3) shared IDs (`T-nnn`, step `S-nn`)
++ Compass-first ordering + tacit-knowledge warning on board/queue/roll-up/register; (4) shared grade
++ raise-to-Confirmed; (5) `compass-return` JSON + text as Deliverables; (6) frontend (import
+preview/confirm, roles panel, badges, grade column, step ID field); (7) live mock run in a browser
+against a database migrated from 008 with pre-existing data; (8) docs.
+24 new backend tests (sample packet + 3 broken copies, standalone, anonymisation, auth, audit,
+migration 009 round-trip). **Gate:** PASS — 181 backend tests + clean frontend build, zero regressions.
+PAX baseline unchanged (LOCKED 64 / 34 / 53.1% / 6,620,000 / 6).

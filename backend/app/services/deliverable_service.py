@@ -55,6 +55,8 @@ _EXT = {
     "PPTX_DIAGNOSTIC": "pptx", "PPTX_SCENARIOS": "pptx", "PPTX_AI_ROADMAP": "pptx",
     "PPTX_WORKFLOW": "pptx",
     "DOCX_TOM": "docx", "XLSX_METRICS": "xlsx", "XLSX_TRANSITION": "xlsx",
+    # Findings return to Capability Compass (D50): the shared-shape file + the same as readable text.
+    "COMPASS_RETURN_JSON": "json", "COMPASS_RETURN_TXT": "txt",
 }
 
 DELIVERABLE_TYPES = list(_EXT)
@@ -317,7 +319,12 @@ async def _gen_xlsx_transition(session, theme, scenario_id, **_) -> bytes:
     pos = positions_to_dicts(positions)
     classes = transition_service.classify_impacts(pos, moves)
     by_key = {p["employee_key"]: p for p in pos}
+    from . import compass_service
+    role_idx = await compass_service.role_index(session, scenario.engagement_id)
     register = [{
+        **{f: v for f, v in compass_service.role_fields(
+            role_idx, by_key.get(k, {}).get("job_title"), None).items()
+           if f in ("compass_ref", "compass_route")},
         "employee_key": k,
         "display_name": display_label(  # pseudonym when anonymized (M7)
             anonymized=anonymized, display_name=by_key.get(k, {}).get("display_name"),
@@ -330,7 +337,21 @@ async def _gen_xlsx_transition(session, theme, scenario_id, **_) -> bytes:
     return transition_service.register_to_xlsx(register)
 
 
+async def _gen_compass_return_json(session, theme, engagement_id, dataset_id=None, **_) -> bytes:
+    from . import compass_return_service
+    result = await compass_return_service.build(session, engagement_id, dataset_id)
+    return compass_return_service.to_json_bytes(result) if result else b"{}"
+
+
+async def _gen_compass_return_txt(session, theme, engagement_id, dataset_id=None, **_) -> bytes:
+    from . import compass_return_service
+    result = await compass_return_service.build(session, engagement_id, dataset_id)
+    return compass_return_service.to_text(result).encode("utf-8") if result else b""
+
+
 _GENERATORS = {
+    "COMPASS_RETURN_JSON": _gen_compass_return_json,
+    "COMPASS_RETURN_TXT": _gen_compass_return_txt,
     "PPTX_DIAGNOSTIC": _gen_pptx_diagnostic,
     "PPTX_SCENARIOS": _gen_pptx_scenarios,
     "PPTX_AI_ROADMAP": _gen_pptx_ai_roadmap,
