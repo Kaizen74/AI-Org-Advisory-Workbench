@@ -183,3 +183,31 @@ def test_migration_008_adds_and_removes_access_users(tmp_path):
     command.downgrade(cfg, "base")
     assert not (ACCESS_TABLES & set(inspect(engine).get_table_names()))
     engine.dispose()
+
+
+def test_migration_009_adds_and_removes_compass_handoff(tmp_path):
+    """D50: additive columns + compass_roles; downgrade removes only what 009 added."""
+    db_path = tmp_path / "migration9_test.db"
+    cfg = _alembic_config(db_path)
+    added = {"engagements": {"compass_key", "compass_packet", "task_seq"}, "tasks": {"code"},
+             "process_steps": {"pms_step_id"}, "task_ai_scores": {"grade_override"},
+             "task_benchmarks": {"grade_override"}}
+
+    command.upgrade(cfg, "head")
+    engine = create_engine(f"sqlite:///{db_path}")
+    insp = inspect(engine)
+    assert "compass_roles" in insp.get_table_names()
+    for table, cols in added.items():
+        assert cols <= {c["name"] for c in insp.get_columns(table)}, table
+
+    command.downgrade(cfg, "008_access_users")
+    insp = inspect(engine)
+    assert "compass_roles" not in insp.get_table_names()
+    for table, cols in added.items():
+        names = {c["name"] for c in insp.get_columns(table)}
+        assert not (cols & names), f"{table} kept {cols & names}"
+    assert {"name", "anonymized"} <= {c["name"] for c in insp.get_columns("engagements")}
+    assert ACCESS_TABLES <= set(insp.get_table_names())  # earlier phases survive
+
+    command.downgrade(cfg, "base")
+    engine.dispose()

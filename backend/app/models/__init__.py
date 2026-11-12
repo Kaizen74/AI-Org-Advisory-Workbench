@@ -5,6 +5,7 @@ from .models import (
     AppSetting,
     AuditEvent,
     Client,
+    CompassRole,
     Dataset,
     Deliverable,
     DesignMove,
@@ -62,6 +63,8 @@ __all__ = [
     "AppSetting",
     # Security (P7)
     "AuditEvent",
+    # Capability Compass hand-off (D50)
+    "CompassRole",
     # Access control (D13)
     "AccessUser",
 ]

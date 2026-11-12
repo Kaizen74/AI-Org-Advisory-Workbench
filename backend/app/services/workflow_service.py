@@ -14,8 +14,11 @@ from typing import Dict, List, Optional
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+import re
+
 from ..models import Position, Process, ProcessStep, Task, TaskAIScore, TaskLink
-from . import settings_service
+from . import compass_service, settings_service
+from .shared_grade import grade_of
 from ._json_utils import parse_ai_json
 from .claude_service import claude_service
 from .task_intelligence_service import HUMAN_AGENCY_SCALE, STANDARD_CAVEATS, human_agency_band
@@ -39,14 +42,40 @@ async def list_processes(session: AsyncSession, engagement_id: str) -> List[Proc
     ))
 
 
-async def add_step(session: AsyncSession, process_id: str, name: str) -> Optional[ProcessStep]:
+_PMS_STEP_RE = re.compile(r"^S-\d{1,6}$")
+
+
+def clean_pms_step_id(value: Optional[str]) -> Optional[str]:
+    """Normalise a Process Map Studio step code. Blank -> None. Raises ValueError when it is not in
+    the shared `S-nn` form — this app stores that ID as received and never mints one (D50)."""
+    v = (value or "").strip().upper()
+    if not v:
+        return None
+    if not _PMS_STEP_RE.match(v):
+        raise ValueError("A Process Map Studio step ID looks like S-04 (the letter S, a dash, a number).")
+    return v
+
+
+async def set_step_pms_id(session: AsyncSession, step_id: str, pms_step_id: Optional[str]) -> Optional[Dict]:
+    """Set/clear the Process Map Studio step code on a step. None if the step does not exist."""
+    step = await session.get(ProcessStep, step_id)
+    if step is None:
+        return None
+    step.pms_step_id = clean_pms_step_id(pms_step_id)
+    await session.flush()
+    return {"id": step.id, "seq": step.seq, "name": step.name, "pms_step_id": step.pms_step_id}
+
+
+async def add_step(session: AsyncSession, process_id: str, name: str,
+                   pms_step_id: Optional[str] = None) -> Optional[ProcessStep]:
     if await session.get(Process, process_id) is None:
         return None
+    pms_step_id = clean_pms_step_id(pms_step_id)
     from sqlalchemy import func
     next_seq = (await session.scalar(
         select(func.max(ProcessStep.seq)).where(ProcessStep.process_id == process_id)
     ) or 0) + 1
-    step = ProcessStep(process_id=process_id, seq=next_seq, name=name)
+    step = ProcessStep(process_id=process_id, seq=next_seq, name=name, pms_step_id=pms_step_id)
     session.add(step)
     await session.flush()
     return step
@@ -68,7 +97,7 @@ async def list_steps(session: AsyncSession, process_id: str) -> Optional[List[Di
         for sid, tid in rows.all():
             links_by_step.setdefault(sid, []).append(tid)
     return [
-        {"id": s.id, "seq": s.seq, "name": s.name,
+        {"id": s.id, "seq": s.seq, "name": s.name, "pms_step_id": s.pms_step_id,
          "linked_tasks": len(links_by_step.get(s.id, [])),
          "linked_task_ids": links_by_step.get(s.id, [])}
         for s in steps
@@ -190,7 +219,7 @@ async def opportunity_matrix(session: AsyncSession, process_id: str) -> Optional
 
 # ── Visual board (drag-to-remap) — additive, no migration; reuses existing tables ──
 def _board_task_payload(task: Task, pos: Optional[Position], score: Optional[TaskAIScore],
-                        step_id: Optional[str]) -> Dict:
+                        step_id: Optional[str], role_idx: Optional[Dict] = None) -> Dict:
     """Flatten a task + its source position + its AI score into one board row.
 
     Every field is REAL persisted data:
@@ -205,8 +234,13 @@ def _board_task_payload(task: Task, pos: Optional[Position], score: Optional[Tas
         # Prefer the locally-captured desire pulse when present; never overwrite the US score.
         desire = score.desire_score_local if score.desire_score_local is not None else score.desire_score_us
     has_level = score.has_level if score else None
+    band = human_agency_band(has_level)
     return {
         "id": task.id,
+        "code": task.code,  # shared displayed ID T-nnn (D50)
+        "grade": grade_of(score),  # shared evidence grade, alongside source/review_state (D50)
+        # Compass role ref/route/cluster + the tacit-knowledge warning (all None with no packet).
+        **compass_service.role_fields(role_idx or {}, pos.job_title if pos else None, band),
         "text": task.task_text,
         "role": (pos.job_title if pos else None) or "Unassigned",
         "department": pos.department if pos else None,
@@ -246,6 +280,8 @@ async def board(session: AsyncSession, process_id: str, dataset_id: str) -> Opti
     )) if step_ids else []
     step_by_task: Dict[str, str] = {tl.task_id: tl.process_step_id for tl in links}
 
+    await compass_service.ensure_task_codes(session, dataset_id)
+    role_idx = await compass_service.role_index(session, proc.engagement_id)
     tasks = list(await session.scalars(
         select(Task).join(Position, Task.position_id == Position.id)
         .where(Position.dataset_id == dataset_id).order_by(Task.id)
@@ -261,13 +297,16 @@ async def board(session: AsyncSession, process_id: str, dataset_id: str) -> Opti
     } if task_ids else {}
 
     payloads = [
-        _board_task_payload(t, positions.get(t.position_id), scores.get(t.id), step_by_task.get(t.id))
+        _board_task_payload(t, positions.get(t.position_id), scores.get(t.id), step_by_task.get(t.id),
+                            role_idx)
         for t in tasks
     ]
+    if role_idx:  # Compass priority roles are offered first (stable sort; no packet -> unchanged)
+        payloads.sort(key=lambda p: compass_service.compass_rank(role_idx, p["role"]))
     mapped = [p for p in payloads if p["step_id"]]
     unmapped = [p for p in payloads if not p["step_id"]]
     steps_payload = [
-        {"id": s.id, "name": s.name, "seq": s.seq,
+        {"id": s.id, "name": s.name, "seq": s.seq, "pms_step_id": s.pms_step_id,
          "tasks": [p for p in mapped if p["step_id"] == s.id]}
         for s in steps
     ]
@@ -375,7 +414,10 @@ async def export_workflow_csv(session: AsyncSession, engagement_id: str, dataset
     processes. Real persisted fields only (role = job title, never a name)."""
     headers = ["process", "value_stream", "step_seq", "step_name", "task_text", "role",
                "department", "human_agency_level", "has_level", "zone", "ai_opportunity_level",
-               "review_state", "source"]
+               "review_state", "source",
+               # Shared language with the other apps (D50) — appended so existing columns keep position.
+               "task_code", "pms_step_id", "grade", "compass_role_ref", "compass_route",
+               "compass_cluster_ref"]
     out = io.StringIO()
     w = csv.writer(out)
     w.writerow(headers)
@@ -390,6 +432,9 @@ async def export_workflow_csv(session: AsyncSession, engagement_id: str, dataset
                     t["role"], t.get("department") or "", t["human_agency_level"],
                     "" if t.get("has_level") is None else t["has_level"], t.get("zone") or "",
                     t.get("ai_level") or "", t.get("review_state") or "", t.get("source") or "",
+                    t.get("code") or "", step.get("pms_step_id") or "", t.get("grade") or "",
+                    t.get("compass_ref") or "", t.get("compass_route") or "",
+                    t.get("compass_cluster_ref") or "",
                 ])
     return out.getvalue().encode("utf-8")
 

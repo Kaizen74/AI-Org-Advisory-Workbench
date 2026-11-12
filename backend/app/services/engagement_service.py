@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..models import (
     AuditEvent,
     Client,
+    CompassRole,
     Dataset,
     Deliverable,
     DesignMove,
@@ -197,6 +198,7 @@ async def _purge_engagement_data(session: AsyncSession, engagement_id: str) -> N
     await session.execute(
         delete(DesirePulseResponse).where(DesirePulseResponse.engagement_id == engagement_id)
     )
+    await session.execute(delete(CompassRole).where(CompassRole.engagement_id == engagement_id))
     await session.execute(delete(Deliverable).where(Deliverable.engagement_id == engagement_id))
     await session.execute(delete(AuditEvent).where(AuditEvent.engagement_id == engagement_id))
     await session.execute(delete(Dataset).where(Dataset.engagement_id == engagement_id))

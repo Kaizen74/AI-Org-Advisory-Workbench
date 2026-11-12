@@ -61,6 +61,29 @@ async def manual_score(body: ManualScore, session: AsyncSession = Depends(get_se
     return result
 
 
+class GradeBody(BaseModel):
+    kind: str  # ai_score | benchmark
+    id: str
+    grade: str  # confirmed | indicated
+
+
+@router.post("/grade")
+async def set_grade(body: GradeBody, session: AsyncSession = Depends(get_session)):
+    """The consultant raises a reviewed item to Confirmed (or lowers it back to Indicated)."""
+    from fastapi import HTTPException
+    result = await vs.set_grade(session, body.kind, body.id, body.grade)
+    err = result.get("error")
+    if err == "not_found":
+        raise HTTPException(status_code=404, detail="Item not found")
+    if err == "not_reviewed":
+        raise HTTPException(status_code=409, detail="Approve or edit this item first — a Hypothesis "
+                                                    "cannot be raised to Confirmed without review.")
+    if err:
+        raise HTTPException(status_code=400, detail="grade must be 'confirmed' or 'indicated' on an "
+                                                    "ai_score or benchmark")
+    return result
+
+
 @router.get("/stats")
 async def stats(dataset_id: Optional[str] = None, session: AsyncSession = Depends(get_session)):
     return await vs.get_stats(session, dataset_id=dataset_id)

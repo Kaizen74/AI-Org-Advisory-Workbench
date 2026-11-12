@@ -25,7 +25,8 @@ from .diagnostics_service import positions_to_dicts
 # Severity order (higher wins when a role is touched by several moves).
 _RANK = {"unchanged": 0, "augmented": 1, "transformed": 2, "displaced": 3, "new": 4}
 REGISTER_HEADERS = ["employee_key", "display_name", "job_title", "impact_class",
-                    "skill_gaps", "suggested_pathway", "source", "review_state"]
+                    "skill_gaps", "suggested_pathway", "source", "review_state",
+                    "compass_role_ref", "compass_route"]  # appended (D50); blank with no packet
 
 
 def _upgrade(classes: Dict[str, str], key: str, new_class: str) -> None:
@@ -112,6 +113,8 @@ async def compute(session: AsyncSession, scenario_id: str) -> Optional[Dict]:
     if scenario is None:
         return None
     pos_dicts = positions_to_dicts(positions)
+    from . import compass_service
+    role_idx = await compass_service.role_index(session, scenario.engagement_id)
     classes = classify_impacts(pos_dicts, moves)
     by_key = {p["employee_key"]: p for p in pos_dicts}
 
@@ -139,6 +142,8 @@ async def compute(session: AsyncSession, scenario_id: str) -> Optional[Dict]:
             "suggested_pathway": pw.get("suggested_pathway", ""),
             "source": "model-inferred" if cls != "unchanged" else "structural",
             "review_state": "unreviewed" if cls != "unchanged" else "n/a",
+            **{k: v for k, v in compass_service.role_fields(role_idx, p.get("job_title"), None).items()
+               if k in ("compass_ref", "compass_route")},
         })
 
     summary: Dict[str, int] = {}
@@ -161,6 +166,7 @@ def register_to_xlsx(register: List[Dict]) -> bytes:
             row["employee_key"], row["display_name"], row["job_title"], row["impact_class"],
             "; ".join(row.get("skill_gaps") or []), row.get("suggested_pathway", ""),
             row["source"], row["review_state"],
+            row.get("compass_ref") or "", row.get("compass_route") or "",
         ])
     buf = io.BytesIO()
     wb.save(buf)

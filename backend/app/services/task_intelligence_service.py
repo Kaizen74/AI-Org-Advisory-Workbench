@@ -120,6 +120,11 @@ async def extract_tasks(
         await session.scalars(select(Position).where(Position.dataset_id == dataset_id))
     )
     with_activities = [p for p in positions if (p.work_activities or "").strip()]
+    # Compass priority roles are worked first (stable; a no-op when there is no Compass packet — D50).
+    from . import compass_service
+    role_idx = await compass_service.role_index_for_dataset(session, dataset_id)
+    if role_idx:
+        with_activities.sort(key=lambda p: compass_service.compass_rank(role_idx, p.job_title))
 
     # Clear prior tasks for these positions (recompute clean).
     pos_ids = [p.id for p in positions]
@@ -128,19 +133,26 @@ async def extract_tasks(
 
     batches = build_batches(with_activities, batch_size)
     tasks_created = 0
+    created: List[Task] = []
     for batch_index, batch in enumerate(batches):
         batch_id = f"batch_{batch_index}"
         for position_id, task_text in _extract_batch(batch):
-            session.add(
-                Task(
-                    position_id=position_id,
-                    task_text=task_text,
-                    batch_id=batch_id,
-                    extraction_source="model-inferred",
-                )
+            task = Task(
+                position_id=position_id,
+                task_text=task_text,
+                batch_id=batch_id,
+                extraction_source="model-inferred",
             )
+            session.add(task)
+            created.append(task)
             tasks_created += 1
     await session.flush()
+    # Displayed T-nnn codes, never reused (D50). Numbered in work order: Compass priority roles
+    # first when a packet is loaded, otherwise simply in extraction order.
+    if role_idx:
+        title_by_pos = {p.id: p.job_title for p in positions}
+        created.sort(key=lambda t: compass_service.compass_rank(role_idx, title_by_pos.get(t.position_id)))
+    await compass_service.ensure_task_codes(session, dataset_id, ordered=created)
 
     return {
         "dataset_id": dataset_id,
@@ -640,6 +652,10 @@ async def org_rollup(session: AsyncSession, dataset_id: str) -> Dict:
         return {"dataset_id": dataset_id, "nodes": [], "roots": [],
                 "human_agency_scale": HUMAN_AGENCY_SCALE, "caveats": STANDARD_CAVEATS}
 
+    from . import compass_service
+    from .shared_grade import grade_of
+    await compass_service.ensure_task_codes(session, dataset_id)
+    role_idx = await compass_service.role_index(session, ds.engagement_id if ds is not None else None)
     tasks = await _load_dataset_tasks(session, dataset_id)
     task_ids = [t.id for t in tasks]
     scores = {
@@ -675,10 +691,14 @@ async def org_rollup(session: AsyncSession, dataset_id: str) -> Dict:
         out: List[Dict] = []
         for t in sorted(tasks_by_pos.get(pos.id, []), key=lambda x: x.id):
             sc = scores.get(t.id)
+            band = _band_of(sc)
             out.append({
                 "id": t.id,
+                "code": t.code,
+                "grade": grade_of(sc),
+                "tacit_warning": compass_service.role_fields(role_idx, pos.job_title, band)["tacit_warning"],
                 "text": t.task_text,
-                "human_agency_level": _band_of(sc),
+                "human_agency_level": band,
                 "zone": sc.zone if sc else None,
                 "review_state": (sc.review_state if sc else "unreviewed") or "unreviewed",
                 "mapped": mapping_by_task.get(t.id, []),  # [] → unmapped
@@ -744,6 +764,8 @@ async def org_rollup(session: AsyncSession, dataset_id: str) -> Dict:
             "self_bands": s["bands"], "self_tasks": s["tasks"], "self_reviewed": s["reviewed"],
             "rollup_bands": r["bands"], "rollup_tasks": r["tasks"], "rollup_reviewed": r["reviewed"],
             "direct_reports": r["reports"], "total_reports": r["descendants"],
+            **{k: v for k, v in compass_service.role_fields(role_idx, p.job_title, None).items()
+               if k != "tacit_warning"},
             "tasks": _node_tasks(p),  # this role's OWN tasks + where each is mapped (process → step)
         })
 
@@ -766,6 +788,7 @@ async def list_tasks(session: AsyncSession, dataset_id: str) -> List[Dict]:
     return [
         {
             "id": t.id,
+            "code": t.code,
             "task_text": t.task_text,
             "employee_key": positions[t.position_id].employee_key if t.position_id in positions else None,
         }

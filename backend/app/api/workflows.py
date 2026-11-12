@@ -26,6 +26,11 @@ class ProcessCreate(BaseModel):
 
 class StepCreate(BaseModel):
     name: str
+    pms_step_id: Optional[str] = None  # Process Map Studio step code, e.g. S-04 (D50)
+
+
+class StepUpdate(BaseModel):
+    pms_step_id: Optional[str] = None
 
 
 class MoveTaskBody(BaseModel):
@@ -52,10 +57,14 @@ async def list_processes(engagement_id: str, session: AsyncSession = Depends(get
 
 @router.post("/{process_id}/steps", status_code=201)
 async def add_step(process_id: str, body: StepCreate, session: AsyncSession = Depends(get_session)):
-    step = await svc.add_step(session, process_id, body.name)
+    try:
+        step = await svc.add_step(session, process_id, body.name, body.pms_step_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
     if step is None:
         raise HTTPException(status_code=404, detail="Process not found")
-    return {"id": step.id, "seq": step.seq, "name": step.name, "linked_tasks": 0}
+    return {"id": step.id, "seq": step.seq, "name": step.name, "linked_tasks": 0,
+            "pms_step_id": step.pms_step_id}
 
 
 @router.get("/{process_id}/steps")
@@ -118,6 +127,18 @@ async def reset_board(process_id: str, session: AsyncSession = Depends(get_sessi
     result = await svc.reset_board(session, process_id)
     if result is None:
         raise HTTPException(status_code=404, detail="Process not found")
+    return result
+
+
+@router.patch("/steps/{step_id}")
+async def update_step(step_id: str, body: StepUpdate, session: AsyncSession = Depends(get_session)):
+    """Set or clear the Process Map Studio step ID (S-nn) so the two apps can be joined on it."""
+    try:
+        result = await svc.set_step_pms_id(session, step_id, body.pms_step_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    if result is None:
+        raise HTTPException(status_code=404, detail="Step not found")
     return result
 
 

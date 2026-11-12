@@ -41,6 +41,7 @@ class EngagementOut(BaseModel):
     default_taxonomy_code: Optional[str] = None
     anonymized: bool
     created_at: Optional[datetime] = None
+    compass_key: Optional[str] = None  # set when imported from Capability Compass (D50)
 
 
 class DatasetOut(BaseModel):
