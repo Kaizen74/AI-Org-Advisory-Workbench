@@ -1,4 +1,22 @@
 # LATEST CHECKPOINT
+**Updated:** 2026-11-12 (D50 — shared language + hand-off with Capability Compass; live deploy still pending Eric)
+**Phase:** post-P7 enhancement — D50 COMPLETE
+**Last completed micro-task:** D50 — the app now reads `compass-handoff` v1.x (Engagements →
+"Import from Capability Compass": preview → confirm), keeps Compass IDs/routes/clusters on matched
+roles, shows `T-nnn` task codes and an optional Process Map Studio `S-nn` on steps, shows the shared
+grade (Hypothesis / Indicated / Confirmed, raise-to-Confirmed in the Validation Queue), warns when a
+specialist/dual role's task is proposed at H1–H2, and writes `compass-return` v1.0 (JSON + readable
+text) from Deliverables. Migration 009 (additive, reversible). Works standalone with no packet.
+**In-flight micro-task:** none.
+**Next action (be exact):** await Eric. Deploy note: Railway runs `alembic upgrade head` on boot, so
+migration 009 applies itself on the next deploy — no manual step. Candidate follow-ups (not started,
+need Eric's go-ahead): the OS module (see D50 "stored but unused"); a time-weighted capacity estimate.
+**Test status:** GATE PASS — 181 backend tests + clean frontend build (2026-11-12).
+**Recovery commands:** bash scripts/gate.sh
+**Open questions for Eric:** (1) Capacity estimate treats all tasks as equal time — acceptable as a
+Hypothesis, or should tasks carry a time share? (2) Should a dangling `cluster_ref` block the import
+(current) or only warn?
+**Prior checkpoint follows (D49).**
 **Updated:** 2026-07-15 (D49 — export visual-parity audit closing the D48 gaps; live deploy still pending Eric)
 **Latest micro-task:** D49 — audited each on-screen view element-by-element against its exported
 artifact and closed three real gaps. FLOW (untouched by D48, the biggest miss): deck cards now carry

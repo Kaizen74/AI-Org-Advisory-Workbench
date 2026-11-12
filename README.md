@@ -173,6 +173,50 @@ keep the validation queue in mind before exporting.)
 
 ---
 
+## 3c. Working with Capability Compass — optional
+
+This app can read the hand-off file that **Capability Compass** writes at the end of Stage 1, and
+write its findings back in one agreed shape. **None of this is required** — skip it and the app
+works on its own exactly as before.
+
+**Import (Engagements tab):**
+
+1. Open **Engagements**. Scroll to **Import from Capability Compass (optional)**.
+2. Click **Choose hand-off file** and pick `<key>_compass_handoff.json` (for example
+   `meridian_compass_handoff.json`).
+3. Read the preview. It lists what will be created or changed, any warnings, and one row per role.
+   **Nothing is saved yet.**
+4. In the **Job title in the org file** column, check each match. "Near-match — please choose" is
+   never applied on its own: pick a title or leave it unmatched.
+5. Click **Confirm import**. To change a match later, use the **Capability Compass roles** panel
+   on the same page.
+
+Tip: upload the org CSV first, then import — the roles can then be matched in the same step. If
+you import first, upload the CSV and click the "Same title found in the org file" links.
+
+**What you then see:**
+
+| Where | What changes |
+|---|---|
+| Engagements | The engagement shows its key (e.g. `MERIDIAN`). |
+| Task Intelligence | A **Compass roles** panel: roles in Compass order, with route badge, positions and tasks. Roles with status *absent* are listed as "no one in the seat" and are not analysed. |
+| Workflow Mapper | Tasks of Compass roles come first, with a badge such as `RL-009 · specialist`. A **⚠ tacit-knowledge warning** appears when a `specialist` or `dual` role's task is proposed at H1 or H2. Each task shows its `T-nnn` code. Click a step to enter its **Process Map Studio step ID** (`S-04`). |
+| Validation Queue | A new **Evidence grade** column (see below) and the same warning. |
+| Deliverables | Two new buttons: **Findings return for Compass (.json)** and **Findings return — readable text (.txt)**. |
+
+**Evidence grade (the same three words in all four apps):**
+
+| Grade | When |
+|---|---|
+| **Hypothesis** | Unreviewed AI output, or anything below 0.70 confidence. Never drives a decision on its own. |
+| **Indicated** | You approved (or edited) it in the Validation Queue. |
+| **Confirmed** | You raised it yourself: tick **Show reviewed** in the Validation Queue, then click **raise to Confirmed**. The app never sets this on its own. |
+
+**The return file** contains three kinds of finding: task dispositions (`T-nnn`), role impact
+(`RL-nnn`) and capacity (FTE freed — always an *estimate*, always graded Hypothesis). Unreviewed AI
+content is left out, exactly as in every other deliverable. It contains no names of people, no API
+key and no document text. Upload the `.txt` version to Capability Compass as a document.
+
 ## 4. Deploy to the cloud (Vercel + Railway)
 
 You host the **backend** (the engine) on **Railway** and the **frontend** (the browser view) on

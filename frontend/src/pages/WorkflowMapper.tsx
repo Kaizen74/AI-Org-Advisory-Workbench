@@ -636,7 +636,7 @@ function Column({ id, title, seq, pmsStepId, tasks, dimOf, roleLitOf, isOver, se
         <button onClick={() => onSelectStep?.(id)} className="flex items-center gap-2 text-left">
           {seq != null && <span className="flex h-5 w-5 flex-none items-center justify-center rounded-md bg-slate-800 text-[11px] font-semibold tabular-nums text-white">{seq}</span>}
           <span className="text-[13px] font-semibold leading-tight text-slate-800">{title}</span>
-          {pmsStepId && <span title="Process Map Studio step ID" className="rounded bg-slate-100 px-1 py-0.5 font-mono text-[9.5px] text-slate-500">{pmsStepId}</span>}
+          {pmsStepId && <span title="Process Map Studio step ID" className="whitespace-nowrap rounded bg-slate-100 px-1 py-0.5 font-mono text-[9.5px] text-slate-500">{pmsStepId}</span>}
         </button>
         <div className="flex items-center gap-1.5">
           <span className="text-[11px] tabular-nums text-slate-400">{tasks.length}</span>

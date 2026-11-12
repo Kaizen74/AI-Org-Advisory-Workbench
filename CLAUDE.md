@@ -221,6 +221,20 @@ and file cannot drift; role = job title, never a name (test-asserted). Additive 
 tests. PAX baseline unchanged — still LOCKED 64 / 34 / 53.1% / 6,620,000 / 6. **Gate GREEN: 154 backend
 tests + clean frontend build, zero regressions.**
 
+**Shared language + Capability Compass hand-off (2026-11-12 — D50):** the app now reads
+`compass-handoff` v1.x and writes `compass-return` v1.0, and stays fully usable with no packet.
+Migration 009 (additive): `engagements.compass_key/compass_packet/task_seq`, `compass_roles`,
+`tasks.code` (`T-nnn`, never reused), `process_steps.pms_step_id` (`S-nn`), `grade_override`. New:
+`compass_service` (validate → preview → apply, job-title matching — near-matches are suggested, never
+auto-applied), `shared_grade` (Hypothesis / Indicated / Confirmed; Confirmed only by the consultant),
+`compass_return_service`, router `/api/v1/compass`, `PATCH /workflows/steps/{id}`,
+`POST /validation/grade`, deliverables `COMPASS_RETURN_JSON|TXT`. Board / queue / roll-up payloads
+gained `code`, `grade`, `compass_ref/route/cluster_ref`, `tacit_warning` (specialist|dual role ×
+H1–H2); Compass roles are worked and listed first. Frontend: `components/Compass.tsx` (import
+preview/confirm, roles panel, badges). C1–C8 + leapfrog gate are stored only (OS module not built —
+see D50). **Gate GREEN: 181 backend tests + clean frontend build, zero regressions;** live-verified in
+a browser on a DB migrated from 008 with existing data. PAX baseline still LOCKED (D9).
+
 ---
 
 ## RESILIENT-BUILD SKILL — FILE MAPPING (do NOT create parallel files)

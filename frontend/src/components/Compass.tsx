@@ -476,7 +476,15 @@ export function CompassRolesPanel({
                     value={r.matched_job_title ?? ""}
                     onChange={(v) => setMatch(r.ref, v)}
                   />
-                  {!r.matched_job_title && r.candidates.length > 0 && (
+                  {!r.matched_job_title && r.suggestion && (
+                    <button
+                      onClick={() => setMatch(r.ref, r.suggestion!)}
+                      className="mt-0.5 block text-[11px] text-teal-700 underline hover:text-teal-900"
+                    >
+                      Same title found in the org file — use "{r.suggestion}"
+                    </button>
+                  )}
+                  {!r.matched_job_title && !r.suggestion && r.candidates.length > 0 && (
                     <div className="text-[11px] text-amber-700">Similar titles found — please choose.</div>
                   )}
                 </td>
