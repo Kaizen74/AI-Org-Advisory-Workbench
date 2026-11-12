@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../services/api";
 import type { Client, Dataset, Engagement } from "../types";
 import { Button, Card, Empty, ErrorNote, Spinner } from "../components/ui";
+import { CompassImport, CompassRolesPanel } from "../components/Compass";
 
 export default function Engagements({
   onOpenDiagnostics,
@@ -17,6 +18,19 @@ export default function Engagements({
   const [error, setError] = useState<string>("");
   const [newClient, setNewClient] = useState("");
   const [newEngagement, setNewEngagement] = useState("");
+  const [compassTick, setCompassTick] = useState(0); // bumps to refresh the Compass roles panel
+
+  async function onCompassImported(r: { engagement_id: string; client_id: string }) {
+    try {
+      await refreshClients();
+      setSelectedClient(r.client_id);
+      setEngagements(await api.listEngagements(r.client_id));
+      setSelectedEngagement(r.engagement_id);
+      setCompassTick((t) => t + 1);
+    } catch (e) {
+      setError(String((e as Error).message ?? e));
+    }
+  }
 
   async function refreshClients() {
     setClients(await api.listClients());
@@ -73,6 +87,7 @@ export default function Engagements({
     try {
       await api.uploadDataset(selectedEngagement, file);
       setDatasets(await api.listDatasets(selectedEngagement));
+      setCompassTick((t) => t + 1);
     } catch (e) {
       setError(String(e));
     }
@@ -179,6 +194,14 @@ export default function Engagements({
                   }`}
                 >
                   {e.name}
+                  {e.compass_key && (
+                    <span
+                      title="Linked to Capability Compass — engagement key"
+                      className="ml-2 rounded bg-teal-100 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-teal-800"
+                    >
+                      {e.compass_key}
+                    </span>
+                  )}
                 </button>
                 <button
                   onClick={() => delEngagement(e.id, e.name)}
@@ -256,6 +279,23 @@ export default function Engagements({
           </>
         )}
       </Card>
+
+      <div className="md:col-span-3">
+        <CompassImport
+          selectedEngagementId={selectedEngagement || null}
+          selectedEngagementName={engagementName}
+          onImported={onCompassImported}
+        />
+      </div>
+      {selectedEngagement && (
+        <div className="md:col-span-3">
+          <CompassRolesPanel
+            engagementId={selectedEngagement}
+            refreshKey={compassTick}
+            title="Capability Compass roles for this engagement"
+          />
+        </div>
+      )}
     </div>
   );
 }

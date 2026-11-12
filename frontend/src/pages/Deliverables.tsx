@@ -10,6 +10,9 @@ const DATASET_TYPES: { type: string; label: string }[] = [
   { type: "PPTX_WORKFLOW", label: "Finalized workflow (.pptx)" },
   { type: "DOCX_TOM", label: "TOM narrative (.docx)" },
   { type: "XLSX_METRICS", label: "Metrics pack (.xlsx)" },
+  // Findings in the shape shared with the other apps (compass-return v1.0) + the same as readable text.
+  { type: "COMPASS_RETURN_JSON", label: "Findings return for Compass (.json)" },
+  { type: "COMPASS_RETURN_TXT", label: "Findings return — readable text (.txt)" },
 ];
 
 export default function Deliverables({
